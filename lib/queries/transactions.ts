@@ -13,8 +13,9 @@ export type TransactionFilters = {
   from?: string;
   to?: string;
   categoryIds?: string[];
+  /** Matches either leg: a transfer belongs to both accounts it names. */
   accountIds?: string[];
-  type?: "expense" | "income";
+  type?: "expense" | "income" | "transfer";
   query?: string;
   unconfirmedOnly?: boolean;
   limit?: number;
@@ -37,7 +38,12 @@ export async function listTransactions(
   if (filters.type) request = request.eq("type", filters.type);
   if (filters.unconfirmedOnly) request = request.eq("is_confirmed", false);
   if (filters.categoryIds?.length) request = request.in("category_id", filters.categoryIds);
-  if (filters.accountIds?.length) request = request.in("account_id", filters.accountIds);
+  if (filters.accountIds?.length) {
+    // A transfer names two accounts and shows up under both, so filtering by
+    // account has to look at the arriving leg as well as the leaving one.
+    const list = `(${filters.accountIds.join(",")})`;
+    request = request.or(`account_id.in.${list},to_account_id.in.${list}`);
+  }
   if (filters.query) {
     const escaped = filters.query.replace(/[%,]/g, " ").trim();
     if (escaped) {
@@ -58,6 +64,16 @@ export type MonthTotals = {
   byCategory: Map<string | null, number>;
 };
 
+/**
+ * Money moving between the user's own accounts is not income and not a spend.
+ * Counting it as either is the one way this feature could quietly ruin the
+ * number the whole product is judged on, so the exclusion lives here — in the
+ * two functions every total is built from — rather than at each call site.
+ */
+function isSpendOrEarn(row: TransactionRow): boolean {
+  return row.type === "expense" || row.type === "income";
+}
+
 export type MonthPoint = { month: string; income: number; expense: number };
 
 /**
@@ -72,6 +88,7 @@ export async function monthlySeries(
   const series = new Map<string, MonthPoint>();
 
   for (const row of rows) {
+    if (!isSpendOrEarn(row)) continue;
     const key = `${row.occurred_on.slice(0, 7)}-01`;
     const point = series.get(key) ?? { month: key, income: 0, expense: 0 };
     if (row.type === "income") point.income += row.amount;
@@ -94,6 +111,7 @@ export async function monthTotals(from: string, to: string): Promise<MonthTotals
   };
 
   for (const row of rows) {
+    if (!isSpendOrEarn(row)) continue;
     if (row.type === "income") {
       totals.income += row.amount;
       continue;

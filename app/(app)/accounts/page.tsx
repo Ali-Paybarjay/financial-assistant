@@ -11,6 +11,7 @@ export default async function AccountsPage() {
     <AccountsView
       currency={viewer.currency}
       today={todayInTimeZone(viewer.timeZone)}
+      timeZone={viewer.timeZone}
       accounts={accounts}
     />
   );

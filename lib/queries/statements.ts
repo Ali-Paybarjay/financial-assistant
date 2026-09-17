@@ -15,12 +15,25 @@ import type {
 /** Imports that are still waiting on the user, newest first. */
 const OPEN_STATUSES = ["uploading", "parsing", "review"] as const;
 
-export async function openImport(): Promise<StatementImportRow | null> {
+/**
+ * The import still waiting on the user.
+ *
+ * With an account, the one belonging to that account — there can now be one
+ * open per account, so arriving from an account's update button must not show
+ * a different account's half-finished report. Without one, the newest of any,
+ * which is what the general import page shows.
+ */
+export async function openImport(accountId?: string): Promise<StatementImportRow | null> {
   const supabase = await createClient();
-  const { data } = await supabase
+
+  let request = supabase
     .from("statement_imports")
     .select("*")
-    .in("status", [...OPEN_STATUSES])
+    .in("status", [...OPEN_STATUSES]);
+
+  if (accountId) request = request.eq("account_id", accountId);
+
+  const { data } = await request
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  latestBalance,
   normalise,
+  normaliseClosingBalance,
   resolveDate,
   spreadsheetChunks,
   type NormaliseContext,
@@ -209,5 +211,71 @@ describe("spreadsheetChunks", () => {
 
   it("ignores blank lines a bank export pads with", () => {
     expect(spreadsheetChunks("\n\n  \n")).toEqual([]);
+  });
+});
+
+describe("the closing balance", () => {
+  const context = {
+    today: "2026-09-17" as const,
+    statementCurrency: "IRR" as const,
+    baseCurrency: "IRT" as const,
+    categories: [],
+  };
+
+  it("converts the bank's unit to the user's, like every other amount", () => {
+    // An Iranian bank closes the month at 12,000,000 rial. The user counts in
+    // toman, and being offered a balance ten times too large as the truth
+    // about their account is the worst outcome this step has.
+    const balance = normaliseClosingBalance(
+      { amount_minor: 12_000_000, date: "1405-06-26", calendar: "jalali" },
+      context,
+    );
+    expect(balance?.amount).toBe(1_200_000);
+  });
+
+  it("converts the date, and does not trust the model's calendar label", () => {
+    const balance = normaliseClosingBalance(
+      { amount_minor: 100, date: "1405-06-26", calendar: "gregorian" },
+      context,
+    );
+    expect(balance?.asOf).toBe("2026-09-17");
+  });
+
+  it("is null rather than a guess when the date cannot be settled", () => {
+    expect(
+      normaliseClosingBalance(
+        { amount_minor: 100, date: "1405-13-40", calendar: "jalali" },
+        context,
+      ),
+    ).toBeNull();
+  });
+
+  it("keeps a negative balance negative", () => {
+    // A card statement closes owing, and refusing the sign would flip a debt
+    // into savings.
+    const balance = normaliseClosingBalance(
+      { amount_minor: -5_000_000, date: "1405-06-26", calendar: "jalali" },
+      context,
+    );
+    expect(balance?.amount).toBe(-500_000);
+  });
+
+  it("is null when the statement printed none", () => {
+    expect(normaliseClosingBalance(null, context)).toBeNull();
+  });
+});
+
+describe("latestBalance", () => {
+  it("takes the newest, whatever order the calls came back in", () => {
+    const picked = latestBalance([
+      { amount: 100, asOf: "2026-07-31" },
+      { amount: 300, asOf: "2026-09-30" },
+      { amount: 200, asOf: "2026-08-31" },
+    ]);
+    expect(picked?.amount).toBe(300);
+  });
+
+  it("is null when nothing reported one", () => {
+    expect(latestBalance([])).toBeNull();
   });
 });

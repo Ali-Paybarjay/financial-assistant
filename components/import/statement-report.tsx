@@ -23,6 +23,7 @@ import {
 import {
   applyStatementImport,
   discardStatementImport,
+  type ApplyResult,
 } from "@/app/(app)/import/actions";
 
 /**
@@ -48,7 +49,8 @@ export function StatementReport({
   /** Named here so the user can see where the rows are about to land. */
   accountTitle?: string;
   currency: CurrencyCode;
-  onApplied: (result: { imported: number; skipped: number }) => void;
+  /** The whole successful result: the balance step is built from it. */
+  onApplied: (result: Extract<ApplyResult, { ok: true }>) => void;
 }) {
   const router = useRouter();
 
@@ -157,6 +159,30 @@ export function StatementReport({
           <Tile label="قبلاً ثبت شده" value={faNumber(matched.length)} />
           <Tile label="ثبت‌نشده" value={faNumber(fresh.length)} emphasis />
         </dl>
+
+        {/* Stated, not compared. The difference between this and the ledger
+            only means anything once the missing rows are in, so the comparison
+            waits for the balance step and this is just what the bank said. */}
+        {statementImport.closing_balance !== null && (
+          <p
+            data-testid="statement-closing-balance"
+            className="mt-3 flex items-baseline justify-between gap-2 rounded-control border border-hairline bg-paper px-3 py-2.5"
+          >
+            <span className="text-caption text-ink-muted">
+              مانده‌ی پایان دوره طبق صورت‌حساب
+              {statementImport.closing_balance_on &&
+                ` · ${formatDateFa(statementImport.closing_balance_on)}`}
+            </span>
+            <Money
+              minor={statementImport.closing_balance}
+              currency={currency}
+              size="row"
+              className={
+                statementImport.closing_balance < 0 ? "text-negative" : "text-ink"
+              }
+            />
+          </p>
+        )}
 
         {fresh.length > 0 && (
           <p className="mt-3 text-caption text-ink-muted">

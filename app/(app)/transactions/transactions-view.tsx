@@ -30,7 +30,7 @@ const UNDO_WINDOW_MS = 5000;
 type ActiveFilters = {
   category?: string;
   account?: string;
-  type?: "expense" | "income";
+  type?: "expense" | "income" | "transfer";
   query?: string;
 };
 
@@ -89,10 +89,17 @@ export function TransactionsView({
 
   const visible = transactions.filter((row) => row.id !== pendingDelete?.id);
 
+  // Transfers are left out on purpose: the same money would count as a loss
+  // here and a gain nowhere, and "جمع" is meant to read as what this filter is
+  // worth, not as an artefact of moving money between one's own pockets.
   const filteredTotal = visible.reduce(
-    (total, row) => total + (row.type === "income" ? row.amount : -row.amount),
+    (total, row) =>
+      row.type === "transfer"
+        ? total
+        : total + (row.type === "income" ? row.amount : -row.amount),
     0,
   );
+  const transferCount = visible.filter((row) => row.type === "transfer").length;
 
   const groups = useMemo(() => {
     const byDay = new Map<string, TransactionRow[]>();
@@ -117,7 +124,12 @@ export function TransactionsView({
     },
     activeFilters.type && {
       key: "type",
-      label: activeFilters.type === "income" ? "فقط درآمد" : "فقط هزینه",
+      label:
+        activeFilters.type === "income"
+          ? "فقط درآمد"
+          : activeFilters.type === "transfer"
+            ? "فقط انتقال"
+            : "فقط هزینه",
     },
     activeFilters.query && { key: "q", label: `«${activeFilters.query}»` },
   ].filter(Boolean) as { key: string; label: string }[];
@@ -186,7 +198,13 @@ export function TransactionsView({
       {/* Without the filtered sum, a filter is a toy: the user cannot see what
           the narrowed set is worth. */}
       <div className="mt-3 flex items-baseline justify-between text-caption text-ink-muted">
-        <span>{faNumber(visible.length)} نتیجه</span>
+        <span>
+          {faNumber(visible.length)} نتیجه
+          {/* Said out loud, because a sum that silently ignores rows the user
+              can see on the same screen is a sum they cannot check. */}
+          {transferCount > 0 &&
+            ` (${faNumber(transferCount)} انتقال در جمع نیست)`}
+        </span>
         <span data-testid="filtered-total" className="flex items-baseline gap-1.5">
           جمع
           <Money minor={filteredTotal} currency={currency} size="row" tone="auto" signed />
@@ -216,6 +234,11 @@ export function TransactionsView({
                     }
                     accountTitle={
                       row.account_id ? accountById.get(row.account_id)?.title : undefined
+                    }
+                    toAccountTitle={
+                      row.to_account_id
+                        ? accountById.get(row.to_account_id)?.title
+                        : undefined
                     }
                     currency={currency}
                     onSelect={() => setEditing(row)}
@@ -321,6 +344,7 @@ export function TransactionsView({
             <option value="">هزینه و درآمد</option>
             <option value="expense">فقط هزینه</option>
             <option value="income">فقط درآمد</option>
+            <option value="transfer">فقط انتقال</option>
           </NativeSelect>
         </div>
       </BottomSheet>

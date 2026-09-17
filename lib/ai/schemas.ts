@@ -137,13 +137,30 @@ export const statementLineSchema = z.object({
   needs_review: z.array(z.enum(REVIEWABLE_FIELDS)),
 });
 
+/**
+ * The balance the statement says the account held when the period ended.
+ *
+ * This is the one number on the page the row rules spend their whole length
+ * telling the model to ignore, so it is asked for separately and by name. It
+ * is never a row, it never has a direction, and it may be negative — a card
+ * statement closes owing.
+ */
+export const statementClosingBalanceSchema = z.object({
+  amount_minor: z.number().int(),
+  /** As printed, same convention as a row: not converted between calendars. */
+  date: z.string().regex(/^\d{1,4}-\d{1,2}-\d{1,2}$/),
+  calendar: z.enum(["jalali", "gregorian"]),
+});
+
 export const statementResultSchema = z.object({
   /** Total pages in the document, so the server can window through a long one. */
   page_count: z.number().int().positive().nullable(),
+  closing_balance: statementClosingBalanceSchema.nullable(),
   lines: z.array(statementLineSchema).max(MAX_STATEMENT_LINES),
 });
 
 export type StatementLine = z.infer<typeof statementLineSchema>;
+export type StatementClosingBalance = z.infer<typeof statementClosingBalanceSchema>;
 export type StatementResult = z.infer<typeof statementResultSchema>;
 
 export const STATEMENT_JSON_SCHEMA = {
@@ -152,12 +169,32 @@ export const STATEMENT_JSON_SCHEMA = {
   schema: {
     type: "object",
     additionalProperties: false,
-    required: ["page_count", "lines"],
+    required: ["page_count", "closing_balance", "lines"],
     properties: {
       page_count: {
         type: ["integer", "null"],
         description:
           "How many pages the whole document has, null if that cannot be told.",
+      },
+      closing_balance: {
+        type: ["object", "null"],
+        additionalProperties: false,
+        required: ["amount_minor", "date", "calendar"],
+        description:
+          "The closing or final balance the statement prints for the account, null if it prints none. This is the ONLY place a balance may be reported; it is never a row in lines.",
+        properties: {
+          amount_minor: {
+            type: "integer",
+            description:
+              "The closing balance in minor units. Negative if the account is overdrawn or the card is owed.",
+          },
+          date: {
+            type: "string",
+            description:
+              "The date that balance is stated for, as printed, rewritten as YEAR-MONTH-DAY. Usually the last row's date or the end of the period.",
+          },
+          calendar: { type: "string", enum: ["jalali", "gregorian"] },
+        },
       },
       lines: {
         type: "array",

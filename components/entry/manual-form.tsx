@@ -9,6 +9,7 @@ import { AmountInput } from "@/components/amount-input";
 import { Field, FormError } from "@/components/field";
 import { AccountField } from "@/components/accounts/account-field";
 import { SegmentedControl } from "@/components/segmented-control";
+import { ArrowsLeftRight } from "@phosphor-icons/react/dist/ssr";
 import type { CurrencyCode } from "@/lib/money";
 import type { AccountRow, CategoryRow } from "@/lib/supabase/database.types";
 import {
@@ -49,6 +50,7 @@ export function ManualForm({
       amount: "",
       categorySlug: "groceries",
       accountId: defaultAccountId ?? "",
+      toAccountId: "",
       occurredOn: today,
       merchant: "",
       note: "",
@@ -56,14 +58,23 @@ export function ManualForm({
   });
 
   const type = watch("type");
+  const isTransfer = type === "transfer";
   const visibleCategories = categories.filter((category) => category.kind === type);
+
+  // Offered only once there are two accounts to move money between. With one
+  // account it is not a transfer, it is a withdrawal.
+  const transferable = accounts.filter((account) => account.is_active).length >= 2;
 
   function onSubmit(values: TransactionForm) {
     setFormError(undefined);
     startTransition(async () => {
       const result = await saveTransaction(values);
       if ("error" in result) setFormError(result.error);
-      else onSaved(`ثبت شد. ${result.balanceText} برایت مانده.`);
+      // A transfer does not change what is left this month, so quoting the
+      // month's balance back would be a non sequitur dressed as a confirmation.
+      else if (values.type === "transfer") {
+        onSaved("انتقال ثبت شد. موجودی هر دو حساب به‌روز شد.");
+      } else onSaved(`ثبت شد. ${result.balanceText} برایت مانده.`);
     });
   }
 
@@ -75,13 +86,22 @@ export function ManualForm({
         control={control}
         name="type"
         render={({ field }) => (
-          <SegmentedControl<"expense" | "income">
+          <SegmentedControl<TransactionForm["type"]>
             label="نوع تراکنش"
             value={field.value}
             onChange={field.onChange}
             segments={[
               { value: "expense", label: "هزینه" },
               { value: "income", label: "درآمد" },
+              ...(transferable
+                ? [
+                    {
+                      value: "transfer" as const,
+                      label: "انتقال",
+                      icon: <ArrowsLeftRight size={15} />,
+                    },
+                  ]
+                : []),
             ]}
           />
         )}
@@ -98,6 +118,7 @@ export function ManualForm({
         />
       </Field>
 
+      {!isTransfer && (
       <Field label="دسته" htmlFor="category" error={errors.categorySlug?.message}>
         <Controller
           control={control}
@@ -127,21 +148,50 @@ export function ManualForm({
           )}
         />
       </Field>
+      )}
 
-      <AccountField
-        id="account"
-        accounts={accounts}
-        hint="از موجودی همین حساب کم یا به آن اضافه می‌شود."
-        {...register("accountId")}
-      />
+      {isTransfer ? (
+        <div className="flex flex-col gap-4">
+          <AccountField
+            id="account"
+            label="از حساب"
+            accounts={accounts}
+            allowNone={false}
+            error={errors.accountId?.message}
+            {...register("accountId")}
+          />
+          <AccountField
+            id="toAccount"
+            label="به حساب"
+            accounts={accounts}
+            allowNone={false}
+            error={errors.toAccountId?.message}
+            hint="از موجودی اولی کم و به دومی اضافه می‌شود؛ در هزینه و درآمد ماه شمرده نمی‌شود."
+            {...register("toAccountId")}
+          />
+        </div>
+      ) : (
+        <AccountField
+          id="account"
+          accounts={accounts}
+          hint="از موجودی همین حساب کم یا به آن اضافه می‌شود."
+          {...register("accountId")}
+        />
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="تاریخ" htmlFor="occurredOn" error={errors.occurredOn?.message}>
           <Input id="occurredOn" type="date" dir="ltr" {...register("occurredOn")} />
         </Field>
-        <Field label="فروشنده" htmlFor="merchant">
-          <Input id="merchant" placeholder="اختیاری" {...register("merchant")} />
-        </Field>
+        {isTransfer ? (
+          <Field label="توضیح" htmlFor="note">
+            <Input id="note" placeholder="اختیاری" {...register("note")} />
+          </Field>
+        ) : (
+          <Field label="فروشنده" htmlFor="merchant">
+            <Input id="merchant" placeholder="اختیاری" {...register("merchant")} />
+          </Field>
+        )}
       </div>
 
       <Button type="submit" size="lg" disabled={isPending}>
@@ -149,7 +199,9 @@ export function ManualForm({
           ? "دارم ثبت می‌کنم…"
           : type === "expense"
             ? "ثبت هزینه"
-            : "ثبت درآمد"}
+            : type === "income"
+              ? "ثبت درآمد"
+              : "ثبت انتقال"}
       </Button>
     </form>
   );

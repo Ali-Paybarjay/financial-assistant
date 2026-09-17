@@ -2,6 +2,7 @@
 
 import {
   ArrowsClockwise,
+  ArrowsLeftRight,
   Bank,
   CaretLeft,
   Keyboard,
@@ -40,6 +41,7 @@ export function TransactionRowItem({
   transaction,
   category,
   accountTitle,
+  toAccountTitle,
   currency,
   onSelect,
 }: {
@@ -47,12 +49,21 @@ export function TransactionRowItem({
   category?: CategoryRow;
   /** Omitted where accounts are not in play, which keeps the line short. */
   accountTitle?: string;
+  /** The far end of a transfer. */
+  toAccountTitle?: string;
   currency: CurrencyCode;
   onSelect: () => void;
 }) {
-  const SourceIcon = SOURCE_ICON[transaction.source] ?? Keyboard;
+  const isTransfer = transaction.type === "transfer";
+  // A transfer's icon names what happened, not how it was entered: "I moved
+  // money" is the fact, and which of three forms it was typed into is not.
+  const SourceIcon = isTransfer
+    ? ArrowsLeftRight
+    : (SOURCE_ICON[transaction.source] ?? Keyboard);
   const unconfirmed = !transaction.is_confirmed;
-  const title = transaction.merchant || transaction.note || category?.name_fa || "بدون عنوان";
+  const title = isTransfer
+    ? "انتقال بین حساب‌ها"
+    : transaction.merchant || transaction.note || category?.name_fa || "بدون عنوان";
 
   return (
     <button
@@ -87,18 +98,43 @@ export function TransactionRowItem({
         >
           {unconfirmed
             ? `تأییدنشده · ${SOURCE_LABEL[transaction.source] ?? ""}`
-            : [category?.name_fa, accountTitle, formatDateFa(transaction.occurred_on)]
-                .filter(Boolean)
-                .join(" · ")}
+            : isTransfer
+              ? [
+                  // Reads right to left: "to B ← from A" in source order gives
+                  // «از A به B» on screen.
+                  accountTitle && toAccountTitle
+                    ? `از ${accountTitle} به ${toAccountTitle}`
+                    : null,
+                  formatDateFa(transaction.occurred_on),
+                ]
+                  .filter(Boolean)
+                  .join(" · ")
+              : [category?.name_fa, accountTitle, formatDateFa(transaction.occurred_on)]
+                  .filter(Boolean)
+                  .join(" · ")}
         </span>
       </span>
 
       <span className="flex shrink-0 flex-col items-end gap-0.5">
+        {/* A transfer is neither a gain nor a loss, so it gets no sign and no
+            colour: the money is still the user's, it is just somewhere else. */}
         <Money
-          minor={transaction.type === "income" ? transaction.amount : -transaction.amount}
+          minor={
+            isTransfer
+              ? transaction.amount
+              : transaction.type === "income"
+                ? transaction.amount
+                : -transaction.amount
+          }
           currency={currency}
           size="row"
-          className={transaction.type === "income" ? "text-positive" : "text-ink"}
+          className={
+            isTransfer
+              ? "text-ink-muted"
+              : transaction.type === "income"
+                ? "text-positive"
+                : "text-ink"
+          }
         />
         {unconfirmed && (
           <span className="flex items-center gap-0.5 text-caption font-medium text-lapis">

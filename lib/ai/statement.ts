@@ -5,13 +5,17 @@ import {
   MAX_STATEMENT_LINES,
   STATEMENT_JSON_SCHEMA,
   statementResultSchema,
+  type StatementClosingBalance,
   type StatementLine,
 } from "./schemas";
 import { statementParsePrompt } from "./prompts";
 import { logUsage, remainingCalls } from "./usage";
 import {
   normalise,
+  latestBalance,
+  normaliseClosingBalance,
   spreadsheetChunks,
+  type NormalisedClosingBalance,
   type NormalisedLine,
 } from "@/lib/import/normalise";
 import type { IsoDate } from "@/lib/date";
@@ -48,7 +52,13 @@ export type StatementFile = {
 };
 
 export type StatementReadOutcome =
-  | { ok: true; lines: NormalisedLine[]; truncated: boolean }
+  | {
+      ok: true;
+      lines: NormalisedLine[];
+      truncated: boolean;
+      /** Null when the statement printed no balance, or printed none we trust. */
+      closingBalance: NormalisedClosingBalance | null;
+    }
   | { ok: false; error: string };
 
 const FAILURE_MESSAGES: Record<ModelError["kind"], string> = {
@@ -108,6 +118,11 @@ export async function readStatementFile({
   if (chunks.length === 0) return { ok: false, error: UNREADABLE };
 
   const lines: NormalisedLine[] = [];
+  // A long statement is read in several calls, each of which may report the
+  // balance as it stood at the end of its own slice. The one the user is owed
+  // is the latest, so they are collected and the newest date wins — which also
+  // makes the answer independent of the order the chunks came back in.
+  const balances: NormalisedClosingBalance[] = [];
   let truncated = chunks.length > MAX_CALLS_PER_FILE;
 
   for (const chunk of chunks.slice(0, MAX_CALLS_PER_FILE)) {
@@ -115,7 +130,7 @@ export async function readStatementFile({
       await logUsage({ userId, feature: "parse_statement", model: MODEL, status: "rejected" });
       // Whatever was read before the ceiling is still worth offering.
       return lines.length > 0
-        ? { ok: true, lines, truncated: true }
+        ? { ok: true, lines, truncated: true, closingBalance: latestBalance(balances) }
         : { ok: false, error: IMPORT_LIMIT_REACHED };
     }
 
@@ -128,25 +143,36 @@ export async function readStatementFile({
     if (!outcome.ok) {
       // A file that produced rows before failing still has those rows.
       return lines.length > 0
-        ? { ok: true, lines, truncated: true }
+        ? { ok: true, lines, truncated: true, closingBalance: latestBalance(balances) }
         : { ok: false, error: outcome.error };
     }
 
     if (outcome.lines.length >= MAX_STATEMENT_LINES) truncated = true;
 
+    const balance = normaliseClosingBalance(outcome.closingBalance, {
+      today,
+      statementCurrency,
+      baseCurrency,
+      categories,
+    });
+    if (balance) balances.push(balance);
+
     for (const raw of outcome.lines) {
       const line = normalise(raw, { today, statementCurrency, baseCurrency, categories });
       if (line) lines.push(line);
-      if (lines.length >= MAX_IMPORT_LINES) return { ok: true, lines, truncated: true };
+      if (lines.length >= MAX_IMPORT_LINES) {
+        return { ok: true, lines, truncated: true, closingBalance: latestBalance(balances) };
+      }
     }
   }
 
   if (lines.length === 0) return { ok: false, error: UNREADABLE };
-  return { ok: true, lines, truncated };
+  return { ok: true, lines, truncated, closingBalance: latestBalance(balances) };
 }
 
+
 type ReadOnceOutcome =
-  | { ok: true; lines: StatementLine[] }
+  | { ok: true; lines: StatementLine[]; closingBalance: StatementClosingBalance | null }
   | { ok: false; error: string };
 
 /** One model call, validated twice — the provider schema, then Zod. */
@@ -182,7 +208,13 @@ async function readOnce({
         status: parsed.success ? "ok" : "malformed",
       });
 
-      if (parsed.success) return { ok: true, lines: parsed.data.lines };
+      if (parsed.success) {
+        return {
+          ok: true,
+          lines: parsed.data.lines,
+          closingBalance: parsed.data.closing_balance,
+        };
+      }
       if (attempt === 0) continue;
       return { ok: false, error: FAILURE_MESSAGES.malformed };
     } catch (error) {

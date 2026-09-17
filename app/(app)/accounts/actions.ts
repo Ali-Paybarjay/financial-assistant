@@ -141,10 +141,13 @@ export async function deleteAccount(id: string): Promise<AccountResult> {
   await requireViewer();
   const supabase = await createClient();
 
+  // Both legs: a transfer that only arrived here still belongs to this
+  // account, and hard-deleting would drop it out of the other account's
+  // balance too.
   const { count, error: countError } = await supabase
     .from("transactions")
     .select("id", { count: "exact", head: true })
-    .eq("account_id", id)
+    .or(`account_id.eq.${id},to_account_id.eq.${id}`)
     .is("deleted_at", null);
 
   if (countError) return { error: GENERIC_ERROR };

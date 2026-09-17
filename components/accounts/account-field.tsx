@@ -31,19 +31,29 @@ type AccountFieldProps = Omit<React.ComponentProps<"select">, "children"> & {
   /** The row's current account, so a closed one stays in the list. */
   selectedId?: string | null;
   hint?: string;
+  error?: string;
+  /**
+   * False on a transfer's two ends: money has to come from somewhere and land
+   * somewhere, so "no account" is not one of the answers there.
+   */
+  allowNone?: boolean;
 };
 
 export const AccountField = React.forwardRef<HTMLSelectElement, AccountFieldProps>(
   function AccountField(
-    { accounts, id, label = "حساب", selectedId, hint, ...props },
+    { accounts, id, label = "حساب", selectedId, hint, error, allowNone = true, ...props },
     ref,
   ) {
     const options = visibleAccounts(accounts, selectedId);
     if (options.length === 0) return null;
 
     return (
-      <Field label={label} htmlFor={id} hint={hint}>
+      <Field label={label} htmlFor={id} hint={hint} error={error}>
         <NativeSelect id={id} ref={ref} {...props}>
+          {/* An empty first option on a required select, so the field starts
+              unanswered instead of silently defaulting to whichever account
+              happened to sort first. */}
+          {!allowNone && <option value="">انتخاب کن…</option>}
           {options.map((account) => (
             <option key={account.id} value={account.id}>
               {account.title}
@@ -52,7 +62,7 @@ export const AccountField = React.forwardRef<HTMLSelectElement, AccountFieldProp
           ))}
           {/* Last, not first: money usually moves through an account, and the
               exception should not sit where the eye lands. */}
-          <option value="">بدون حساب (نقدی)</option>
+          {allowNone && <option value="">بدون حساب (نقدی)</option>}
         </NativeSelect>
       </Field>
     );

@@ -6,8 +6,10 @@ import { createClient } from "@/lib/supabase/server";
 import { requireViewer } from "@/lib/auth";
 import { categoryIdsBySlug } from "@/lib/queries/categories";
 import { getImport } from "@/lib/queries/statements";
-import { convertibleFrom, isCurrencyCode } from "@/lib/money";
+import { listAccountsWithBalances } from "@/lib/queries/accounts";
+import { convertibleFrom, isCurrencyCode, toMinor } from "@/lib/money";
 import { REVIEWABLE_FIELDS } from "@/lib/ai/schemas";
+import type { StatementImportRow } from "@/lib/supabase/database.types";
 import {
   ACCEPTED_MIME_TYPES,
   FILE_EXTENSIONS,
@@ -57,13 +59,21 @@ export async function startStatementImport(input: {
 
   const supabase = await createClient();
 
-  // Only one import may be open at a time: two half-finished reports of
-  // overlapping periods is a way to import the same money twice.
-  await supabase
+  // One open import per account, not one overall. Two half-finished reports
+  // over the same account is a way to import the same money twice; over two
+  // different accounts it is just the user working through their accounts at
+  // the start of the month, which is exactly what they are being asked to do.
+  const clearing = supabase
     .from("statement_imports")
     .update({ status: "discarded" })
     .eq("user_id", viewer.userId)
     .in("status", ["uploading", "parsing", "review"]);
+
+  const { error: clearError } = input.accountId
+    ? await clearing.eq("account_id", input.accountId)
+    : await clearing.is("account_id", null);
+
+  if (clearError) return { error: GENERIC_ERROR };
 
   const { data, error } = await supabase
     .from("statement_imports")
@@ -167,7 +177,24 @@ const applySchema = z.object({
 
 export type ApplyResult =
   | { error: string }
-  | { ok: true; imported: number; skipped: number };
+  | {
+      ok: true;
+      imported: number;
+      skipped: number;
+      /**
+       * Everything the balance step needs, returned rather than re-read: the
+       * rows just written changed the balance, so a page refresh would race
+       * the write it is meant to be reporting on.
+       */
+      balance: {
+        accountTitle: string;
+        /** The account's balance now, with the imported rows in it. */
+        ours: number;
+        /** What the statement said, if it printed anything we trust. */
+        theirs: number | null;
+        theirsOn: string | null;
+      } | null;
+    };
 
 /**
  * Write the rows the user chose.
@@ -266,17 +293,59 @@ export async function applyStatementImport(raw: unknown): Promise<ApplyResult> {
     .eq("match_status", "new")
     .select("row_index");
 
+  const appliedAt = new Date().toISOString();
+
   await supabase
     .from("statement_imports")
     .update({
       status: "applied",
       imported_count: rows.length,
-      applied_at: new Date().toISOString(),
+      applied_at: appliedAt,
     })
     .eq("id", statementImport.id);
 
+  // The account has now been checked against the bank, whether or not that
+  // added anything. An import that finds nothing missing is the best possible
+  // outcome, and it would be perverse for it to leave the account still
+  // nagging the user to do what they just did.
+  if (statementImport.account_id) {
+    await supabase
+      .from("accounts")
+      .update({ last_reconciled_at: appliedAt })
+      .eq("id", statementImport.account_id);
+  }
+
   refresh();
-  return { ok: true, imported: rows.length, skipped: skipped?.length ?? 0 };
+
+  return {
+    ok: true,
+    imported: rows.length,
+    skipped: skipped?.length ?? 0,
+    balance: await balanceStep(statementImport),
+  };
+}
+
+/**
+ * The state the balance step opens on: what the app now thinks the account
+ * holds, beside what the bank said it holds. Null when the statement was not
+ * filed against an account, which is every import made before accounts
+ * existed and any made from the general import page.
+ */
+async function balanceStep(
+  statementImport: StatementImportRow,
+): Promise<Extract<ApplyResult, { ok: true }>["balance"]> {
+  if (!statementImport.account_id) return null;
+
+  const accounts = await listAccountsWithBalances();
+  const account = accounts.find((entry) => entry.id === statementImport.account_id);
+  if (!account) return null;
+
+  return {
+    accountTitle: account.title,
+    ours: account.balance,
+    theirs: statementImport.closing_balance,
+    theirsOn: statementImport.closing_balance_on,
+  };
 }
 
 /** Walk away from an import. The lines stay; nothing was written from them. */
@@ -293,6 +362,59 @@ export async function discardStatementImport(
     .in("status", ["uploading", "parsing", "review", "failed"]);
 
   if (error) return { error: GENERIC_ERROR };
+
+  refresh();
+  return { ok: true };
+}
+
+/**
+ * Accept what the statement said the account holds.
+ *
+ * This is the other half of an update, and the more important one: importing
+ * the missing rows closes the gap the app knows about, and this closes the gap
+ * it does not. Whatever difference is left after the rows were added — a fee
+ * nobody itemised, a row the model dropped, a purchase from before the account
+ * existed — is absorbed by moving the anchor rather than hunted for.
+ *
+ * The amount comes from the request rather than from the stored import, and
+ * deliberately: the report shows the bank's figure as a guess the user can
+ * correct, the same as every other thing read off a page. What it cannot do is
+ * change anything already recorded.
+ */
+export async function applyStatementBalance(input: {
+  importId: string;
+  balance: string;
+  balanceOn: string;
+}): Promise<{ error: string } | { ok: true }> {
+  const viewer = await requireViewer();
+  const supabase = await createClient();
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.balanceOn)) return { error: GENERIC_ERROR };
+
+  const statementImport = await getImport(input.importId);
+  if (!statementImport?.account_id) return { error: GENERIC_ERROR };
+  if (statementImport.target_currency !== viewer.currency) {
+    return { error: "از وقتی این صورت‌حساب را خواندم ارز پایه عوض شده. دوباره آپلودش کن." };
+  }
+
+  let balance: number;
+  try {
+    balance = toMinor(input.balance, viewer.currency);
+  } catch {
+    return { error: "موجودی عدد نیست. فقط رقم بنویس، مثل ۱۲۰۰۰۰۰." };
+  }
+
+  const { error } = await supabase
+    .from("accounts")
+    .update({ opening_balance: balance, opening_balance_on: input.balanceOn })
+    .eq("id", statementImport.account_id);
+
+  if (error) return { error: GENERIC_ERROR };
+
+  await supabase
+    .from("statement_imports")
+    .update({ balance_applied: true })
+    .eq("id", statementImport.id);
 
   refresh();
   return { ok: true };

@@ -10,6 +10,7 @@ import { CategoryDonut, type CategorySlice } from "@/components/dashboard/catego
 import { MonthBars } from "@/components/dashboard/month-bars";
 import { EmptyDashboard } from "@/components/dashboard/empty-dashboard";
 import { AccountBalances } from "@/components/dashboard/account-balances";
+import { ReconcileBanner } from "@/components/accounts/reconcile-banner";
 import { TransactionRowItem } from "@/components/transactions/transaction-row";
 import { EntryLauncher } from "@/components/entry/entry-sheet";
 import { faNumber, faPercent } from "@/lib/format";
@@ -39,6 +40,7 @@ export function DashboardView({
   categories,
   accounts,
   accountsTotal,
+  accountsDue,
   defaultAccountId,
 }: {
   currency: CurrencyCode;
@@ -56,6 +58,8 @@ export function DashboardView({
   categories: CategoryRow[];
   accounts: AccountWithBalance[];
   accountsTotal: number;
+  /** Open accounts not yet checked against the bank this month. */
+  accountsDue: AccountWithBalance[];
   defaultAccountId: string | null;
 }) {
   const router = useRouter();
@@ -232,6 +236,10 @@ export function DashboardView({
                 </section>
               )}
 
+              {/* Above the balances, because it is the reason they might be
+                  wrong. */}
+              <ReconcileBanner due={accountsDue} />
+
               <AccountBalances
                 accounts={accounts}
                 total={accountsTotal}
@@ -257,6 +265,11 @@ export function DashboardView({
                     }
                     accountTitle={
                       row.account_id ? accountById.get(row.account_id)?.title : undefined
+                    }
+                    toAccountTitle={
+                      row.to_account_id
+                        ? accountById.get(row.to_account_id)?.title
+                        : undefined
                     }
                     currency={currency}
                     onSelect={() => router.push("/transactions")}

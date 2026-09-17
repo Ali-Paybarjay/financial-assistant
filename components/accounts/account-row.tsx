@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import {
+  ArrowClockwise,
   Bank,
   CreditCard,
   Money as MoneyIcon,
@@ -12,7 +14,7 @@ import { Money } from "@/components/money";
 import { faNumber } from "@/lib/format";
 import { formatDateFa } from "@/lib/date";
 import type { CurrencyCode } from "@/lib/money";
-import type { AccountWithBalance } from "@/lib/accounts";
+import { reconcileState, type AccountWithBalance } from "@/lib/accounts";
 import { ACCOUNT_KIND_LABEL } from "@/lib/validation/accounts";
 import { cn } from "@/lib/utils";
 
@@ -27,34 +29,50 @@ const KIND_ICON: Record<string, Icon> = {
 export function AccountRowItem({
   account,
   currency,
+  today,
+  timeZone,
   onEdit,
 }: {
   account: AccountWithBalance;
   currency: CurrencyCode;
+  today: string;
+  timeZone: string;
   onEdit: () => void;
 }) {
   const KindIcon = KIND_ICON[account.kind] ?? Vault;
+  const reconcile = reconcileState(account, today, timeZone);
+
+  const checked = account.last_reconciled_at
+    ? reconcile.due
+      ? reconcile.monthsBehind && reconcile.monthsBehind > 1
+        ? `${faNumber(reconcile.monthsBehind)} ماه چک نشده`
+        : "این ماه چک نشده"
+      : "این ماه چک شده"
+    : "هنوز با بانک چک نشده";
 
   const meta = [
     ACCOUNT_KIND_LABEL.get(account.kind),
     account.institution,
-    account.reference,
     account.transactionCount > 0
       ? `${faNumber(account.transactionCount)} تراکنش`
       : `از ${formatDateFa(account.opening_balance_on)}`,
+    account.is_active ? checked : null,
   ]
     .filter(Boolean)
     .join(" · ");
 
   return (
-    <button
-      type="button"
-      onClick={onEdit}
+    <div
       className={cn(
-        "flex w-full items-center gap-3 border-b border-hairline p-3 text-start last:border-b-0 hover:bg-paper",
+        "flex items-center gap-2 border-b border-hairline p-3 last:border-b-0",
         !account.is_active && "opacity-55",
       )}
     >
+      <button
+        type="button"
+        onClick={onEdit}
+        className="flex min-w-0 flex-1 items-center gap-3 text-start"
+      >
       <span className="flex size-[34px] shrink-0 items-center justify-center rounded-control bg-lapis-tint text-lapis">
         <KindIcon size={18} />
       </span>
@@ -73,23 +91,42 @@ export function AccountRowItem({
         <span className="truncate text-caption text-ink-muted">{meta}</span>
       </span>
 
-      <span className="flex shrink-0 flex-col items-end gap-0.5">
-        <Money
-          minor={account.balance}
-          currency={currency}
-          size="row"
-          className={account.balance < 0 ? "text-negative" : "text-ink"}
-        />
-        {account.movement !== 0 && (
+        <span className="flex shrink-0 flex-col items-end gap-0.5">
           <Money
-            minor={account.movement}
+            minor={account.balance}
             currency={currency}
-            size="inherit"
-            signed
-            className="text-caption text-ink-muted"
+            size="row"
+            className={account.balance < 0 ? "text-negative" : "text-ink"}
           />
-        )}
-      </span>
-    </button>
+          {account.movement !== 0 && (
+            <Money
+              minor={account.movement}
+              currency={currency}
+              size="inherit"
+              signed
+              className="text-caption text-ink-muted"
+            />
+          )}
+        </span>
+      </button>
+
+      {/* Its own control, not part of the row: "check this against the bank"
+          is the action of the month, and burying it behind an edit sheet is
+          how a monthly habit fails to form. A closed account is not asked. */}
+      {account.is_active && (
+        <Link
+          href={`/import?account=${account.id}`}
+          aria-label={`بروزرسانی ${account.title}`}
+          className={cn(
+            "flex size-9 shrink-0 items-center justify-center rounded-control border transition-colors",
+            reconcile.due
+              ? "border-lapis bg-lapis text-white hover:bg-lapis/90"
+              : "border-hairline-strong bg-surface text-ink-muted hover:border-lapis hover:text-lapis",
+          )}
+        >
+          <ArrowClockwise size={17} />
+        </Link>
+      )}
+    </div>
   );
 }

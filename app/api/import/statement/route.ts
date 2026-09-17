@@ -8,7 +8,11 @@ import { listTransactions } from "@/lib/queries/transactions";
 import { addDays, todayInTimeZone } from "@/lib/date";
 import { isCurrencyCode } from "@/lib/money";
 import { MAX_IMPORT_LINES, readStatementFile } from "@/lib/ai/statement";
-import type { NormalisedLine } from "@/lib/import/normalise";
+import {
+  latestBalance,
+  type NormalisedClosingBalance,
+  type NormalisedLine,
+} from "@/lib/import/normalise";
 import type { MediaStatus } from "@/lib/supabase/database.types";
 import {
   MATCH_WINDOW_DAYS,
@@ -90,6 +94,9 @@ export async function POST(request: NextRequest) {
   const admin = createAdminClient();
 
   const collected: NormalisedLine[] = [];
+  // Several files can each report a closing balance — three monthly exports of
+  // one account do. The newest is the one the account is actually at.
+  const balances: NormalisedClosingBalance[] = [];
   let truncated = false;
   let firstError: string | undefined;
 
@@ -129,6 +136,7 @@ export async function POST(request: NextRequest) {
     }
 
     collected.push(...outcome.lines);
+    if (outcome.closingBalance) balances.push(outcome.closingBalance);
     truncated ||= outcome.truncated;
     await markAsset(asset.id, "parsed", null);
   }
@@ -154,6 +162,7 @@ export async function POST(request: NextRequest) {
 
   const periodFrom = ordered[0].occurredOn;
   const periodTo = ordered[ordered.length - 1].occurredOn;
+  const closingBalance = latestBalance(balances);
 
   const reconcilable: ReconcilableLine[] = ordered.map((line, rowIndex) => ({
     rowIndex,
@@ -230,6 +239,11 @@ export async function POST(request: NextRequest) {
       status: "review",
       period_from: periodFrom,
       period_to: periodTo,
+      // What the bank says the account held. Stored on the import, not written
+      // to the account: it is a claim the report shows and the user accepts,
+      // the same as every other thing read off a page.
+      closing_balance: closingBalance?.amount ?? null,
+      closing_balance_on: closingBalance?.asOf ?? null,
       line_count: summary.total,
       matched_count: summary.matched,
       new_count: summary.fresh,

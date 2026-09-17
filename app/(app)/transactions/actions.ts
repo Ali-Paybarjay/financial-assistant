@@ -40,16 +40,23 @@ export async function saveTransaction(raw: unknown): Promise<SaveTransactionResu
   }
   if (amount <= 0) return { error: "مبلغ باید بزرگ‌تر از صفر باشد." };
 
+  const isTransfer = parsed.data.type === "transfer";
+
   const payload = {
     user_id: viewer.userId,
     type: parsed.data.type,
     amount,
     currency: viewer.currency,
-    category_id: categories.get(parsed.data.categorySlug) ?? null,
+    // A transfer has no category: moving your own money is not a spend, and
+    // giving it one would put it in the donut beside things that were.
+    category_id: isTransfer
+      ? null
+      : (categories.get(parsed.data.categorySlug ?? "") ?? null),
     // "" is the user choosing no account, and is stored as such. RLS is what
     // stops an id belonging to someone else being written here.
     account_id: parsed.data.accountId || null,
-    merchant: parsed.data.merchant || null,
+    to_account_id: isTransfer ? parsed.data.toAccountId || null : null,
+    merchant: isTransfer ? null : parsed.data.merchant || null,
     note: parsed.data.note || null,
     occurred_on: parsed.data.occurredOn,
     source: "form" as const,

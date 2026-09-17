@@ -6,18 +6,21 @@ import { Bank, Plus, Wallet } from "@phosphor-icons/react/dist/ssr";
 import { Button } from "@/components/ui/button";
 import { Money } from "@/components/money";
 import { AccountRowItem } from "@/components/accounts/account-row";
+import { ReconcileBanner } from "@/components/accounts/reconcile-banner";
 import { faNumber } from "@/lib/format";
 import type { CurrencyCode } from "@/lib/money";
-import { totalBalance, type AccountWithBalance } from "@/lib/accounts";
+import { accountsDue, totalBalance, type AccountWithBalance } from "@/lib/accounts";
 import { AccountSheet } from "./account-sheet";
 
 export function AccountsView({
   currency,
   today,
+  timeZone,
   accounts,
 }: {
   currency: CurrencyCode;
   today: string;
+  timeZone: string;
   accounts: AccountWithBalance[];
 }) {
   const [editing, setEditing] = useState<AccountWithBalance | null>(null);
@@ -26,6 +29,7 @@ export function AccountsView({
   const active = accounts.filter((account) => account.is_active);
   const closed = accounts.filter((account) => !account.is_active);
   const total = totalBalance(accounts);
+  const due = accountsDue(accounts, today, timeZone);
 
   function open(account: AccountWithBalance | null) {
     setEditing(account);
@@ -59,6 +63,12 @@ export function AccountsView({
         </div>
       ) : (
         <>
+          {due.length > 0 && (
+            <div className="mb-3">
+              <ReconcileBanner due={due} />
+            </div>
+          )}
+
           <div className="flex items-baseline justify-between rounded-card border border-hairline bg-surface px-4 py-3">
             <span className="flex items-center gap-2 text-caption text-ink-muted">
               <Wallet size={16} />
@@ -73,6 +83,8 @@ export function AccountsView({
                 key={account.id}
                 account={account}
                 currency={currency}
+                today={today}
+                timeZone={timeZone}
                 onEdit={() => open(account)}
               />
             ))}
@@ -89,6 +101,8 @@ export function AccountsView({
                     key={account.id}
                     account={account}
                     currency={currency}
+                    today={today}
+                    timeZone={timeZone}
                     onEdit={() => open(account)}
                   />
                 ))}
