@@ -15,7 +15,7 @@
 | Storage | باکت‌های خصوصی `receipts` و `voice-notes` |
 | Validation | Zod روی هر ورودی کاربر و هر خروجی مدل |
 | State | TanStack Query |
-| AI | Anthropic Claude (استخراج از متن و فاکتور) · OpenAI Whisper (تبدیل صدا به متن) |
+| AI | Claude Sonnet 5 از طریق OpenRouter (استخراج از متن و فاکتور) · OpenAI Whisper مستقیم (تبدیل صدا به متن) |
 | Tests | Vitest (واحد) · Playwright (E2E) |
 
 ## راه‌اندازی

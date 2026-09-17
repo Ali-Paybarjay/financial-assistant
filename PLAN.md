@@ -40,7 +40,7 @@
 app/api/parse/text/route.ts     ← متن آزاد
 app/api/parse/receipt/route.ts  ← عکس فاکتور (فقط storage_path می‌گیرد، نه فایل)
 app/api/transcribe/route.ts     ← صدا → متن، سپس همان pipeline متن
-lib/ai/anthropic.ts             ← تنها جایی که ANTHROPIC_API_KEY خوانده می‌شود
+lib/ai/openrouter.ts            ← تنها جایی که OPENROUTER_API_KEY خوانده می‌شود
 lib/ai/stt.ts                   ← interface SpeechToTextProvider + WhisperProvider
 lib/ai/prompts.ts               ← پرامپت‌ها، با لیست دسته‌ها و ارز و تاریخ امروزِ کاربر
 lib/ai/schemas.ts               ← ParsedTransaction / ParseResult (Zod)
@@ -48,7 +48,9 @@ lib/ai/schemas.ts               ← ParsedTransaction / ParseResult (Zod)
 
 تصمیم‌های کلیدی:
 
-- **Structured Outputs به‌جای «فقط JSON بنویس».** به‌جای اینکه در پرامپت التماس کنیم backtick نگذارد، از `output_config.format` روی همان schema استفاده می‌کنیم و Zod را به‌عنوان لایه‌ی دوم نگه می‌داریم. retry تک‌باره‌ی سند اصلی باقی می‌ماند ولی عملاً باید به‌ندرت فعال شود. *(شکل دقیق فراخوانی در M6 از مرجع SDK تأیید می‌شود.)*
+- **مدل از طریق OpenRouter، نه فراخوانی مستقیم Anthropic.** مدل `anthropic/claude-sonnet-5` با API سازگار با OpenAI صدا زده می‌شود. قیمت توکنش روی OpenRouter دقیقاً برابر نرخ مستقیم Anthropic است ($۲/$۱۰ به ازای هر میلیون)، هم ورودی تصویری را می‌پذیرد و هم structured outputs دارد.
+- **صدا از این مسیر نمی‌گذرد.** OpenRouter فقط chat completions است و endpoint رونویسی ندارد؛ فرمت‌های صوتی‌اش هم شامل `webm` نمی‌شود، که دقیقاً چیزی است که `MediaRecorder` روی کروم و اندروید تولید می‌کند. پس Whisper با کلید مستقیم OpenAI پشت همان `SpeechToTextProvider` می‌ماند.
+- **Structured Outputs به‌جای «فقط JSON بنویس».** به‌جای اینکه در پرامپت التماس کنیم backtick نگذارد، `response_format: { type: "json_schema" }` می‌فرستیم و Zod را به‌عنوان لایه‌ی دوم نگه می‌داریم. روی OpenRouter تضمین schema به provider بستگی دارد، پس `require_parameters: true` در تنظیمات مسیردهی لازم است تا درخواست فقط به endpointهای پشتیبانی‌کننده برود — و retry تک‌باره‌ی سند اصلی همچنان لازم می‌ماند.
 - **effort پایین.** این یک کار استخراج کوتاه و حساس به تأخیر است، نه استدلال سنگین. با سقف ۳۰ ثانیه‌ی سند، `effort: "low"` انتخاب پیش‌فرض است و اگر کیفیت افت کرد به `medium` می‌رود.
 - **عکس هرگز از Route Handler عبور نمی‌کند.** کلاینت مستقیم به باکت خصوصی آپلود می‌کند (signed upload URL) و فقط `media_asset_id` را به سرور می‌دهد؛ سرور خودش فایل را از Storage می‌خواند. دلیل در بخش ۶ (ریسک R3).
 - **سقف ۵۰ فراخوانی در روز** با شمارش روی `ai_usage_logs` در بازه‌ی روزِ کاربر (نه UTC)، پیش از فراخوانی مدل. رقابت همزمانی در MVP پذیرفته می‌شود (حداکثر چند فراخوانی اضافه، نه نشت هزینه).
