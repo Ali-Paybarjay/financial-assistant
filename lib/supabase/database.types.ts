@@ -10,10 +10,20 @@ type Generated =
   | "created_at"
   | "updated_at";
 
+/** A column that accepts null can always be omitted on insert. */
+type NullableKeys<Row> = {
+  [K in keyof Row]-?: null extends Row[K] ? K : never;
+}[keyof Row];
+
+type Optional<Row, Defaulted extends keyof Row> = Extract<
+  Generated | Defaulted | NullableKeys<Row>,
+  keyof Row
+>;
+
 type Table<Row, Defaulted extends keyof Row = never> = {
   Row: Row;
-  Insert: Omit<Row, Extract<Generated | Defaulted, keyof Row>> &
-    Partial<Pick<Row, Extract<Generated | Defaulted, keyof Row>>>;
+  Insert: Omit<Row, Optional<Row, Defaulted>> &
+    Partial<Pick<Row, Optional<Row, Defaulted>>>;
   Update: Partial<Row>;
   Relationships: [];
 };

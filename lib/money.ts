@@ -126,6 +126,19 @@ export function formatMoney(
   return body;
 }
 
+/** The narrow symbol only ("$", "€"), for use as an input prefix. */
+export function currencySymbol(currency: CurrencyCode): string {
+  return (
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      currencyDisplay: "narrowSymbol",
+    })
+      .formatToParts(0)
+      .find((part) => part.type === "currency")?.value ?? currency
+  );
+}
+
 /** Savings rate as a whole percent. Returns null when income is zero. */
 export function savingsRate(incomeMinor: Minor, expenseMinor: Minor): number | null {
   if (incomeMinor <= 0) return null;
