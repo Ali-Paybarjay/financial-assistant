@@ -1,0 +1,104 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import Link from "next/link";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Field, FormError } from "@/components/field";
+import { loginSchema, type LoginInput } from "@/lib/validation/auth";
+import { login, signInWithGoogle } from "../actions";
+
+export function LoginForm() {
+  const [formError, setFormError] = useState<string>();
+  const [isPending, startTransition] = useTransition();
+  const [isGooglePending, startGoogleTransition] = useTransition();
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginInput>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: "", password: "" },
+  });
+
+  function onSubmit(values: LoginInput) {
+    setFormError(undefined);
+    startTransition(async () => {
+      const result = await login(values);
+      if (result && "error" in result) setFormError(result.error);
+    });
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="font-display text-display-l font-bold text-ink">خوش آمدی</h1>
+        <p className="mt-1 text-body text-ink-muted">وارد شو تا ادامه بدهیم.</p>
+      </div>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
+        <FormError>{formError}</FormError>
+
+        <Field label="ایمیل" htmlFor="email" error={errors.email?.message}>
+          <Input
+            id="email"
+            type="email"
+            dir="ltr"
+            autoComplete="email"
+            placeholder="name@example.com"
+            aria-invalid={Boolean(errors.email)}
+            {...register("email")}
+          />
+        </Field>
+
+        <Field label="رمز" htmlFor="password" error={errors.password?.message}>
+          <Input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            aria-invalid={Boolean(errors.password)}
+            {...register("password")}
+          />
+        </Field>
+
+        <Button type="submit" size="lg" disabled={isPending}>
+          {isPending ? "دارم واردت می‌کنم…" : "ورود"}
+        </Button>
+      </form>
+
+      <div className="flex items-center gap-3">
+        <span className="h-px flex-1 bg-hairline" />
+        <span className="text-caption text-ink-muted">یا</span>
+        <span className="h-px flex-1 bg-hairline" />
+      </div>
+
+      <form
+        action={() => {
+          startGoogleTransition(async () => {
+            const result = await signInWithGoogle();
+            if (result && "error" in result) setFormError(result.error);
+          });
+        }}
+      >
+        <Button type="submit" variant="outline" size="lg" className="w-full" disabled={isGooglePending}>
+          {isGooglePending ? "دارم می‌برمت به گوگل…" : "ورود با گوگل"}
+        </Button>
+      </form>
+
+      <div className="flex flex-col gap-2 text-caption text-ink-muted">
+        <Link href="/forgot-password" className="text-lapis hover:underline">
+          رمزت را فراموش کرده‌ای؟
+        </Link>
+        <p>
+          حساب نداری؟{" "}
+          <Link href="/signup" className="font-medium text-lapis hover:underline">
+            بساز
+          </Link>
+        </p>
+      </div>
+    </div>
+  );
+}
