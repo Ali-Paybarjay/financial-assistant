@@ -75,6 +75,17 @@ export function daysLeftInMonth(timeZone: string, anchor?: IsoDate, now?: Date):
   return Number(to.split("-")[2]) - Number(today.split("-")[2]);
 }
 
+/**
+ * The instant at which a calendar date began in `timeZone`. Used for "today's
+ * usage" windows, which must follow the user's midnight rather than UTC's.
+ */
+export function startOfDayUtc(date: IsoDate, timeZone: string): Date {
+  const naive = new Date(`${date}T00:00:00Z`);
+  const asLocal = new Date(naive.toLocaleString("en-US", { timeZone }));
+  const asUtc = new Date(naive.toLocaleString("en-US", { timeZone: "UTC" }));
+  return new Date(naive.getTime() - (asLocal.getTime() - asUtc.getTime()));
+}
+
 const FA_DATE = new Intl.DateTimeFormat("fa-IR-u-ca-gregory", {
   timeZone: "UTC",
   day: "numeric",

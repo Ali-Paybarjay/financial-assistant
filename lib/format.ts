@@ -12,3 +12,22 @@ export function faNumber(value: number): string {
 export function faPercent(value: number): string {
   return `${FA_NUMBER.format(value)}٪`;
 }
+
+const WORDS = [
+  "صفر",
+  "یک",
+  "دو",
+  "سه",
+  "چهار",
+  "پنج",
+  "شش",
+  "هفت",
+  "هشت",
+  "نه",
+  "ده",
+];
+
+/** Small counts read better as words inside a sentence: «ثبت دو تراکنش». */
+export function faCount(value: number): string {
+  return WORDS[value] ?? FA_NUMBER.format(value);
+}
