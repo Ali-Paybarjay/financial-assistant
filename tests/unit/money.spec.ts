@@ -72,6 +72,14 @@ describe("formatMoney", () => {
     expect(formatMoney(45000, "IRT", { omitSymbol: true })).toBe("45,000");
   });
 
+  it("keeps the krona's decimals but moves it after the amount", () => {
+    // Intl gives "kr 1,234.50" under en-US; Swedish writes the unit last.
+    expect(formatMoney(123450, "SEK")).toBe("1,234.50 kr");
+    expect(formatMoney(-123450, "SEK")).toBe("−1,234.50 kr");
+    expect(formatMoney(123450, "SEK", { omitSymbol: true })).toBe("1,234.50");
+    expect(toMinor("1234.50", "SEK")).toBe(123450);
+  });
+
   it("uses a true minus sign, not a hyphen", () => {
     expect(formatMoney(-335, "CAD")).toBe("−$3.35");
   });
