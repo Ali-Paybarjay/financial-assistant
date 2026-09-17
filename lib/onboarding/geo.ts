@@ -23,6 +23,8 @@ export function currencyForCountry(code: CountryCode): CurrencyCode {
  * zones are listed one by one; the prefixes below cover the long tail.
  */
 const COUNTRY_BY_TIME_ZONE: Record<string, CountryCode> = {
+  "Asia/Tehran": "IR",
+
   "Europe/London": "GB",
   "Europe/Belfast": "GB",
   "Europe/Jersey": "GB",
@@ -90,6 +92,7 @@ const COUNTRY_BY_TIME_ZONE: Record<string, CountryCode> = {
 };
 
 const COUNTRY_BY_ZONE_PREFIX: ReadonlyArray<readonly [string, CountryCode]> = [
+  ["Iran", "IR"], // The "Iran" alias of Asia/Tehran, still shipped by some browsers.
   ["Australia/", "AU"],
   ["Canada/", "CA"],
   ["US/", "US"],

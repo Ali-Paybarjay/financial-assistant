@@ -13,6 +13,7 @@ import { StepShell, SaveReassurance } from "@/components/onboarding/step-shell";
 import { formatMoney, toMinor, type CurrencyCode } from "@/lib/money";
 import {
   FREQUENCY_OPTIONS,
+  INCOME_PLACEHOLDER,
   INCOME_TYPE_OPTIONS,
   type StepMeta,
 } from "@/lib/onboarding/config";
@@ -107,7 +108,7 @@ export function Step2({
             <AmountInput
               id="monthlyIncomeEstimate"
               currency={currency}
-              placeholder="4500"
+              placeholder={INCOME_PLACEHOLDER[currency]}
               {...register("monthlyIncomeEstimate")}
             />
           </Field>
