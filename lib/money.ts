@@ -82,8 +82,13 @@ export function normalizeDigits(input: string): string {
       out += String(code - PERSIAN_ZERO);
     } else if (code >= ARABIC_ZERO && code <= ARABIC_ZERO + 9) {
       out += String(code - ARABIC_ZERO);
-    } else if (char === "٫" || char === "،") {
-      out += "."; // Arabic decimal separator, Arabic comma
+    } else if (char === "٫") {
+      out += "."; // U+066B, the Persian decimal mark.
+    } else if (char === "،") {
+      // U+060C is the Persian comma. It is not a decimal mark — it is the key
+      // people reach for when they group thousands — so it becomes a comma and
+      // the separator rules below decide what it meant.
+      out += ",";
     } else {
       out += char;
     }
@@ -93,23 +98,77 @@ export function normalizeDigits(input: string): string {
 
 export class MoneyParseError extends Error {}
 
+/** Grouping is 1–3 digits, then groups of exactly 3. "12.3.4" is not a number. */
+const GROUPED_BY_DOT = /^\d{1,3}(?:\.\d{3})+$/;
+const GROUPED_BY_COMMA = /^\d{1,3}(?:,\d{3})+$/;
+
+/**
+ * Rewrite a human amount so the only separator left is one "." for the decimal.
+ *
+ * Seven of the thirteen countries this app supports write the decimal with a
+ * comma — Sweden, Germany, France, Spain, Italy, Austria, Belgium — and every
+ * comma used to be stripped as grouping, so "1234,50" was read as 123,450.
+ *
+ * A comma is the decimal mark when either:
+ *  - a dot appears before it, the way German writes "1.234,50"; or
+ *  - it is the only comma and at most two digits follow it, the shape of
+ *    "1234,50" and "0,5".
+ * Otherwise it groups, so "1,234" is still one thousand two hundred and
+ * thirty-four, and grouping is verified rather than assumed — "1,23,456"
+ * throws rather than quietly becoming 123,456.
+ *
+ * A string with no comma is left exactly as it was, which keeps the dot the
+ * unambiguous decimal mark it has always been here: "1.005" is one and a half
+ * cent rounded, not one thousand and five.
+ */
+function toPlainDecimal(unsigned: string): string {
+  if (!unsigned.includes(",")) return unsigned;
+
+  const lastDot = unsigned.lastIndexOf(".");
+  const lastComma = unsigned.lastIndexOf(",");
+
+  const commaIsDecimal =
+    lastDot >= 0
+      ? lastComma > lastDot
+      : unsigned.indexOf(",") === lastComma && unsigned.length - lastComma - 1 <= 2;
+
+  const decimalAt = commaIsDecimal ? lastComma : lastDot;
+  const groupMark = commaIsDecimal ? "." : ",";
+
+  const integerPart = decimalAt >= 0 ? unsigned.slice(0, decimalAt) : unsigned;
+  const fractionPart = decimalAt >= 0 ? unsigned.slice(decimalAt + 1) : "";
+
+  if (integerPart.includes(groupMark)) {
+    const grouped = groupMark === "." ? GROUPED_BY_DOT : GROUPED_BY_COMMA;
+    if (!grouped.test(integerPart)) {
+      throw new MoneyParseError(`Not a valid amount: ${unsigned}`);
+    }
+  }
+
+  const whole = integerPart.split(groupMark).join("");
+  return fractionPart ? `${whole}.${fractionPart}` : whole;
+}
+
 /**
  * Parse human input into minor units without ever touching floating point.
  * "45.50" -> 4550. Throws on anything that is not a plain positive amount.
  */
 export function toMinor(input: string | number, currency: CurrencyCode): Minor {
   const exponent = MINOR_EXPONENT[currency];
+  // \s covers the no-break and narrow no-break spaces French and Swedish group
+  // with; ٬ (U+066C) is the Persian thousands mark and never anything else.
   const raw = normalizeDigits(String(input))
-    .replace(/[\s,٬]/g, "")
+    .replace(/[\s٬]/g, "")
     .trim();
 
-  if (!/^-?\d*(\.\d*)?$/.test(raw) || raw === "" || raw === "." || raw === "-") {
+  const negative = raw.startsWith("-");
+  const plain = toPlainDecimal(negative ? raw.slice(1) : raw);
+
+  if (!/^\d*(\.\d*)?$/.test(plain) || plain === "" || plain === ".") {
     throw new MoneyParseError(`Not a valid amount: ${String(input)}`);
   }
 
-  const negative = raw.startsWith("-");
-  const unsigned = negative ? raw.slice(1) : raw;
-  const [whole = "0", fraction = ""] = unsigned.split(".");
+  const [whole = "0", fraction = ""] = plain.split(".");
 
   const padded = fraction.padEnd(exponent + 1, "0");
   const kept = padded.slice(0, exponent);
