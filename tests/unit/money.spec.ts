@@ -33,6 +33,39 @@ describe("toMinor", () => {
     expect(toMinor("۴۵٫۵۰", "CAD")).toBe(4550);
     expect(toMinor("۱۲", "CAD")).toBe(1200);
     expect(toMinor("1,234.56", "CAD")).toBe(123456);
+    // U+066C groups; the Persian comma is the key people reach for instead.
+    expect(toMinor("۱٬۲۳۴٫۵", "EUR")).toBe(123450);
+    expect(toMinor("۱،۲۳۴", "IRT")).toBe(1234);
+  });
+
+  it("reads a comma as the decimal where that is how people write it", () => {
+    // Sweden, France: "1 234,50". The space is a grouping space.
+    expect(toMinor("1234,50", "SEK")).toBe(123450);
+    expect(toMinor("1 234,50", "SEK")).toBe(123450);
+    expect(toMinor("1 234,50", "SEK")).toBe(123450);
+    // Germany, Spain, Italy, Austria, Belgium: "1.234,50".
+    expect(toMinor("1.234,50", "EUR")).toBe(123450);
+    expect(toMinor("0,5", "EUR")).toBe(50);
+    expect(toMinor("45,5", "EUR")).toBe(4550);
+    // A trailing comma is a half-typed number, not grouping.
+    expect(toMinor("1234,", "EUR")).toBe(123400);
+  });
+
+  it("still reads a comma as grouping where that is how people write it", () => {
+    expect(toMinor("1,234", "CAD")).toBe(123400);
+    expect(toMinor("2,500,000", "IRR")).toBe(2500000);
+    expect(toMinor("1,234.50", "CAD")).toBe(123450);
+  });
+
+  it("leaves a dot alone, so it stays the decimal mark it has always been", () => {
+    expect(toMinor("1.005", "USD")).toBe(101);
+    expect(toMinor("45.555", "CAD")).toBe(4556);
+  });
+
+  it("rejects grouping no locale writes rather than guessing at it", () => {
+    expect(() => toMinor("1,23,456", "CAD")).toThrow(MoneyParseError);
+    expect(() => toMinor("1.2,3", "EUR")).toThrow(MoneyParseError);
+    expect(() => toMinor("12345,678", "EUR")).toThrow(MoneyParseError);
   });
 
   it("keeps whole units whole for the toman and the rial", () => {
