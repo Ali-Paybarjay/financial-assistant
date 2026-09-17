@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { CaretRight, CheckCircle } from "@phosphor-icons/react/dist/ssr";
 import { TOTAL_STEPS } from "@/lib/onboarding/config";
+import { ExitButton } from "@/components/onboarding/exit-button";
 import { faNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -25,7 +26,7 @@ export function StepShell({
 }: StepShellProps) {
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-[480px] flex-col bg-surface px-4 pb-6 pt-4">
-      <header className="flex items-center justify-between">
+      <header className="flex items-center justify-between gap-2">
         {step > 1 ? (
           <Link
             href={`/onboarding/${step - 1}`}
@@ -38,9 +39,10 @@ export function StepShell({
         ) : (
           <span className="size-10" />
         )}
-        <span className="text-label font-semibold text-ink-muted">
+        <span className="flex-1 text-center text-label font-semibold text-ink-muted">
           گام {faNumber(step)} از {faNumber(TOTAL_STEPS)}
         </span>
+        <ExitButton />
       </header>
 
       <div
