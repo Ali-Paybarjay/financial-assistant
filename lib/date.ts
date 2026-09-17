@@ -76,6 +76,28 @@ export function daysLeftInMonth(timeZone: string, anchor?: IsoDate, now?: Date):
 }
 
 /**
+ * Days since the Unix epoch. Calendar dates only, so there is no timezone in
+ * play and no DST hour to lose — subtracting two of these gives the number of
+ * nights between the dates, which is what "three days apart" means.
+ */
+export function epochDay(date: IsoDate): number {
+  return asUtcDate(date).getTime() / 86_400_000;
+}
+
+/** Nights between two calendar dates. Negative when `to` precedes `from`. */
+export function daysBetween(from: IsoDate, to: IsoDate): number {
+  return epochDay(to) - epochDay(from);
+}
+
+/** Step a calendar date by whole days. `addDays('2026-02-28', 1)` -> '2026-03-01'. */
+export function addDays(date: IsoDate, delta: number): IsoDate {
+  const shifted = new Date(asUtcDate(date).getTime() + delta * 86_400_000);
+  return `${shifted.getUTCFullYear()}-${pad(shifted.getUTCMonth() + 1)}-${pad(
+    shifted.getUTCDate(),
+  )}`;
+}
+
+/**
  * The instant at which a calendar date began in `timeZone`. Used for "today's
  * usage" windows, which must follow the user's midnight rather than UTC's.
  */
