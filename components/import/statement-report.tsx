@@ -129,6 +129,13 @@ export function StatementReport({
     <div className="flex flex-col gap-4">
       <FormError>{error}</FormError>
 
+      {statementImport.error_message && (
+        <p className="flex items-start gap-2 rounded-control border border-guess-border bg-guess-tint px-3 py-2.5 text-caption font-medium text-guess-text">
+          <Warning size={16} className="mt-0.5 shrink-0" />
+          {statementImport.error_message}
+        </p>
+      )}
+
       <section className="rounded-card border border-hairline bg-surface p-4">
         <h2 className="text-[17px] font-semibold text-ink">گزارش صورت‌حساب</h2>
         {statementImport.period_from && statementImport.period_to && (

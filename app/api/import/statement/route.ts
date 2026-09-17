@@ -7,7 +7,7 @@ import { listCategories, categoryIdsBySlug } from "@/lib/queries/categories";
 import { listTransactions } from "@/lib/queries/transactions";
 import { addDays, todayInTimeZone } from "@/lib/date";
 import { isCurrencyCode } from "@/lib/money";
-import { readStatementFile } from "@/lib/ai/statement";
+import { MAX_IMPORT_LINES, readStatementFile } from "@/lib/ai/statement";
 import type { NormalisedLine } from "@/lib/import/normalise";
 import type { MediaStatus } from "@/lib/supabase/database.types";
 import {
@@ -138,13 +138,18 @@ export async function POST(request: NextRequest) {
 
   // Oldest first, ties broken by the order the files were read, so the row
   // numbering — and therefore reconciliation — is reproducible.
-  const ordered = collected
+  const sorted = collected
     .map((line, sequence) => ({ line, sequence }))
     .sort(
       (a, b) =>
         a.line.occurredOn.localeCompare(b.line.occurredOn) || a.sequence - b.sequence,
     )
     .map((entry) => entry.line);
+
+  // A ceiling across the whole import, not just per file. Beyond it the apply
+  // action would refuse the payload, which is a worse way to find out.
+  if (sorted.length > MAX_IMPORT_LINES) truncated = true;
+  const ordered = sorted.slice(0, MAX_IMPORT_LINES);
 
   const periodFrom = ordered[0].occurredOn;
   const periodTo = ordered[ordered.length - 1].occurredOn;
@@ -204,6 +209,15 @@ export async function POST(request: NextRequest) {
 
   if (insertError) return await fail(statementImport.id, GENERIC_ERROR);
 
+  // A report can be real and still be partial — one file of five failed to
+  // open, or the statement ran past the ceiling. Saying so beside a clean
+  // looking report is the difference between a caveat and a missing page.
+  const caveat =
+    firstError ??
+    (truncated
+      ? "صورت‌حساب از سقفی که یک‌بار می‌خوانم بلندتر بود و همه‌اش خوانده نشد. بقیه را ماه‌به‌ماه بفرست."
+      : null);
+
   await supabase
     .from("statement_imports")
     .update({
@@ -213,7 +227,7 @@ export async function POST(request: NextRequest) {
       line_count: summary.total,
       matched_count: summary.matched,
       new_count: summary.fresh,
-      error_message: null,
+      error_message: caveat,
     })
     .eq("id", statementImport.id);
 
@@ -223,9 +237,7 @@ export async function POST(request: NextRequest) {
     matched: summary.matched,
     fresh: summary.fresh,
     truncated,
-    // Some files read and some did not: the report is real but partial, and
-    // saying so is better than a clean-looking report that is missing a page.
-    warning: firstError,
+    warning: caveat,
   });
 
   async function markAsset(id: string, status: MediaStatus, message: string | null) {
