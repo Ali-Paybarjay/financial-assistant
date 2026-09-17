@@ -59,3 +59,25 @@ test("the layout does not break at 375px", async ({ page }) => {
   );
   expect(overflow).toBeLessThanOrEqual(0);
 });
+
+test("a step offers a way out of the flow, and taking it ends the session", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto("/onboarding/2");
+
+  await page.getByRole("button", { name: "خروج", exact: true }).click();
+  await expect(page.getByText("از ثبت‌نام بیرون بروی؟")).toBeVisible();
+
+  // Backing out of the sheet leaves the user exactly where they were.
+  await page.getByRole("button", { name: "ادامه‌ی ثبت‌نام" }).click();
+  await expect(page).toHaveURL(/\/onboarding\/2/);
+
+  await page.getByRole("button", { name: "خروج", exact: true }).click();
+  await page.getByRole("button", { name: "خروج از حساب" }).click();
+  await page.waitForURL(/\/login/);
+
+  // The session is really gone: the flow no longer lets anyone back in.
+  await page.goto("/onboarding/2");
+  await page.waitForURL(/\/login/);
+});

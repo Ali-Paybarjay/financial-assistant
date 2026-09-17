@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Money } from "@/components/money";
 import { sumMinor } from "@/lib/money";
 import { RISK_LABELS } from "@/lib/onboarding/config";
+import { ExitButton } from "@/components/onboarding/exit-button";
 import { FinishButton } from "./finish-button";
 
 /** Monthly equivalent, so a biweekly salary and a yearly bonus are comparable. */
@@ -41,8 +42,13 @@ export default async function SummaryPage() {
     : null;
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-[480px] flex-col bg-surface px-4 pb-6 pt-10">
-      <h1 className="font-display text-display-l font-bold text-ink">
+    <main className="mx-auto flex min-h-dvh w-full max-w-[480px] flex-col bg-surface px-4 pb-6 pt-4">
+      {/* The last screen of the flow keeps the same way out as every step. */}
+      <header className="flex items-center justify-end">
+        <ExitButton />
+      </header>
+
+      <h1 className="mt-6 font-display text-display-l font-bold text-ink">
         این تصویر مالی توست
       </h1>
       <p className="mt-2 text-body text-ink-muted">
