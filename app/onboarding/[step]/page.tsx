@@ -3,6 +3,7 @@ import { requireViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { listCategories } from "@/lib/queries/categories";
 import { stepMeta, TOTAL_STEPS } from "@/lib/onboarding/config";
+import { countryFromRequest } from "@/lib/onboarding/request-geo";
 import { Step1 } from "./steps/step-1";
 import { Step2 } from "./steps/step-2";
 import { Step3 } from "./steps/step-3";
@@ -32,7 +33,16 @@ export default async function OnboardingStepPage({
 
   switch (step) {
     case 1:
-      return <Step1 meta={meta} profile={viewer.profile} />;
+      return (
+        <Step1
+          meta={meta}
+          profile={viewer.profile}
+          prefill={{
+            fullName: viewer.identity.fullName,
+            countryCode: await countryFromRequest(),
+          }}
+        />
+      );
 
     case 2: {
       const { data } = await supabase

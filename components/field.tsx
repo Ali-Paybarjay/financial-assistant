@@ -5,16 +5,31 @@ type FieldProps = {
   htmlFor: string;
   error?: string;
   hint?: string;
+  /** Sits beside the label, for «حدس زدم» on a control we filled in ourselves. */
+  note?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
 };
 
-export function Field({ label, htmlFor, error, hint, children, className }: FieldProps) {
+export function Field({
+  label,
+  htmlFor,
+  error,
+  hint,
+  note,
+  children,
+  className,
+}: FieldProps) {
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
-      <label htmlFor={htmlFor} className="text-label font-medium text-ink-muted">
-        {label}
-      </label>
+      <div className="flex items-baseline gap-1.5">
+        <label htmlFor={htmlFor} className="text-label font-medium text-ink-muted">
+          {label}
+        </label>
+        {note && (
+          <span className="text-caption font-medium text-guess">· {note}</span>
+        )}
+      </div>
       {children}
       {hint && !error && <p className="text-caption text-ink-muted">{hint}</p>}
       {error && (
