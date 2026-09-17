@@ -31,7 +31,8 @@ type Table<Row, Defaulted extends keyof Row = never> = {
 export type TransactionSource = "form" | "text" | "voice" | "receipt" | "recurring";
 export type TransactionType = "expense" | "income";
 export type CategoryKind = "expense" | "income";
-export type MediaKind = "audio" | "image";
+/** Receipts only: in-app voice recording is out of scope. */
+export type MediaKind = "image";
 export type MediaStatus = "uploaded" | "processing" | "parsed" | "failed";
 export type GoalStatus = "active" | "achieved" | "paused" | "cancelled";
 export type RiskLabel = "conservative" | "balanced" | "growth";
@@ -109,7 +110,6 @@ export type MediaAssetRow = {
   mime_type: string;
   size_bytes: number;
   status: MediaStatus;
-  transcript: string | null;
   extracted: unknown | null;
   error_message: string | null;
   created_at: string;

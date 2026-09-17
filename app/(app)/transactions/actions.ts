@@ -103,6 +103,113 @@ export async function restoreTransaction(
   return { ok: true };
 }
 
+/**
+ * A one-time upload target for a receipt. The client PUTs the compressed image
+ * straight to Storage with this token, so the file never passes through a
+ * route handler and never meets the platform's request body ceiling.
+ */
+export async function createReceiptUpload(input: {
+  mimeType: string;
+  sizeBytes: number;
+}): Promise<
+  { error: string } | { ok: true; mediaAssetId: string; path: string; token: string }
+> {
+  const viewer = await requireViewer();
+  const supabase = await createClient();
+
+  const allowed = ["image/jpeg", "image/png", "image/webp", "image/heic"];
+  if (!allowed.includes(input.mimeType)) {
+    return { error: "این نوع فایل را نمی‌خوانم. عکس JPG یا PNG بفرست." };
+  }
+  if (input.sizeBytes > 5 * 1024 * 1024) {
+    return { error: "عکس بزرگ‌تر از ۵ مگابایت است. دوباره از فاکتور عکس بگیر." };
+  }
+
+  const extension = input.mimeType.split("/")[1].replace("jpeg", "jpg");
+  const path = `${viewer.userId}/${crypto.randomUUID()}.${extension}`;
+
+  const { data: upload, error: uploadError } = await supabase.storage
+    .from("receipts")
+    .createSignedUploadUrl(path);
+
+  if (uploadError || !upload) return { error: "آپلود شروع نشد. دوباره بزن." };
+
+  const { data: asset, error: assetError } = await supabase
+    .from("media_assets")
+    .insert({
+      user_id: viewer.userId,
+      kind: "image",
+      storage_path: path,
+      mime_type: input.mimeType,
+      size_bytes: input.sizeBytes,
+      status: "uploaded",
+    })
+    .select("id")
+    .single();
+
+  if (assetError || !asset) return { error: "آپلود شروع نشد. دوباره بزن." };
+
+  return { ok: true, mediaAssetId: asset.id, path, token: upload.token };
+}
+
+/**
+ * Writes what the user confirmed in the confirm card. Rows keep is_confirmed
+ * false when the user accepted a field the model had guessed, so the
+ * confidence rule still marks them in the list and in the month's total.
+ */
+export async function saveParsedTransactions(input: {
+  transactions: {
+    type: "expense" | "income";
+    amountMinor: number;
+    categorySlug: string;
+    merchant: string | null;
+    note: string | null;
+    occurredOn: string;
+    confidence: number;
+    needsReview: string[];
+  }[];
+  source: "text" | "receipt";
+  mediaAssetId?: string;
+}): Promise<SaveTransactionResult> {
+  const viewer = await requireViewer();
+  const supabase = await createClient();
+  const categories = await categoryIdsBySlug();
+
+  if (input.transactions.length === 0) return { error: GENERIC_ERROR };
+
+  const rows = input.transactions.map((transaction) => ({
+    user_id: viewer.userId,
+    type: transaction.type,
+    amount: transaction.amountMinor,
+    currency: viewer.currency,
+    category_id: categories.get(transaction.categorySlug) ?? null,
+    merchant: transaction.merchant,
+    note: transaction.note,
+    occurred_on: transaction.occurredOn,
+    source: input.source,
+    media_asset_id: input.mediaAssetId ?? null,
+    ai_confidence: transaction.confidence,
+    is_confirmed: transaction.needsReview.length === 0,
+    needs_review: transaction.needsReview,
+  }));
+
+  if (rows.some((row) => row.amount <= 0)) return { error: GENERIC_ERROR };
+
+  const { error } = await supabase.from("transactions").insert(rows);
+  if (error) return { error: GENERIC_ERROR };
+
+  refresh();
+
+  const { from, to } = monthRange(viewer.timeZone, rows[0].occurred_on);
+  const totals = await monthTotals(from, to);
+  return {
+    ok: true,
+    balanceText: formatMoney(totals.income - totals.expense, viewer.currency, {
+      signed: true,
+    }),
+  };
+}
+
 /** Accepting the model's guess for a whole row: the confidence rule goes solid. */
 export async function confirmTransaction(
   id: string,

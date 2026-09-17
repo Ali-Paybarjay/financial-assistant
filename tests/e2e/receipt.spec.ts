@@ -1,0 +1,56 @@
+import { expect, test, type Page } from "@playwright/test";
+import { join } from "node:path";
+
+/**
+ * Acceptance test 4 from the brief: the user uploads a photo of a receipt and
+ * the total is read correctly.
+ *
+ * The fixture deliberately contains a subtotal (54.25), tax (7.05), a tender
+ * amount (70.00) and change (8.70) alongside the real total (61.30), because
+ * picking the largest number or the last number on the page is exactly how
+ * this goes wrong.
+ */
+
+const EMAIL = process.env.E2E_EMAIL ?? "alpha@testmail.dev";
+const PASSWORD = process.env.E2E_PASSWORD ?? "test-pass-12345";
+
+// Playwright runs from the project root.
+const RECEIPT = join(process.cwd(), "tests", "e2e", "fixtures", "receipt.png");
+
+async function login(page: Page) {
+  await page.goto("/login");
+  await page.getByLabel("ایمیل").fill(EMAIL);
+  await page.getByLabel("رمز").fill(PASSWORD);
+  await page.getByRole("button", { name: "ورود", exact: true }).click();
+  await page.waitForURL(/\/(dashboard|onboarding)/);
+}
+
+test("a receipt photo yields its total, not its subtotal or its change", async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+
+  await login(page);
+  await page.goto("/dashboard");
+  await page.getByRole("button", { name: "ثبت هزینه" }).first().click();
+  await page.getByRole("tab", { name: "عکس" }).click();
+
+  // Drive the hidden gallery input directly; a real camera is not available.
+  await page.locator('input[type="file"]:not([capture])').setInputFiles(RECEIPT);
+
+  await expect(page.getByText("کارت تأیید")).toBeVisible({ timeout: 90_000 });
+
+  await expect(page.getByText("$61.30")).toBeVisible();
+  await expect(page.getByText("$54.25")).toBeHidden();
+  await expect(page.getByText("$70.00")).toBeHidden();
+
+  // One transaction, never one per line item.
+  await expect(page.getByRole("button", { name: "ثبت تراکنش" })).toBeVisible();
+
+  // The merchant was printed on the receipt, so it is read rather than
+  // guessed. Scoped to the confirm card's own field — the dashboard behind it
+  // already lists older Loblaws rows.
+  await expect(
+    page.getByRole("button", { name: /فروشنده\s+Loblaws/i }),
+  ).toBeVisible();
+});

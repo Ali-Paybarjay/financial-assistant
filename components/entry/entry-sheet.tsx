@@ -2,18 +2,23 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus } from "@phosphor-icons/react/dist/ssr";
+import { Keyboard, Plus, Receipt, TextT } from "@phosphor-icons/react/dist/ssr";
 import { BottomSheet } from "@/components/bottom-sheet";
+import { SegmentedControl } from "@/components/segmented-control";
 import { ManualForm } from "./manual-form";
+import { TextTab } from "./text-tab";
+import { ReceiptTab } from "./receipt-tab";
 import type { CurrencyCode } from "@/lib/money";
 import type { CategoryRow } from "@/lib/supabase/database.types";
+
+type Method = "form" | "text" | "receipt";
 
 /**
  * The floating action button and the sheet it opens. Bottom-end corner, which
  * in RTL is the bottom left — `end-4` rather than a physical side.
  *
- * The sheet holds only the manual form today; the text, voice and receipt tabs
- * arrive with the parsing routes in M6–M8.
+ * Three methods, not four: speech is dictated straight into the text tab with
+ * the keyboard mic the user already has, so there is no recording to manage.
  */
 export function EntryLauncher({
   currency,
@@ -28,15 +33,21 @@ export function EntryLauncher({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const [method, setMethod] = useState<Method>("form");
   const [confirmation, setConfirmation] = useState<string>();
   const router = useRouter();
+
+  function reset() {
+    setConfirmation(undefined);
+    setMethod("form");
+  }
 
   return (
     <>
       <button
         type="button"
         onClick={() => {
-          setConfirmation(undefined);
+          reset();
           onOpenChange(true);
         }}
         className="fixed bottom-[76px] end-4 z-30 flex h-14 items-center gap-2 rounded-full bg-lapis px-5 text-[15px] font-semibold text-white shadow-fab transition-colors hover:bg-lapis/90 active:bg-lapis-pressed min-[960px]:hidden"
@@ -49,7 +60,10 @@ export function EntryLauncher({
         open={open}
         onOpenChange={(next) => {
           onOpenChange(next);
-          if (!next) router.refresh();
+          if (!next) {
+            reset();
+            router.refresh();
+          }
         }}
         title="ثبت تراکنش"
       >
@@ -60,19 +74,49 @@ export function EntryLauncher({
             </p>
             <button
               type="button"
-              onClick={() => setConfirmation(undefined)}
+              onClick={reset}
               className="text-caption font-medium text-lapis hover:underline"
             >
               یکی دیگر ثبت کن
             </button>
           </div>
         ) : (
-          <ManualForm
-            currency={currency}
-            categories={categories}
-            today={today}
-            onSaved={setConfirmation}
-          />
+          <div className="flex flex-col gap-4">
+            {/* Ordered fastest and most certain first. */}
+            <SegmentedControl<Method>
+              label="روش ثبت"
+              value={method}
+              onChange={setMethod}
+              segments={[
+                { value: "form", label: "فرم", icon: <Keyboard size={15} /> },
+                { value: "text", label: "متن", icon: <TextT size={15} /> },
+                { value: "receipt", label: "عکس", icon: <Receipt size={15} /> },
+              ]}
+            />
+
+            {method === "form" && (
+              <ManualForm
+                currency={currency}
+                categories={categories}
+                today={today}
+                onSaved={setConfirmation}
+              />
+            )}
+            {method === "text" && (
+              <TextTab
+                currency={currency}
+                categories={categories}
+                onSaved={setConfirmation}
+              />
+            )}
+            {method === "receipt" && (
+              <ReceiptTab
+                currency={currency}
+                categories={categories}
+                onSaved={setConfirmation}
+              />
+            )}
+          </div>
         )}
       </BottomSheet>
     </>
