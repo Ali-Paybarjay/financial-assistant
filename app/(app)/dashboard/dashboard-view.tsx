@@ -9,12 +9,14 @@ import { KpiCards } from "@/components/dashboard/kpi-cards";
 import { CategoryDonut, type CategorySlice } from "@/components/dashboard/category-donut";
 import { MonthBars } from "@/components/dashboard/month-bars";
 import { EmptyDashboard } from "@/components/dashboard/empty-dashboard";
+import { AccountBalances } from "@/components/dashboard/account-balances";
 import { TransactionRowItem } from "@/components/transactions/transaction-row";
 import { EntryLauncher } from "@/components/entry/entry-sheet";
 import { faNumber, faPercent } from "@/lib/format";
 import { formatMonthFa, shiftMonth } from "@/lib/date";
 import type { CurrencyCode } from "@/lib/money";
 import type { MonthPoint } from "@/lib/queries/transactions";
+import type { AccountWithBalance } from "@/lib/accounts";
 import type {
   CategoryRow,
   GoalRow,
@@ -35,6 +37,9 @@ export function DashboardView({
   recent,
   goals,
   categories,
+  accounts,
+  accountsTotal,
+  defaultAccountId,
 }: {
   currency: CurrencyCode;
   name: string;
@@ -49,6 +54,9 @@ export function DashboardView({
   recent: TransactionRow[];
   goals: GoalRow[];
   categories: CategoryRow[];
+  accounts: AccountWithBalance[];
+  accountsTotal: number;
+  defaultAccountId: string | null;
 }) {
   const router = useRouter();
   const [entryOpen, setEntryOpen] = useState(false);
@@ -57,6 +65,7 @@ export function DashboardView({
   const perDay = daysLeft > 0 ? Math.round(balance / daysLeft) : balance;
   const isEmpty = recent.length === 0;
   const categoryById = new Map(categories.map((category) => [category.id, category]));
+  const accountById = new Map(accounts.map((account) => [account.id, account]));
 
   function goToMonth(delta: number) {
     router.push(`/dashboard?month=${shiftMonth(month, delta)}`);
@@ -223,6 +232,12 @@ export function DashboardView({
                 </section>
               )}
 
+              <AccountBalances
+                accounts={accounts}
+                total={accountsTotal}
+                currency={currency}
+              />
+
               <section className="overflow-hidden rounded-card border border-hairline bg-surface">
                 <div className="flex items-center justify-between p-4 pb-2">
                   <h2 className="text-[15px] font-semibold text-ink">تراکنش‌های اخیر</h2>
@@ -240,6 +255,9 @@ export function DashboardView({
                     category={
                       row.category_id ? categoryById.get(row.category_id) : undefined
                     }
+                    accountTitle={
+                      row.account_id ? accountById.get(row.account_id)?.title : undefined
+                    }
                     currency={currency}
                     onSelect={() => router.push("/transactions")}
                   />
@@ -253,6 +271,8 @@ export function DashboardView({
       <EntryLauncher
         currency={currency}
         categories={categories}
+        accounts={accounts}
+        defaultAccountId={defaultAccountId}
         today={today}
         open={entryOpen}
         onOpenChange={setEntryOpen}

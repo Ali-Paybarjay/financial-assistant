@@ -38,12 +38,15 @@ export function StatementReport({
   statementImport,
   lines,
   categories,
+  accountTitle,
   currency,
   onApplied,
 }: {
   statementImport: StatementImportRow;
   lines: StatementLineRow[];
   categories: CategoryRow[];
+  /** Named here so the user can see where the rows are about to land. */
+  accountTitle?: string;
   currency: CurrencyCode;
   onApplied: (result: { imported: number; skipped: number }) => void;
 }) {
@@ -138,12 +141,16 @@ export function StatementReport({
 
       <section className="rounded-card border border-hairline bg-surface p-4">
         <h2 className="text-[17px] font-semibold text-ink">گزارش صورت‌حساب</h2>
-        {statementImport.period_from && statementImport.period_to && (
-          <p className="mt-1 text-caption text-ink-muted">
-            از {formatDateFa(statementImport.period_from)} تا{" "}
-            {formatDateFa(statementImport.period_to)}
-          </p>
-        )}
+        <p className="mt-1 text-caption text-ink-muted">
+          {[
+            accountTitle,
+            statementImport.period_from && statementImport.period_to
+              ? `از ${formatDateFa(statementImport.period_from)} تا ${formatDateFa(statementImport.period_to)}`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        </p>
 
         <dl className="mt-3 grid grid-cols-3 gap-2">
           <Tile label="ردیف خوانده‌شده" value={faNumber(lines.length)} />

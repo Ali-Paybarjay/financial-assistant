@@ -21,6 +21,8 @@ export const recurringExpenseFormSchema = z.object({
   id: optionalId,
   title: z.string().trim().min(1, "عنوان را بنویس").max(80),
   categorySlug: z.string().min(1, "دسته را انتخاب کن"),
+  /** "" is a real answer: a fixed expense paid in cash touches no account. */
+  accountId: z.union([z.string().uuid(), z.literal("")]).optional(),
   amount: amountText,
   dueDay: z.number().int().min(1, "روز بین ۱ تا ۳۱").max(31, "روز بین ۱ تا ۳۱"),
   autoPost: z.boolean(),

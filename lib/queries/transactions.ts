@@ -13,6 +13,7 @@ export type TransactionFilters = {
   from?: string;
   to?: string;
   categoryIds?: string[];
+  accountIds?: string[];
   type?: "expense" | "income";
   query?: string;
   unconfirmedOnly?: boolean;
@@ -36,6 +37,7 @@ export async function listTransactions(
   if (filters.type) request = request.eq("type", filters.type);
   if (filters.unconfirmedOnly) request = request.eq("is_confirmed", false);
   if (filters.categoryIds?.length) request = request.in("category_id", filters.categoryIds);
+  if (filters.accountIds?.length) request = request.in("account_id", filters.accountIds);
   if (filters.query) {
     const escaped = filters.query.replace(/[%,]/g, " ").trim();
     if (escaped) {

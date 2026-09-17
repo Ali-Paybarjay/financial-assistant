@@ -1,5 +1,7 @@
 import { requireViewer } from "@/lib/auth";
 import { listCategories } from "@/lib/queries/categories";
+import { listAccounts } from "@/lib/queries/accounts";
+import { preferredAccountId } from "@/lib/accounts";
 import { listImports, listLines, openImport } from "@/lib/queries/statements";
 import { convertibleFrom } from "@/lib/money";
 import { ImportView } from "./import-view";
@@ -7,8 +9,9 @@ import { ImportView } from "./import-view";
 export default async function ImportPage() {
   const viewer = await requireViewer();
 
-  const [categories, current, history] = await Promise.all([
+  const [categories, accounts, current, history] = await Promise.all([
     listCategories(),
+    listAccounts(),
     openImport(),
     listImports(),
   ]);
@@ -22,6 +25,8 @@ export default async function ImportPage() {
       currency={viewer.currency}
       sourceOptions={convertibleFrom(viewer.currency)}
       categories={categories}
+      accounts={accounts}
+      defaultAccountId={preferredAccountId(accounts)}
       current={current}
       lines={lines}
       history={history}

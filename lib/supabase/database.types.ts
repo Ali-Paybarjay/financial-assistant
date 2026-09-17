@@ -51,6 +51,8 @@ export type StatementImportStatus =
   | "discarded";
 /** Money leaving the account, or arriving in it. */
 export type StatementDirection = "in" | "out";
+/** "cash" is a pocket, not a bank — it holds a balance the same way. */
+export type AccountKind = "checking" | "savings" | "card" | "cash" | "other";
 export type StatementMatchStatus = "new" | "matched" | "imported" | "skipped";
 
 export type ProfileRow = {
@@ -88,6 +90,34 @@ export type CategoryRow = {
   updated_at: string;
 };
 
+export type AccountRow = {
+  id: string;
+  user_id: string;
+  title: string;
+  kind: AccountKind;
+  currency: string;
+  /** May be negative: a credit card at 1,200 owed is -1200. */
+  opening_balance: number;
+  opening_balance_on: string;
+  institution: string | null;
+  reference: string | null;
+  is_default: boolean;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+/** One row of account_balances(). Derived on read, never stored. */
+export type AccountBalanceRow = {
+  account_id: string;
+  opening_balance: number;
+  movement: number;
+  balance: number;
+  transaction_count: number;
+  last_activity_on: string | null;
+};
+
 export type IncomeSourceRow = {
   id: string;
   user_id: string;
@@ -108,6 +138,8 @@ export type RecurringExpenseRow = {
   user_id: string;
   title: string;
   category_id: string | null;
+  /** The account the posted transaction comes out of, if the user named one. */
+  account_id: string | null;
   amount: number;
   currency: string;
   frequency: string;
@@ -140,6 +172,8 @@ export type TransactionRow = {
   amount: number;
   currency: string;
   category_id: string | null;
+  /** Null is money that moved without touching a tracked account. */
+  account_id: string | null;
   merchant: string | null;
   note: string | null;
   occurred_on: string;
@@ -184,6 +218,8 @@ export type StatementImportRow = {
   id: string;
   user_id: string;
   status: StatementImportStatus;
+  /** The account this statement is of. Null on imports predating accounts. */
+  account_id: string | null;
   source_currency: string;
   target_currency: string;
   period_from: string | null;
@@ -238,6 +274,10 @@ export type Database = {
     Tables: {
       profiles: Table<ProfileRow, "timezone" | "base_currency" | "onboarding_step">;
       categories: Table<CategoryRow, "is_system" | "sort_order">;
+      accounts: Table<
+        AccountRow,
+        "opening_balance" | "is_default" | "is_active" | "sort_order"
+      >;
       income_sources: Table<IncomeSourceRow, "is_active">;
       recurring_expenses: Table<RecurringExpenseRow, "is_active" | "auto_post">;
       media_assets: Table<MediaAssetRow, "status">;
@@ -261,6 +301,10 @@ export type Database = {
       post_recurring_for_month: {
         Args: { p_month: string };
         Returns: number;
+      };
+      account_balances: {
+        Args: Record<never, never>;
+        Returns: AccountBalanceRow[];
       };
     };
     Enums: Record<never, never>;

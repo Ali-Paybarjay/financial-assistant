@@ -39,11 +39,14 @@ const SOURCE_LABEL: Record<string, string> = {
 export function TransactionRowItem({
   transaction,
   category,
+  accountTitle,
   currency,
   onSelect,
 }: {
   transaction: TransactionRow;
   category?: CategoryRow;
+  /** Omitted where accounts are not in play, which keeps the line short. */
+  accountTitle?: string;
   currency: CurrencyCode;
   onSelect: () => void;
 }) {
@@ -84,7 +87,7 @@ export function TransactionRowItem({
         >
           {unconfirmed
             ? `تأییدنشده · ${SOURCE_LABEL[transaction.source] ?? ""}`
-            : [category?.name_fa, formatDateFa(transaction.occurred_on)]
+            : [category?.name_fa, accountTitle, formatDateFa(transaction.occurred_on)]
                 .filter(Boolean)
                 .join(" · ")}
         </span>

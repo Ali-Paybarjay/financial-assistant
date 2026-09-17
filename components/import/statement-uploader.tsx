@@ -6,9 +6,11 @@ import { FileArrowUp, FilePdf, FileCsv, Image as ImageIcon, X } from "@phosphor-
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/native-select";
 import { Field, FormError } from "@/components/field";
+import { AccountField } from "@/components/accounts/account-field";
 import { createClient } from "@/lib/supabase/client";
 import { faNumber } from "@/lib/format";
 import type { CurrencyCode } from "@/lib/money";
+import type { AccountRow } from "@/lib/supabase/database.types";
 import {
   MAX_FILES_PER_IMPORT,
   mimeTypeFor,
@@ -35,9 +37,13 @@ const ACCEPT = ".pdf,.csv,.txt,image/*";
 export function StatementUploader({
   currency,
   sourceOptions,
+  accounts,
+  defaultAccountId,
 }: {
   currency: CurrencyCode;
   sourceOptions: CurrencyCode[];
+  accounts: AccountRow[];
+  defaultAccountId: string | null;
 }) {
   const router = useRouter();
   const picker = useRef<HTMLInputElement>(null);
@@ -47,6 +53,7 @@ export function StatementUploader({
     // toman, so that is the better default when both are on offer.
     sourceOptions.includes("IRR") ? "IRR" : sourceOptions[0],
   );
+  const [accountId, setAccountId] = useState(defaultAccountId ?? "");
   const [error, setError] = useState<string>();
   const [status, setStatus] = useState<string>();
   const [isWorking, startWorking] = useTransition();
@@ -71,7 +78,7 @@ export function StatementUploader({
       setError(undefined);
       setStatus("دارم شروع می‌کنم…");
 
-      const opened = await startStatementImport({ sourceCurrency });
+      const opened = await startStatementImport({ sourceCurrency, accountId });
       if ("error" in opened) {
         setError(opened.error);
         setStatus(undefined);
@@ -132,6 +139,17 @@ export function StatementUploader({
   return (
     <div className="flex flex-col gap-4">
       <FormError>{error}</FormError>
+
+      {/* Which account this is a statement of. It decides where the rows land
+          and, just as importantly, which existing rows they are compared with. */}
+      <AccountField
+        id="statement-account"
+        label="صورت‌حساب کدام حساب است؟"
+        accounts={accounts}
+        value={accountId}
+        onChange={(event) => setAccountId(event.target.value)}
+        hint="ردیف‌هایی که ثبت کنی به موجودی همین حساب می‌خورند."
+      />
 
       {sourceOptions.length > 1 && (
         <Field

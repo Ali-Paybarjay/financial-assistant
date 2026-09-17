@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/native-select";
 import { Money } from "@/components/money";
+import { AccountField } from "@/components/accounts/account-field";
 import { faCount } from "@/lib/format";
 import { formatDateFa } from "@/lib/date";
 import type { CurrencyCode } from "@/lib/money";
-import type { CategoryRow } from "@/lib/supabase/database.types";
+import type { AccountRow, CategoryRow } from "@/lib/supabase/database.types";
 import type { ParsedTransaction } from "@/lib/ai/schemas";
 import { FIELD_LABELS, type ReviewableField } from "@/lib/ai/schemas";
 import { cn } from "@/lib/utils";
@@ -31,6 +32,9 @@ export function ConfirmCard({
   drafts,
   currency,
   categories,
+  accounts,
+  accountId,
+  onAccountChange,
   onChange,
   onSubmit,
   onCancel,
@@ -39,6 +43,9 @@ export function ConfirmCard({
   drafts: DraftTransaction[];
   currency: CurrencyCode;
   categories: CategoryRow[];
+  accounts: AccountRow[];
+  accountId: string;
+  onAccountChange: (accountId: string) => void;
   onChange: (index: number, next: DraftTransaction) => void;
   onSubmit: () => void;
   onCancel: () => void;
@@ -85,6 +92,17 @@ export function ConfirmCard({
             : `${faCount(guessCount)} فیلد خط‌چین‌دار را حدس زدم. روی هرکدام بزن تا عوض شود.`}
         </p>
       )}
+
+      {/* One account for the whole card, not one per row: a receipt or a
+          dictated sentence is a single act of paying, however many lines the
+          model found in it. */}
+      <AccountField
+        id="confirm-account"
+        accounts={accounts}
+        value={accountId}
+        onChange={(event) => onAccountChange(event.target.value)}
+        hint="همه‌ی ردیف‌های این کارت به همین حساب می‌خورند."
+      />
 
       <div className="flex gap-2">
         <Button size="lg" className="flex-1" onClick={onSubmit} disabled={isPending}>

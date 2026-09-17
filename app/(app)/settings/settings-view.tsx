@@ -12,6 +12,7 @@ import {
   Bank,
   CaretLeft,
   Coins,
+  CreditCard,
   Plus,
   SignOut,
   SquaresFour,
@@ -89,6 +90,7 @@ export function SettingsView({
       </button>
 
       <Group title="پول">
+        <Row href="/accounts" icon={<CreditCard size={20} />} label="حساب‌ها" />
         <Row href="/income" icon={<Coins size={20} />} label="منابع درآمد" />
         <Row
           href="/income?tab=recurring"

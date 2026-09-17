@@ -31,6 +31,7 @@ function refresh() {
   revalidatePath("/import");
   revalidatePath("/dashboard");
   revalidatePath("/transactions");
+  revalidatePath("/accounts");
 }
 
 /**
@@ -40,6 +41,8 @@ function refresh() {
  */
 export async function startStatementImport(input: {
   sourceCurrency: string;
+  /** Which account this is a statement of. "" or absent means none. */
+  accountId?: string | null;
 }): Promise<{ error: string } | { ok: true; importId: string }> {
   const viewer = await requireViewer();
 
@@ -67,6 +70,9 @@ export async function startStatementImport(input: {
     .insert({
       user_id: viewer.userId,
       status: "uploading",
+      // Naming the account does two things: every row written from this file
+      // lands on it, and reconciliation stops looking at other accounts' rows.
+      account_id: input.accountId || null,
       source_currency: input.sourceCurrency,
       target_currency: viewer.currency,
     })
@@ -220,6 +226,9 @@ export async function applyStatementImport(raw: unknown): Promise<ApplyResult> {
       amount: line.amount,
       currency: statementImport.target_currency,
       category_id: categories.get(edit.categorySlug) ?? null,
+      // From the import, never from the request: the user chose the account
+      // when they said whose statement this was.
+      account_id: statementImport.account_id,
       merchant: edit.merchant || line.merchant,
       // The bank's own wording is the note, so the row can always be traced
       // back to the statement it came from.

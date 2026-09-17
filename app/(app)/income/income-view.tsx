@@ -13,6 +13,7 @@ import { SegmentedControl } from "@/components/segmented-control";
 import { faNumber } from "@/lib/format";
 import { sumMinor, type CurrencyCode } from "@/lib/money";
 import type {
+  AccountRow,
   CategoryRow,
   IncomeSourceRow,
   RecurringExpenseRow,
@@ -37,12 +38,16 @@ export function IncomeView({
   sources,
   recurring,
   categories,
+  accounts,
+  defaultAccountId,
 }: {
   initialTab: Tab;
   currency: CurrencyCode;
   sources: IncomeSourceRow[];
   recurring: RecurringExpenseRow[];
   categories: CategoryRow[];
+  accounts: AccountRow[];
+  defaultAccountId: string | null;
 }) {
   const [tab, setTab] = useState<Tab>(initialTab);
   const [editingIncome, setEditingIncome] = useState<IncomeSourceRow | null>(null);
@@ -165,6 +170,8 @@ export function IncomeView({
         onOpenChange={(open) => setSheet(open ? "recurring" : null)}
         currency={currency}
         categories={categories}
+        accounts={accounts}
+        defaultAccountId={defaultAccountId}
         expense={editingRecurring}
       />
     </div>
