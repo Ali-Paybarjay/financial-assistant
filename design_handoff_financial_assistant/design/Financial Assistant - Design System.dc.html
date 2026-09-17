@@ -1,0 +1,1389 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/nocturne-6d98428c-55b2-4412-bcc7-c5ba74078bed/styles.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
+<script src="_ds/nocturne-6d98428c-55b2-4412-bcc7-c5ba74078bed/_ds_bundle.js"></script>
+<style>
+@font-face{font-family:Vazirmatn;src:url("fonts/webfonts/Vazirmatn-Regular.woff2") format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:Vazirmatn;src:url("fonts/webfonts/Vazirmatn-Medium.woff2") format("woff2");font-weight:500;font-display:swap}
+@font-face{font-family:Vazirmatn;src:url("fonts/webfonts/Vazirmatn-SemiBold.woff2") format("woff2");font-weight:600;font-display:swap}
+@font-face{font-family:Vazirmatn;src:url("fonts/webfonts/Vazirmatn-Bold.woff2") format("woff2");font-weight:700;font-display:swap}
+@font-face{font-family:Estedad;src:url("fonts/webfonts/Estedad-Bold.woff2") format("woff2");font-weight:700;font-display:swap}
+@font-face{font-family:Estedad;src:url("fonts/webfonts/Estedad-ExtraBold.woff2") format("woff2");font-weight:800;font-display:swap}
+body{margin:0;background:#E7EAEF;color:#14181F;font-family:Vazirmatn,system-ui,sans-serif;font-size:15px;line-height:1.7}
+a{color:#23459B;text-decoration:none;text-underline-offset:3px}
+a:hover{color:#16307A;text-decoration:underline}
+:focus-visible{outline:2px solid #23459B;outline-offset:2px}
+::selection{background:#D6E0F5}
+@keyframes settle{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){*{animation-duration:0.01ms !important;transition-duration:0.01ms !important}}
+</style>
+</helmet>
+
+<div dir="rtl" style="width:1800px;padding:56px 56px 96px;background:#E7EAEF;font-family:Vazirmatn,system-ui,sans-serif">
+
+  <header style="max-width:1080px;display:flex;flex-direction:column;gap:14px;margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#23459B"></span>
+      <span style="font-size:12px;font-weight:600;letter-spacing:.14em;color:#5C6573">دستیار مالی · MVP · سند طراحی بصری</span>
+    </div>
+    <h1 style="margin:0;font-family:Estedad,Vazirmatn,sans-serif;font-weight:800;font-size:44px;line-height:1.2;color:#14181F;letter-spacing:-.01em">لاجورد و نوار اطمینان</h1>
+    <p style="margin:0;max-width:760px;font-size:17px;line-height:1.75;color:#3C4553;text-wrap:pretty">یک design token system و چهار موکاپ موبایل (۳۷۵px) برای «دستیار مالی». هر تصمیم با دلیل و با نقدِ خودش آمده است. این سند برای کپی مستقیم در بخش design token system فایل <span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:15px">PLAN.md</span> نوشته شده است.</p>
+    <p style="margin:6px 0 0;max-width:760px;font-size:13px;color:#5C6573">جهت‌گیری پایه: لایت‌مود، RTL کامل، مبالغ با ارقام لاتین و ایزوله‌ی جهت. هیچ‌کدام از سه لوکِ ممنوع (کرم گرم + سریف، مشکی + سبز اسیدی، روزنامه‌ای بدون گردی) در این پالت استفاده نشده است.</p>
+  </header>
+
+  <sc-if value="{{ showSpecs }}" hint-placeholder-val="{{ true }}">
+  <section style="max-width:1080px;margin-bottom:64px">
+    <div style="font-size:12px;font-weight:600;letter-spacing:.14em;color:#5C6573;margin-bottom:8px">۱ — پالت</div>
+    <h2 style="margin:0 0 6px;font-family:Estedad,Vazirmatn,sans-serif;font-weight:700;font-size:26px;color:#14181F">شش رنگ، هیچ‌کدام تزئینی</h2>
+    <p style="margin:0 0 22px;max-width:700px;color:#3C4553">قاعده: رنگ فقط وقتی مجاز است که یک پیام بدهد. زمینه و متن و کارت، خنثی‌اند؛ لاجورد فقط برای کنش و داده؛ سبز/قرمز فقط برای علامت مانده؛ برنجی فقط برای «این را مدل حدس زده».</p>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+      <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div style="height:56px;border-radius:10px;background:#23459B"></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+          <span style="font-weight:600;font-size:15px">لاجورد — برند</span>
+          <span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:13px;color:#5C6573">#23459B</span>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:1.7;color:#3C4553">رنگدانه‌ی لاجورد ایرانی: آبیِ عمیق با گرایش بنفش. عمداً از آبی‌بنفشِ رایج فین‌تک تیره‌تر و از آن کم‌درخشان‌تر است تا روی اعداد سیاه غالب نشود. کاربرد: دکمه‌ی اصلی، لینک، سری اصلی نمودار.</p>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div style="height:56px;border-radius:10px;background:#0E6B4F"></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+          <span style="font-weight:600;font-size:15px">کاج — مثبت</span>
+          <span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:13px;color:#5C6573">#0E6B4F</span>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:1.7;color:#3C4553">سبزِ اشباع‌نشده و تیره، نه سبز اسیدی و نه سبز «سود». کنتراست روی سفید ≈ ۵.۳:۱ یعنی برای عدد ۱۵px هم مجاز است. همیشه با علامت ‎+‎ همراه است، نه به‌جای آن.</p>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div style="height:56px;border-radius:10px;background:#AD2E24"></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+          <span style="font-weight:600;font-size:15px">آجر — منفی</span>
+          <span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:13px;color:#5C6573">#AD2E24</span>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:1.7;color:#3C4553">قرمزِ خاکی‌شده، نه قرمز هشدار. کسری بودجه یک واقعیت است نه یک خطای سیستم؛ رنگ نباید کاربر را بترساند. همیشه با علامت ‎−‎ همراه.</p>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div style="height:56px;border-radius:10px;background:#8A5A00"></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+          <span style="font-weight:600;font-size:15px">برنج — حدسِ مدل</span>
+          <span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:13px;color:#5C6573">#8A5A00</span>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:1.7;color:#3C4553">تنها رنگی که به‌خاطر معماری محصول اضافه شده: سه روش از چهار روش ثبت، داده‌ی حدسی تولید می‌کنند. زرد روشن روی سفید AA نمی‌دهد، پس عمداً به برنجِ تیره رانده شده است.</p>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div style="height:56px;border-radius:10px;background:#F1F3F6;border:1px solid #E2E6EC"></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+          <span style="font-weight:600;font-size:15px">کاغذ — زمینه</span>
+          <span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:13px;color:#5C6573">#F1F3F6</span>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:1.7;color:#3C4553">خاکستریِ سردِ کم‌رنگ. کارت‌ها <span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:13px">#FFFFFF</span> روی آن می‌نشینند، پس ارتفاع بدون سایه‌ی سنگین خوانده می‌شود. کاستِ سرد، عمدی است: پادزهرِ لوکِ ممنوعِ «کرم گرم».</p>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div style="height:56px;border-radius:10px;background:#14181F"></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+          <span style="font-weight:600;font-size:15px">مرکب — متن</span>
+          <span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:13px;color:#5C6573">#14181F</span>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:1.7;color:#3C4553">نه مشکی مطلق؛ یک ذره آبی دارد تا با لاجورد هم‌خانواده بماند. متن فرعی <span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:13px">#5C6573</span> (≈ ۵.۱:۱) و خط جداکننده <span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:13px">#E2E6EC</span>.</p>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:14px;margin-top:14px">
+      <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:18px">
+        <div style="font-weight:600;margin-bottom:4px">پالت نمودار — تک‌رنگ، نه رنگین‌کمان</div>
+        <p style="margin:0 0 14px;font-size:13px;color:#3C4553">پنج پله از یک هیو (لاجورد) به ترتیب سهم، و «سایر» همیشه خاکستریِ خنثی. در چاپ سیاه‌وسفید هم ترتیب حفظ می‌شود، چون تفکیک با روشنایی است نه با هیو.</p>
+        <div style="display:flex;gap:0;border-radius:10px;overflow:hidden;height:44px">
+          <div style="flex:40;background:#23459B"></div>
+          <div style="flex:20;background:#3E5CB2"></div>
+          <div style="flex:11;background:#6280C8"></div>
+          <div style="flex:9;background:#93A8DC"></div>
+          <div style="flex:7;background:#C2CDEB"></div>
+          <div style="flex:13;background:#C9CDD4"></div>
+        </div>
+        <div dir="ltr" style="display:flex;gap:10px;margin-top:8px;font-family:ui-monospace,monospace;font-size:11px;color:#5C6573;justify-content:space-between">
+          <span>#23459B</span><span>#3E5CB2</span><span>#6280C8</span><span>#93A8DC</span><span>#C2CDEB</span><span>#C9CDD4</span>
+        </div>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:18px">
+        <div style="font-weight:600;margin-bottom:4px">فرم و ارتفاع</div>
+        <ul style="margin:0;padding-inline-start:18px;font-size:13px;line-height:2;color:#3C4553">
+          <li>گردی: کارت <span dir="ltr" style="unicode-bidi:isolate">14px</span> · ورودی و دکمه <span dir="ltr" style="unicode-bidi:isolate">10px</span> · چیپ <span dir="ltr" style="unicode-bidi:isolate">999px</span>. صفرِ گردی ممنوع است (لوکِ روزنامه‌ای).</li>
+          <li>خط جداکننده <span dir="ltr" style="unicode-bidi:isolate">1px #E2E6EC</span> — نه خط مویی ۰.۵px.</li>
+          <li>سایه‌ی واحد: <span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:12px">0 1px 2px rgba(20,24,31,.04), 0 8px 24px -14px rgba(20,24,31,.16)</span> — فقط برای لایه‌ی شناور (مودال و FAB).</li>
+          <li>اسپیسینگ بر پایه‌ی ۴: <span dir="ltr" style="unicode-bidi:isolate">4 · 8 · 12 · 16 · 24 · 32 · 48</span>. هدف لمسی هرگز کمتر از <span dir="ltr" style="unicode-bidi:isolate">44px</span>.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section style="max-width:1080px;margin-bottom:64px">
+    <div style="font-size:12px;font-weight:600;letter-spacing:.14em;color:#5C6573;margin-bottom:8px">۲ — تایپوگرافی</div>
+    <h2 style="margin:0 0 6px;font-family:Estedad,Vazirmatn,sans-serif;font-weight:700;font-size:26px;color:#14181F">وزیرمتن برای خواندن، استعداد برای عدد</h2>
+    <p style="margin:0 0 22px;max-width:760px;color:#3C4553">فونت display پیشنهادی <strong style="font-weight:600">استعداد</strong> است، نه مربع. دلیل: مربع لایسنس تجاری دارد و قید «self-host بدون CDN تحریم‌خورده» را با یک قید حقوقی جایگزین می‌کند؛ استعداد با لایسنس SIL آزاد است، وزن ۸۰۰ دارد و ارقام لاتینش با وزیرمتن هم‌عرض می‌ماند. هر دو فونت در همین پروژه به‌صورت <span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:14px">woff2</span> میزبانی شده‌اند. استعداد فقط سه جا ظاهر می‌شود: عدد مانده، تیتر گام‌های onboarding، تیتر حالت خالی.</p>
+
+    <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;overflow:hidden">
+      <div style="display:grid;grid-template-columns:150px 1fr 300px;gap:16px;padding:12px 18px;background:#F1F3F6;font-size:12px;font-weight:600;color:#5C6573;border-bottom:1px solid #E2E6EC">
+        <span>توکن</span><span>نمونه</span><span>مشخصات و کاربرد</span>
+      </div>
+      <div style="display:grid;grid-template-columns:150px 1fr 300px;gap:16px;padding:16px 18px;align-items:center;border-bottom:1px solid #E2E6EC">
+        <span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:13px;color:#23459B">display-xl</span>
+        <span dir="ltr" style="unicode-bidi:isolate;font-family:Estedad,sans-serif;font-weight:800;font-size:40px;line-height:44px;font-variant-numeric:tabular-nums;color:#0E6B4F">+$1,131.60</span>
+        <span style="font-size:13px;color:#3C4553">Estedad 800 · <span dir="ltr" style="unicode-bidi:isolate">40/44</span> · tabular · فقط عدد مانده‌ی ماه</span>
+      </div>
+      <div style="display:grid;grid-template-columns:150px 1fr 300px;gap:16px;padding:16px 18px;align-items:center;border-bottom:1px solid #E2E6EC">
+        <span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:13px;color:#23459B">display-l</span>
+        <span style="font-family:Estedad,sans-serif;font-weight:700;font-size:28px;line-height:34px">چقدر ریسک را تحمل می‌کنی؟</span>
+        <span style="font-size:13px;color:#3C4553">Estedad 700 · <span dir="ltr" style="unicode-bidi:isolate">28/34</span> · تیتر گام و حالت خالی</span>
+      </div>
+      <div style="display:grid;grid-template-columns:150px 1fr 300px;gap:16px;padding:16px 18px;align-items:center;border-bottom:1px solid #E2E6EC">
+        <span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:13px;color:#23459B">num-l</span>
+        <span dir="ltr" style="unicode-bidi:isolate;font-weight:600;font-size:24px;line-height:28px;font-variant-numeric:tabular-nums">$3,118.40</span>
+        <span style="font-size:13px;color:#3C4553">Vazirmatn 600 · <span dir="ltr" style="unicode-bidi:isolate">24/28</span> · عدد کارت‌های KPI</span>
+      </div>
+      <div style="display:grid;grid-template-columns:150px 1fr 300px;gap:16px;padding:16px 18px;align-items:center;border-bottom:1px solid #E2E6EC">
+        <span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:13px;color:#23459B">title</span>
+        <span style="font-weight:600;font-size:19px;line-height:26px">هزینه به تفکیک دسته</span>
+        <span style="font-size:13px;color:#3C4553">Vazirmatn 600 · <span dir="ltr" style="unicode-bidi:isolate">19/26</span> · تیتر کارت و صفحه</span>
+      </div>
+      <div style="display:grid;grid-template-columns:150px 1fr 300px;gap:16px;padding:16px 18px;align-items:center;border-bottom:1px solid #E2E6EC">
+        <span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:13px;color:#23459B">body</span>
+        <span style="font-size:15px;line-height:24px">این ماه <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:500">$1,131.60</span> برایت مانده است.</span>
+        <span style="font-size:13px;color:#3C4553">Vazirmatn 400 · <span dir="ltr" style="unicode-bidi:isolate">15/24</span> · متن بدنه</span>
+      </div>
+      <div style="display:grid;grid-template-columns:150px 1fr 300px;gap:16px;padding:16px 18px;align-items:center;border-bottom:1px solid #E2E6EC">
+        <span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:13px;color:#23459B">label</span>
+        <span style="font-weight:500;font-size:13px;line-height:18px;color:#5C6573">نرخ پس‌انداز این ماه</span>
+        <span style="font-size:13px;color:#3C4553">Vazirmatn 500 · <span dir="ltr" style="unicode-bidi:isolate">13/18</span> · برچسب فیلد و کارت</span>
+      </div>
+      <div style="display:grid;grid-template-columns:150px 1fr 300px;gap:16px;padding:16px 18px;align-items:center">
+        <span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:13px;color:#23459B">caption</span>
+        <span style="font-weight:500;font-size:12px;line-height:16px;color:#5C6573">۱۶ سپتامبر ۲۰۲۶ · ثبت با صدا</span>
+        <span style="font-size:13px;color:#3C4553">Vazirmatn 500 · <span dir="ltr" style="unicode-bidi:isolate">12/16</span> · فرا‌داده‌ی ردیف</span>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+      <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:18px">
+        <div style="font-weight:600;margin-bottom:10px">قاعده‌ی پول در متن فارسی</div>
+        <div style="background:#E7F2EE;border:1px solid #CBE2DA;border-radius:10px;padding:12px 14px;margin-bottom:8px">
+          <div style="font-size:12px;font-weight:600;color:#0E6B4F;margin-bottom:4px">درست — ایزوله‌شده</div>
+          <div style="font-size:15px">قهوه‌ی امروزت <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:500">$5.75</span> بود.</div>
+        </div>
+        <div style="background:#FBEBE9;border:1px solid #F0D2CE;border-radius:10px;padding:12px 14px">
+          <div style="font-size:12px;font-weight:600;color:#AD2E24;margin-bottom:4px">غلط — بدون ایزوله، نماد ارز جابه‌جا می‌شود</div>
+          <div style="font-size:15px">قهوه‌ی امروزت <span style="font-variant-numeric:tabular-nums;font-weight:500">$5.75</span> بود.</div>
+        </div>
+        <p style="margin:10px 0 0;font-size:13px;color:#3C4553">هر مبلغ فقط از کامپوننت <span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:13px">&lt;Money /&gt;</span> بیرون می‌آید: ارقام لاتین، <span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:13px">tabular-nums</span>، <span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:13px">dir="ltr"</span> و <span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:13px">unicode-bidi:isolate</span>. تاریخ‌ها برعکس: ارقام فارسی، چون داده‌ی محاسباتی نیستند و در ستون تراز نمی‌شوند.</p>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:18px">
+        <div style="font-weight:600;margin-bottom:10px">حالت‌های تعاملی</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+          <span style="display:inline-flex;align-items:center;height:44px;padding:0 18px;border-radius:10px;background:#23459B;color:#FFFFFF;font-weight:600;font-size:15px">ثبت هزینه</span>
+          <span style="display:inline-flex;align-items:center;height:44px;padding:0 18px;border-radius:10px;background:#16307A;color:#FFFFFF;font-weight:600;font-size:15px">‹ فشرده</span>
+          <span style="display:inline-flex;align-items:center;height:44px;padding:0 18px;border-radius:10px;background:#FFFFFF;border:1px solid #C4CCD8;color:#14181F;font-weight:600;font-size:15px">انصراف</span>
+          <span style="display:inline-flex;align-items:center;height:44px;padding:0 18px;border-radius:10px;background:#EDF1FA;color:#23459B;font-weight:600;font-size:15px;outline:2px solid #23459B;outline-offset:2px">‹ focus</span>
+          <span style="display:inline-flex;align-items:center;height:44px;padding:0 18px;border-radius:10px;background:#23459B;color:#FFFFFF;font-weight:600;font-size:15px;opacity:.45">غیرفعال</span>
+        </div>
+        <ul style="margin:0;padding-inline-start:18px;font-size:13px;line-height:2;color:#3C4553">
+          <li>focus همیشه حلقه‌ی <span dir="ltr" style="unicode-bidi:isolate">2px</span> لاجورد با <span dir="ltr" style="unicode-bidi:isolate">offset 2px</span> — هیچ‌وقت حلقه‌ی پیش‌فرض مرورگر.</li>
+          <li>دکمه‌ی درحال‌ارسال قفل می‌شود و متنش عوض می‌شود («دارم ثبت می‌کنم…») تا کلیک دوم تراکنش تکراری نسازد.</li>
+          <li>حرکت: تنها دو ترنزیشن مجاز — <span dir="ltr" style="unicode-bidi:isolate">180ms</span> برای تثبیت حدس و <span dir="ltr" style="unicode-bidi:isolate">220ms</span> برای بالا آمدن مودال. با <span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:12px">prefers-reduced-motion</span> هر دو حذف می‌شوند.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section style="max-width:1080px;margin-bottom:64px">
+    <div style="font-size:12px;font-weight:600;letter-spacing:.14em;color:#5C6573;margin-bottom:8px">۳ — عنصر امضا</div>
+    <h2 style="margin:0 0 6px;font-family:Estedad,Vazirmatn,sans-serif;font-weight:700;font-size:26px;color:#14181F">نوار اطمینان</h2>
+    <p style="margin:0 0 22px;max-width:780px;color:#3C4553">زیر هر مقداری که مدل تولید کرده، یک نوار <span dir="ltr" style="unicode-bidi:isolate">2px</span> می‌نشیند: <strong style="font-weight:600;color:#8A5A00">خط‌چین برنجی</strong> تا وقتی حدس است، و <strong style="font-weight:600">پیوسته‌ی مرکبی</strong> از لحظه‌ای که کاربر تأیید می‌کند. همین یک نوار در سه لایه‌ی محصول تکرار می‌شود: در کارت تأیید (زیر فیلدها)، در لیست تراکنش‌ها (یک خط‌چین کوتاه کنار ردیف‌های تأییدنشده)، و در داشبورد (زیر عدد هزینه، وقتی جمع ماه شامل تراکنش تأییدنشده است).</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:22px">
+        <div style="font-size:12px;font-weight:600;color:#5C6573;margin-bottom:16px">دمو — روی «تأیید» بزن</div>
+        <div style="display:flex;align-items:flex-end;gap:16px;min-height:74px">
+          <div>
+            <div style="font-size:13px;font-weight:500;color:#5C6573;margin-bottom:6px">دسته</div>
+            <sc-if value="{{ confirmed }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:8px;animation:settle 180ms ease-out">
+                <span style="font-size:19px;font-weight:600;border-bottom:2px solid #14181F;padding-bottom:4px">رستوران و کافه</span>
+                <span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 9px;border-radius:999px;background:#E7F2EE;color:#0E6B4F;font-size:12px;font-weight:600">تأیید شد</span>
+              </div>
+            </sc-if>
+            <sc-if value="{{ notConfirmed }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:19px;font-weight:600;border-bottom:2px dashed #8A5A00;padding-bottom:4px">رستوران و کافه</span>
+                <span style="display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:999px;background:#FDF4DE;color:#8A5A00;font-size:12px;font-weight:600">حدس زدم</span>
+              </div>
+            </sc-if>
+          </div>
+          <button type="button" onClick="{{ toggle }}" style="height:40px;padding:0 16px;border-radius:10px;border:1px solid #C4CCD8;background:#FFFFFF;color:#14181F;font-family:Vazirmatn,sans-serif;font-weight:600;font-size:14px;cursor:pointer" style-hover="background:#EDF1FA;border-color:#23459B;color:#23459B">تأیید / بازگشت</button>
+        </div>
+        <p style="margin:16px 0 0;font-size:13px;color:#3C4553">حرکت: <span dir="ltr" style="unicode-bidi:isolate">180ms</span>، خط‌چین به پیوسته و یک جابه‌جایی ۳ پیکسلی. تنها انیمیشن امضای اپ همین است.</p>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:22px">
+        <div style="font-weight:600;margin-bottom:10px">چرا این، و نقد خودم</div>
+        <p style="margin:0 0 10px;font-size:14px;line-height:1.8;color:#3C4553"><strong style="font-weight:600;color:#14181F">چرا معنادار است:</strong> در این محصول داده عمدتاً با «حدس» وارد می‌شود — سه روش از چهار روش ثبت خروجی مدل‌اند. پس تمایز میان «چیزی که گفتم» و «چیزی که برداشت شد» موضوعِ اصلی رابط است، نه یک جزئیات. دونات و کارت KPI را هر اپ مالی دیگری هم دارد؛ این نوار مسئله‌ی همین اپ را حل می‌کند و برای کاربر فارسی‌زبانی که با لهجه و واحد پولِ غیرمادری حرف می‌زند، حدسِ مدل بیشتر خطا می‌کند و همین علامت بیشتر لازم می‌شود.</p>
+        <p style="margin:0 0 10px;font-size:14px;line-height:1.8;color:#3C4553"><strong style="font-weight:600;color:#AD2E24">نقد یک:</strong> پیش‌نویس اول من چهار کارت KPI هم‌اندازه بود — یعنی همان داشبورد پیش‌فرضی که برای هر اپ مالی تولید می‌شود. اصلاح: «مانده» از کارت بیرون کشیده شد و به تیترِ صفحه تبدیل شد؛ سه عدد دیگر به یک ردیف کم‌وزن‌تر زیرش رفتند. جمله‌ی محکِ «کمتر از ۵ ثانیه» یک عدد را می‌خواهد، نه چهار عدد هم‌وزن.</p>
+        <p style="margin:0 0 10px;font-size:14px;line-height:1.8;color:#3C4553"><strong style="font-weight:600;color:#AD2E24">نقد دو:</strong> برنجی/زرد ریسک این را دارد که «هشدار» خوانده شود. رنگ هرگز تنها حامل معنا نیست: همیشه خط‌چین + واژه‌ی «حدس زدم» هم هست — که هم برای کاربر کوررنگ کار می‌کند و هم برای صفحه‌خوان (<span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:12px">aria-describedby</span>).</p>
+        <p style="margin:0;font-size:14px;line-height:1.8;color:#3C4553"><strong style="font-weight:600;color:#AD2E24">نقد سه:</strong> لاجورد به‌تنهایی نمی‌تواند هویت بسازد؛ آبیِ عمیق انتخابِ محتملِ هر اپ مالی است. چیزی که این پالت را از بقیه جدا می‌کند، نه هیو است نه ترکیب — بلکه این است که برنجی یک نقشِ ساختاری دارد که اپ‌های دیگر ندارند. اگر روزی نوار اطمینان حذف شود، این پالت دیگر امضایی ندارد.</p>
+      </div>
+    </div>
+  </section>
+  </sc-if>
+
+  <section style="margin-bottom:64px">
+    <div style="max-width:1080px;margin-bottom:26px">
+      <div style="font-size:12px;font-weight:600;letter-spacing:.14em;color:#5C6573;margin-bottom:8px">۴ — موکاپ‌ها · موبایل <span dir="ltr" style="unicode-bidi:isolate">375px</span></div>
+      <h2 style="margin:0 0 6px;font-family:Estedad,Vazirmatn,sans-serif;font-weight:700;font-size:26px;color:#14181F">چهار صفحه‌ی بحرانی</h2>
+      <p style="margin:0;max-width:760px;color:#3C4553">به ترتیب اولویت بریف. همه در عرض واقعی <span dir="ltr" style="unicode-bidi:isolate">375px</span>، با هدف لمسی حداقل <span dir="ltr" style="unicode-bidi:isolate">44px</span>.</p>
+    </div>
+
+    <div style="display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap">
+
+      <div style="width:375px">
+        <div style="width:375px;background:#F1F3F6;border:1px solid #D7DCE4;border-radius:26px;overflow:hidden;box-shadow:0 1px 2px rgba(20,24,31,.04),0 22px 44px -26px rgba(20,24,31,.28)">
+          <div style="height:28px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:11px;font-weight:600;color:#5C6573;background:#FFFFFF">
+            <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">9:41</span>
+            <span style="display:flex;gap:4px;align-items:center"><span style="width:14px;height:8px;border:1px solid #5C6573;border-radius:2px;display:inline-block"></span><span style="width:4px;height:4px;border-radius:50%;background:#5C6573;display:inline-block"></span></span>
+          </div>
+
+          <div style="background:#FFFFFF;padding:14px 16px 16px;border-bottom:1px solid #E2E6EC">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+              <div style="display:flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:999px;background:#F1F3F6;border:1px solid #E2E6EC;font-size:13px;font-weight:600">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5C6573" stroke-width="2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"></path></svg>
+                <span>سپتامبر ۲۰۲۶</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5C6573" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"></path></svg>
+              </div>
+              <div style="width:36px;height:36px;border-radius:50%;background:#EDF1FA;color:#23459B;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px">ن</div>
+            </div>
+            <div style="font-size:13px;font-weight:500;color:#5C6573;margin-bottom:2px">مانده‌ی این ماه</div>
+            <div style="display:flex;align-items:baseline;gap:10px">
+              <span dir="ltr" style="unicode-bidi:isolate;font-family:Estedad,sans-serif;font-weight:800;font-size:40px;line-height:46px;font-variant-numeric:tabular-nums;color:#0E6B4F">+$1,131.60</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:6px">
+              <span style="font-size:12px;font-weight:500;color:#5C6573">۱۴ روز تا پایان ماه</span>
+              <span style="width:1px;height:12px;background:#E2E6EC"></span>
+              <span style="font-size:12px;font-weight:500;color:#5C6573">روزی <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">$80.82</span></span>
+            </div>
+          </div>
+
+          <div style="padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+              <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:11px 10px">
+                <div style="font-size:11px;font-weight:500;color:#5C6573;margin-bottom:4px">درآمد</div>
+                <div dir="ltr" style="unicode-bidi:isolate;font-weight:600;font-size:16px;font-variant-numeric:tabular-nums;line-height:20px">$4,250.00</div>
+                <div style="font-size:11px;font-weight:600;color:#0E6B4F;margin-top:3px">‎+2.4%</div>
+              </div>
+              <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:11px 10px">
+                <div style="font-size:11px;font-weight:500;color:#5C6573;margin-bottom:4px">هزینه</div>
+                <div dir="ltr" style="unicode-bidi:isolate;font-weight:600;font-size:16px;font-variant-numeric:tabular-nums;line-height:20px;border-bottom:2px dashed #8A5A00;display:inline-block;padding-bottom:2px">$3,118.40</div>
+                <div style="font-size:11px;font-weight:600;color:#AD2E24;margin-top:3px">‎+11.6%</div>
+              </div>
+              <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:11px 10px">
+                <div style="font-size:11px;font-weight:500;color:#5C6573;margin-bottom:4px">نرخ پس‌انداز</div>
+                <div dir="ltr" style="unicode-bidi:isolate;font-weight:600;font-size:16px;font-variant-numeric:tabular-nums;line-height:20px">26.6%</div>
+                <div style="font-size:11px;font-weight:600;color:#AD2E24;margin-top:3px">‎−8.2</div>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:7px;background:#FDF4DE;border:1px solid #EFDFB4;border-radius:10px;padding:8px 11px">
+              <span style="width:16px;height:2px;background:repeating-linear-gradient(90deg,#8A5A00 0 4px,transparent 4px 7px);flex:none"></span>
+              <span style="font-size:12px;font-weight:500;color:#6E4700;line-height:1.6">۲ تراکنش تأییدنشده در این جمع هست.</span>
+              <span style="margin-inline-start:auto;font-size:12px;font-weight:600;color:#23459B;white-space:nowrap">بررسی</span>
+            </div>
+
+            <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:14px">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px">
+                <span style="font-weight:600;font-size:15px">هزینه به تفکیک دسته</span>
+                <span style="font-size:12px;font-weight:600;color:#23459B">همه</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:14px">
+                <div style="position:relative;width:118px;height:118px;flex:none;border-radius:50%;background:conic-gradient(from -90deg,#23459B 0 144deg,#FFFFFF 144deg 145.6deg,#3E5CB2 145.6deg 215deg,#FFFFFF 215deg 216.6deg,#6280C8 216.6deg 256deg,#FFFFFF 256deg 257.6deg,#93A8DC 257.6deg 289deg,#FFFFFF 289deg 290.6deg,#C2CDEB 290.6deg 314deg,#FFFFFF 314deg 315.6deg,#C9CDD4 315.6deg 360deg)">
+                  <div style="position:absolute;inset:23px;border-radius:50%;background:#FFFFFF;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px">
+                    <span style="font-size:11px;font-weight:500;color:#5C6573">بیشترین</span>
+                    <span style="font-size:12px;font-weight:600;line-height:1.3;text-align:center">مسکن</span>
+                    <span dir="ltr" style="unicode-bidi:isolate;font-size:13px;font-weight:600;color:#23459B;font-variant-numeric:tabular-nums">40%</span>
+                  </div>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:7px">
+                  <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span style="width:9px;height:9px;border-radius:2px;background:#23459B;flex:none"></span><span style="flex:1">مسکن و اجاره</span><span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:500">$1,250.00</span></div>
+                  <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span style="width:9px;height:9px;border-radius:2px;background:#3E5CB2;flex:none"></span><span style="flex:1">خوراک</span><span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:500">$612.40</span></div>
+                  <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span style="width:9px;height:9px;border-radius:2px;background:#6280C8;flex:none"></span><span style="flex:1">حمل‌ونقل</span><span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:500">$358.00</span></div>
+                  <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span style="width:9px;height:9px;border-radius:2px;background:#93A8DC;flex:none"></span><span style="flex:1">رستوران و کافه</span><span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:500">$284.90</span></div>
+                  <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span style="width:9px;height:9px;border-radius:2px;background:#C2CDEB;flex:none"></span><span style="flex:1">قبوض</span><span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:500">$213.10</span></div>
+                  <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:#5C6573"><span style="width:9px;height:9px;border-radius:2px;background:#C9CDD4;flex:none"></span><span style="flex:1">سایر</span><span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:500">$400.00</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:14px">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px">
+                <span style="font-weight:600;font-size:15px">۶ ماه اخیر</span>
+                <span style="display:flex;gap:10px;font-size:11px;color:#5C6573"><span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:#23459B"></span>درآمد</span><span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:#C2CDEB;border:1px solid #93A8DC"></span>هزینه</span></span>
+              </div>
+              <div dir="ltr" style="display:flex;align-items:flex-end;justify-content:space-between;height:96px;gap:8px">
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="display:flex;align-items:flex-end;gap:2px;height:80px"><span style="width:9px;height:72px;background:#23459B;border-radius:2px 2px 0 0"></span><span style="width:9px;height:59px;background:#C2CDEB;border:1px solid #93A8DC;border-bottom:0;border-radius:2px 2px 0 0"></span></div><span style="font-size:10px;color:#5C6573;font-family:Vazirmatn,sans-serif">آوریل</span></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="display:flex;align-items:flex-end;gap:2px;height:80px"><span style="width:9px;height:74px;background:#23459B;border-radius:2px 2px 0 0"></span><span style="width:9px;height:52px;background:#C2CDEB;border:1px solid #93A8DC;border-bottom:0;border-radius:2px 2px 0 0"></span></div><span style="font-size:10px;color:#5C6573;font-family:Vazirmatn,sans-serif">مه</span></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="display:flex;align-items:flex-end;gap:2px;height:80px"><span style="width:9px;height:74px;background:#23459B;border-radius:2px 2px 0 0"></span><span style="width:9px;height:63px;background:#C2CDEB;border:1px solid #93A8DC;border-bottom:0;border-radius:2px 2px 0 0"></span></div><span style="font-size:10px;color:#5C6573;font-family:Vazirmatn,sans-serif">ژوئن</span></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="display:flex;align-items:flex-end;gap:2px;height:80px"><span style="width:9px;height:77px;background:#23459B;border-radius:2px 2px 0 0"></span><span style="width:9px;height:53px;background:#C2CDEB;border:1px solid #93A8DC;border-bottom:0;border-radius:2px 2px 0 0"></span></div><span style="font-size:10px;color:#5C6573;font-family:Vazirmatn,sans-serif">ژوئیه</span></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="display:flex;align-items:flex-end;gap:2px;height:80px"><span style="width:9px;height:74px;background:#23459B;border-radius:2px 2px 0 0"></span><span style="width:9px;height:49px;background:#C2CDEB;border:1px solid #93A8DC;border-bottom:0;border-radius:2px 2px 0 0"></span></div><span style="font-size:10px;color:#5C6573;font-family:Vazirmatn,sans-serif">اوت</span></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="display:flex;align-items:flex-end;gap:2px;height:80px"><span style="width:9px;height:74px;background:#23459B;border-radius:2px 2px 0 0"></span><span style="width:9px;height:55px;background:#C2CDEB;border:1px solid #93A8DC;border-bottom:0;border-radius:2px 2px 0 0"></span></div><span style="font-size:10px;color:#5C6573;font-family:Vazirmatn,sans-serif">سپتامبر</span></div>
+              </div>
+            </div>
+
+            <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:14px">
+              <div style="font-weight:600;font-size:15px;margin-bottom:12px">هدف‌ها</div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;font-size:13px;margin-bottom:6px"><span>صندوق اضطراری</span><span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:500;font-size:12px;color:#5C6573">$6,200 / $10,000</span></div>
+              <div style="height:8px;border-radius:999px;background:#EDF1FA;overflow:hidden"><div style="width:62%;height:100%;background:#23459B;border-radius:999px"></div></div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;font-size:13px;margin:14px 0 6px"><span>سفر تابستان</span><span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:500;font-size:12px;color:#5C6573">$900 / $4,000</span></div>
+              <div style="height:8px;border-radius:999px;background:#EDF1FA;overflow:hidden"><div style="width:22%;height:100%;background:#6280C8;border-radius:999px"></div></div>
+            </div>
+
+            <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:14px 14px 4px">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px">
+                <span style="font-weight:600;font-size:15px">تراکنش‌های اخیر</span>
+                <span style="font-size:12px;font-weight:600;color:#23459B">همه</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #F1F3F6">
+                <span style="width:32px;height:32px;border-radius:9px;background:#F1F3F6;display:flex;align-items:center;justify-content:center;flex:none"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5C6573" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0014 0M12 18v3"></path></svg></span>
+                <span style="flex:1;min-width:0">
+                  <span style="display:block;font-size:14px;font-weight:500">مترو تورنتو</span>
+                  <span style="display:block;font-size:11px;color:#5C6573">حمل‌ونقل · ۱۶ سپتامبر</span>
+                </span>
+                <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;color:#14181F">−$3.35</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #F1F3F6">
+                <span style="width:32px;height:32px;border-radius:9px;background:#FDF4DE;display:flex;align-items:center;justify-content:center;flex:none"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8A5A00" stroke-width="1.8" stroke-linecap="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"></path><path d="M9.5 9h5M9.5 13h5"></path></svg></span>
+                <span style="flex:1;min-width:0">
+                  <span style="display:block;font-size:14px;font-weight:500;border-bottom:2px dashed #8A5A00;padding-bottom:2px;width:fit-content">Loblaws</span>
+                  <span style="display:block;font-size:11px;color:#8A5A00;margin-top:3px">تأییدنشده · از عکس فاکتور</span>
+                </span>
+                <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;color:#14181F">−$62.40</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #F1F3F6">
+                <span style="width:32px;height:32px;border-radius:9px;background:#F1F3F6;display:flex;align-items:center;justify-content:center;flex:none"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5C6573" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h10M4 17h13"></path></svg></span>
+                <span style="flex:1;min-width:0">
+                  <span style="display:block;font-size:14px;font-weight:500">قهوه</span>
+                  <span style="display:block;font-size:11px;color:#5C6573">رستوران و کافه · ۱۵ سپتامبر</span>
+                </span>
+                <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;color:#14181F">−$5.75</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:11px 0">
+                <span style="width:32px;height:32px;border-radius:9px;background:#E7F2EE;display:flex;align-items:center;justify-content:center;flex:none"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0E6B4F" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="4"></rect><path d="M7.5 9.5h9M7.5 14h5"></path></svg></span>
+                <span style="flex:1;min-width:0">
+                  <span style="display:block;font-size:14px;font-weight:500">حقوق سپتامبر</span>
+                  <span style="display:block;font-size:11px;color:#5C6573">درآمد · ۱ سپتامبر</span>
+                </span>
+                <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;color:#0E6B4F">+$4,250.00</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="position:relative;height:124px">
+            <div style="position:absolute;bottom:68px;right:16px;display:flex;align-items:center;gap:8px;height:52px;padding:0 20px;border-radius:999px;background:#23459B;color:#FFFFFF;font-weight:600;font-size:15px;box-shadow:0 8px 24px -10px rgba(35,69,155,.7)">
+              <i class="ph ph-plus" style="font-size:18px"></i>
+              <span>ثبت هزینه</span>
+            </div>
+            <div style="position:absolute;bottom:0;left:0;right:0;height:60px;background:#FFFFFF;border-top:1px solid #E2E6EC;display:grid;grid-template-columns:repeat(4,1fr);align-items:center">
+              <span style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#23459B"><i class="ph-fill ph-house" style="font-size:22px"></i><span style="font-size:10px;font-weight:600">داشبورد</span></span>
+              <span style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#5C6573"><i class="ph ph-list-dashes" style="font-size:22px"></i><span style="font-size:10px;font-weight:500">تراکنش‌ها</span></span>
+              <span style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#5C6573"><i class="ph ph-target" style="font-size:22px"></i><span style="font-size:10px;font-weight:500">هدف‌ها</span></span>
+              <span style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#5C6573"><i class="ph ph-gear" style="font-size:22px"></i><span style="font-size:10px;font-weight:500">تنظیمات</span></span>
+            </div>
+          </div>
+        </div>
+        <sc-if value="{{ frameLabels }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-top:16px;max-width:375px">
+            <div style="font-family:Estedad,Vazirmatn,sans-serif;font-weight:700;font-size:18px;margin-bottom:6px">۱ · داشبورد</div>
+            <ul style="margin:0;padding-inline-start:18px;font-size:13px;line-height:1.9;color:#3C4553">
+              <li>مانده تیترِ صفحه است، نه یکی از چهار کارت — پاسخ به «کمتر از ۵ ثانیه».</li>
+              <li>«روزی <span dir="ltr" style="unicode-bidi:isolate">$80.82</span>» عددی است که تصمیم امروز را عوض می‌کند؛ درصد تغییر ماه قبل، نه.</li>
+              <li>نوار اطمینان زیر عدد هزینه یعنی این جمع هنوز قطعی نیست؛ نوار زرد پایینش راه اصلاح را می‌دهد.</li>
+              <li>FAB پایین‌راست، ارتفاع <span dir="ltr" style="unicode-bidi:isolate">52px</span>، با برچسب متنی — آیکون تنها برای کنش اصلی کافی نیست.</li>
+            </ul>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="width:375px">
+        <div style="width:375px;background:#F1F3F6;border:1px solid #D7DCE4;border-radius:26px;overflow:hidden;box-shadow:0 1px 2px rgba(20,24,31,.04),0 22px 44px -26px rgba(20,24,31,.28);position:relative">
+          <div style="height:28px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:11px;font-weight:600;color:#5C6573;background:#FFFFFF">
+            <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">9:41</span>
+            <span style="display:flex;gap:4px;align-items:center"><span style="width:14px;height:8px;border:1px solid #5C6573;border-radius:2px;display:inline-block"></span><span style="width:4px;height:4px;border-radius:50%;background:#5C6573;display:inline-block"></span></span>
+          </div>
+          <div style="height:120px;background:#FFFFFF;padding:14px 16px;opacity:.5">
+            <div style="font-size:13px;color:#5C6573;margin-bottom:4px">مانده‌ی این ماه</div>
+            <div dir="ltr" style="unicode-bidi:isolate;font-family:Estedad,sans-serif;font-weight:800;font-size:40px;color:#0E6B4F;font-variant-numeric:tabular-nums">+$1,131.60</div>
+          </div>
+          <div style="background:rgba(20,24,31,.45);height:60px"></div>
+
+          <div style="background:#FFFFFF;border-radius:20px 20px 0 0;padding:14px 16px 20px;box-shadow:0 -10px 30px -18px rgba(20,24,31,.4)">
+            <div style="width:40px;height:4px;border-radius:999px;background:#E2E6EC;margin:0 auto 14px"></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+              <span style="font-weight:600;font-size:19px">ثبت تراکنش</span>
+              <span style="width:32px;height:32px;border-radius:50%;background:#F1F3F6;display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5C6573" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></span>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:4px;background:#F1F3F6;border-radius:12px;margin-bottom:16px">
+              <button type="button" onClick="{{ pickForm }}" style="height:40px;border:0;border-radius:9px;background:{{ formBg }};color:{{ formFg }};font-family:Vazirmatn,sans-serif;font-weight:600;font-size:13px;cursor:pointer">فرم</button>
+              <button type="button" onClick="{{ pickText }}" style="height:40px;border:0;border-radius:9px;background:{{ textBg }};color:{{ textFg }};font-family:Vazirmatn,sans-serif;font-weight:600;font-size:13px;cursor:pointer">متن</button>
+              <button type="button" onClick="{{ pickVoice }}" style="height:40px;border:0;border-radius:9px;background:{{ voiceBg }};color:{{ voiceFg }};font-family:Vazirmatn,sans-serif;font-weight:600;font-size:13px;cursor:pointer">صدا</button>
+              <button type="button" onClick="{{ pickReceipt }}" style="height:40px;border:0;border-radius:9px;background:{{ receiptBg }};color:{{ receiptFg }};font-family:Vazirmatn,sans-serif;font-weight:600;font-size:13px;cursor:pointer">عکس</button>
+            </div>
+
+            <sc-if value="{{ isForm }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:12px">
+                <div>
+                  <label style="display:block;font-size:13px;font-weight:500;color:#5C6573;margin-bottom:6px">مبلغ</label>
+                  <div style="display:flex;align-items:center;gap:8px;height:52px;padding:0 14px;border:1px solid #23459B;border-radius:10px;outline:2px solid rgba(35,69,155,.18);outline-offset:0">
+                    <span dir="ltr" style="unicode-bidi:isolate;font-weight:600;font-size:22px;color:#5C6573;font-variant-numeric:tabular-nums">$</span>
+                    <span dir="ltr" style="unicode-bidi:isolate;font-weight:600;font-size:22px;font-variant-numeric:tabular-nums">45.00</span>
+                    <span style="margin-inline-start:auto;font-size:11px;color:#5C6573">کیبورد عددی</span>
+                  </div>
+                </div>
+                <div>
+                  <label style="display:block;font-size:13px;font-weight:500;color:#5C6573;margin-bottom:6px">دسته</label>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px">
+                    <span style="height:36px;display:inline-flex;align-items:center;padding:0 12px;border-radius:999px;background:#23459B;color:#FFFFFF;font-size:13px;font-weight:600">خوراک</span>
+                    <span style="height:36px;display:inline-flex;align-items:center;padding:0 12px;border-radius:999px;background:#F1F3F6;border:1px solid #E2E6EC;font-size:13px">رستوران</span>
+                    <span style="height:36px;display:inline-flex;align-items:center;padding:0 12px;border-radius:999px;background:#F1F3F6;border:1px solid #E2E6EC;font-size:13px">حمل‌ونقل</span>
+                    <span style="height:36px;display:inline-flex;align-items:center;padding:0 12px;border-radius:999px;background:#F1F3F6;border:1px solid #E2E6EC;font-size:13px">قبوض</span>
+                    <span style="height:36px;display:inline-flex;align-items:center;padding:0 12px;border-radius:999px;background:#F1F3F6;border:1px solid #E2E6EC;font-size:13px;color:#5C6573">بیشتر…</span>
+                  </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                  <div>
+                    <label style="display:block;font-size:13px;font-weight:500;color:#5C6573;margin-bottom:6px">تاریخ</label>
+                    <div style="height:48px;display:flex;align-items:center;padding:0 12px;border:1px solid #E2E6EC;border-radius:10px;font-size:14px">امروز</div>
+                  </div>
+                  <div>
+                    <label style="display:block;font-size:13px;font-weight:500;color:#5C6573;margin-bottom:6px">فروشنده</label>
+                    <div style="height:48px;display:flex;align-items:center;padding:0 12px;border:1px solid #E2E6EC;border-radius:10px;font-size:14px;color:#8B93A1">اختیاری</div>
+                  </div>
+                </div>
+                <div style="height:52px;border-radius:10px;background:#23459B;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:16px;margin-top:2px">ثبت هزینه</div>
+                <div style="text-align:center;font-size:12px;color:#5C6573">سه فیلد اجباری، باقی اختیاری — زیر ۱۰ ثانیه</div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ isText }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;flex-direction:column;gap:14px">
+                <div style="border:1px solid #E2E6EC;border-radius:10px;padding:12px;background:#FFFFFF">
+                  <div style="font-size:15px;line-height:1.8">امروز ۴۵ دلار خرید از سوپرمارکت و ۱۲ دلار قهوه</div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid #F1F3F6">
+                    <span style="font-size:11px;color:#5C6573">دو تراکنش شناسایی شد</span>
+                    <span style="font-size:12px;font-weight:600;color:#23459B">دوباره بخوان</span>
+                  </div>
+                </div>
+
+                <div style="border:1px solid #E2E6EC;border-radius:14px;overflow:hidden">
+                  <div style="padding:10px 14px;background:#F1F3F6;display:flex;align-items:center;justify-content:space-between">
+                    <span style="font-size:13px;font-weight:600">کارت تأیید</span>
+                    <span style="font-size:11px;color:#5C6573">تا تأیید نکنی ذخیره نمی‌شود</span>
+                  </div>
+
+                  <div style="padding:12px 14px;border-bottom:1px solid #E2E6EC">
+                    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px">
+                      <span style="font-size:14px;font-weight:600">۱ · خرید سوپرمارکت</span>
+                      <span dir="ltr" style="unicode-bidi:isolate;font-weight:600;font-size:18px;font-variant-numeric:tabular-nums">$45.00</span>
+                    </div>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px 14px;font-size:12px">
+                      <span style="display:flex;flex-direction:column;gap:3px"><span style="color:#5C6573">دسته</span><span style="font-weight:500;border-bottom:2px solid #14181F;padding-bottom:3px;width:fit-content">خوراک و سوپرمارکت</span></span>
+                      <span style="display:flex;flex-direction:column;gap:3px"><span style="color:#5C6573">تاریخ</span><span style="font-weight:500;border-bottom:2px solid #14181F;padding-bottom:3px;width:fit-content">۱۶ سپتامبر</span></span>
+                      <span style="display:flex;flex-direction:column;gap:3px"><span style="color:#8A5A00">فروشنده · حدس زدم</span><span style="font-weight:500;border-bottom:2px dashed #8A5A00;padding-bottom:3px;width:fit-content;color:#6E4700">سوپرمارکت</span></span>
+                    </div>
+                  </div>
+
+                  <div style="padding:12px 14px">
+                    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px">
+                      <span style="font-size:14px;font-weight:600">۲ · قهوه</span>
+                      <span dir="ltr" style="unicode-bidi:isolate;font-weight:600;font-size:18px;font-variant-numeric:tabular-nums">$12.00</span>
+                    </div>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px 14px;font-size:12px">
+                      <span style="display:flex;flex-direction:column;gap:3px"><span style="color:#8A5A00">دسته · حدس زدم</span><span style="font-weight:500;border-bottom:2px dashed #8A5A00;padding-bottom:3px;width:fit-content;color:#6E4700">رستوران و کافه</span></span>
+                      <span style="display:flex;flex-direction:column;gap:3px"><span style="color:#5C6573">تاریخ</span><span style="font-weight:500;border-bottom:2px solid #14181F;padding-bottom:3px;width:fit-content">۱۶ سپتامبر</span></span>
+                      <span style="display:flex;flex-direction:column;gap:3px"><span style="color:#5C6573">فروشنده</span><span style="font-weight:500;color:#8B93A1">—</span></span>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="display:flex;align-items:center;gap:7px;background:#FDF4DE;border:1px solid #EFDFB4;border-radius:10px;padding:9px 11px">
+                  <span style="width:16px;height:2px;background:repeating-linear-gradient(90deg,#8A5A00 0 4px,transparent 4px 7px);flex:none"></span>
+                  <span style="font-size:12px;font-weight:500;color:#6E4700;line-height:1.6">دو فیلد خط‌چین‌دار را حدس زدم. روی هرکدام بزن تا عوض شود.</span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr auto;gap:10px">
+                  <div style="height:52px;border-radius:10px;background:#23459B;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:16px">ثبت دو تراکنش</div>
+                  <div style="height:52px;padding:0 18px;border-radius:10px;border:1px solid #C4CCD8;background:#FFFFFF;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px">انصراف</div>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ isVoice }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:14px">
+                <div style="border:1px solid #E2E6EC;border-radius:14px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:14px">
+                  <div dir="ltr" style="display:flex;align-items:center;gap:3px;height:56px">
+                    <span style="width:3px;height:14px;background:#C2CDEB;border-radius:999px"></span><span style="width:3px;height:26px;background:#93A8DC;border-radius:999px"></span><span style="width:3px;height:40px;background:#6280C8;border-radius:999px"></span><span style="width:3px;height:22px;background:#93A8DC;border-radius:999px"></span><span style="width:3px;height:52px;background:#23459B;border-radius:999px"></span><span style="width:3px;height:34px;background:#3E5CB2;border-radius:999px"></span><span style="width:3px;height:18px;background:#93A8DC;border-radius:999px"></span><span style="width:3px;height:44px;background:#23459B;border-radius:999px"></span><span style="width:3px;height:28px;background:#3E5CB2;border-radius:999px"></span><span style="width:3px;height:12px;background:#C2CDEB;border-radius:999px"></span><span style="width:3px;height:38px;background:#6280C8;border-radius:999px"></span><span style="width:3px;height:48px;background:#23459B;border-radius:999px"></span><span style="width:3px;height:20px;background:#93A8DC;border-radius:999px"></span><span style="width:3px;height:30px;background:#3E5CB2;border-radius:999px"></span><span style="width:3px;height:16px;background:#C2CDEB;border-radius:999px"></span><span style="width:3px;height:36px;background:#6280C8;border-radius:999px"></span><span style="width:3px;height:24px;background:#93A8DC;border-radius:999px"></span><span style="width:3px;height:10px;background:#C2CDEB;border-radius:999px"></span>
+                  </div>
+                  <div dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:600;font-size:24px">00:12</div>
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <span style="width:52px;height:52px;border-radius:50%;background:#AD2E24;display:flex;align-items:center;justify-content:center"><span style="width:16px;height:16px;border-radius:3px;background:#FFFFFF"></span></span>
+                    <span style="font-size:12px;color:#5C6573;max-width:150px;line-height:1.6">حداکثر ۶۰ ثانیه. برای توقف بزن.</span>
+                  </div>
+                </div>
+                <div style="border:1px solid #E2E6EC;border-radius:10px;padding:12px;background:#FFFFFF">
+                  <div style="font-size:11px;font-weight:600;color:#5C6573;margin-bottom:6px">متنی که شنیدم</div>
+                  <div style="font-size:15px;line-height:1.8">بیست و پنج دلار بنزین زدم</div>
+                </div>
+                <div style="font-size:12px;color:#5C6573;line-height:1.7">متن را پیش از تبدیل نشانت می‌دهم؛ اگر اشتباه شنیدم، اصلاحش کن.</div>
+                <div style="height:52px;border-radius:10px;background:#23459B;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:16px">تبدیل به تراکنش</div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ isReceipt }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:14px">
+                <div style="border:1px dashed #C4CCD8;border-radius:14px;height:180px;background:#F1F3F6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px">
+                  <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#8B93A1" stroke-width="1.6" stroke-linecap="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"></path><path d="M9.5 8.5h5M9.5 12.5h5M9.5 16.5h3"></path></svg>
+                  <span style="font-size:13px;color:#5C6573">عکس فاکتور را بگیر یا انتخاب کن</span>
+                  <span style="font-size:11px;color:#8B93A1">پیش از آپلود تا <span dir="ltr" style="unicode-bidi:isolate">1500px</span> و کیفیت <span dir="ltr" style="unicode-bidi:isolate">80%</span> فشرده می‌شود</span>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                  <div style="height:52px;border-radius:10px;background:#23459B;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px">دوربین</div>
+                  <div style="height:52px;border-radius:10px;border:1px solid #C4CCD8;background:#FFFFFF;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px">از گالری</div>
+                </div>
+                <div style="border:1px solid #E2E6EC;border-radius:14px;padding:12px 14px">
+                  <div style="font-size:11px;font-weight:600;color:#5C6573;margin-bottom:8px">آخرین فاکتور خوانده‌شده</div>
+                  <div style="display:flex;align-items:baseline;justify-content:space-between">
+                    <span style="font-size:14px;font-weight:500;border-bottom:2px dashed #8A5A00;padding-bottom:3px">Loblaws · ۱۵ سپتامبر</span>
+                    <span dir="ltr" style="unicode-bidi:isolate;font-weight:600;font-size:18px;font-variant-numeric:tabular-nums">$62.40</span>
+                  </div>
+                  <div style="font-size:11px;color:#8A5A00;margin-top:8px">فقط مبلغ کل را برمی‌دارم، نه تک‌تک آیتم‌ها.</div>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+        <sc-if value="{{ frameLabels }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-top:16px;max-width:375px">
+            <div style="font-family:Estedad,Vazirmatn,sans-serif;font-weight:700;font-size:18px;margin-bottom:6px">۲ · مودال ثبت با چهار تب</div>
+            <ul style="margin:0;padding-inline-start:18px;font-size:13px;line-height:1.9;color:#3C4553">
+              <li>تب‌ها را بزن — چهار حالت واقعی است، نه تصویر ثابت.</li>
+              <li>کارت تأیید همیشه بین مدل و دیتابیس می‌نشیند؛ فیلد حدسی با خط‌چین + واژه علامت‌گذاری می‌شود، نه فقط با رنگ.</li>
+              <li>ترتیب تب‌ها از راست: فرم (سریع‌ترین و مطمئن‌ترین) تا عکس (کندترین).</li>
+              <li>مودال focus را می‌گیرد و بعد از بستن به FAB برمی‌گرداند.</li>
+            </ul>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="width:375px">
+        <div style="width:375px;background:#FFFFFF;border:1px solid #D7DCE4;border-radius:26px;overflow:hidden;box-shadow:0 1px 2px rgba(20,24,31,.04),0 22px 44px -26px rgba(20,24,31,.28)">
+          <div style="height:28px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:11px;font-weight:600;color:#5C6573">
+            <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">9:41</span>
+            <span style="display:flex;gap:4px;align-items:center"><span style="width:14px;height:8px;border:1px solid #5C6573;border-radius:2px;display:inline-block"></span><span style="width:4px;height:4px;border-radius:50%;background:#5C6573;display:inline-block"></span></span>
+          </div>
+          <div style="padding:16px 20px 26px;min-height:700px;display:flex;flex-direction:column">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
+              <span style="width:40px;height:40px;border-radius:10px;border:1px solid #E2E6EC;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#14181F" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"></path></svg></span>
+              <span style="font-size:13px;font-weight:600;color:#5C6573">گام ۶ از ۷</span>
+            </div>
+            <div style="display:flex;gap:4px;margin-bottom:26px">
+              <span style="flex:1;height:4px;border-radius:999px;background:#23459B"></span>
+              <span style="flex:1;height:4px;border-radius:999px;background:#23459B"></span>
+              <span style="flex:1;height:4px;border-radius:999px;background:#23459B"></span>
+              <span style="flex:1;height:4px;border-radius:999px;background:#23459B"></span>
+              <span style="flex:1;height:4px;border-radius:999px;background:#23459B"></span>
+              <span style="flex:1;height:4px;border-radius:999px;background:#23459B"></span>
+              <span style="flex:1;height:4px;border-radius:999px;background:#E2E6EC"></span>
+            </div>
+            <div style="font-size:12px;font-weight:600;letter-spacing:.1em;color:#23459B;margin-bottom:10px">ریسک‌پذیری · سؤال ۳ از ۵</div>
+            <h3 style="margin:0 0 10px;font-family:Estedad,Vazirmatn,sans-serif;font-weight:700;font-size:28px;line-height:36px;color:#14181F;text-wrap:pretty">سرمایه‌ات در یک ماه ۲۰٪ افت می‌کند. چه می‌کنی؟</h3>
+            <p style="margin:0 0 20px;font-size:14px;color:#5C6573;line-height:1.8">جواب درست و غلط ندارد. با این پنج سؤال می‌فهمم پیشنهادهایم را چقدر محافظه‌کارانه بدهم.</p>
+
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:flex-start;gap:12px;padding:14px;border:1px solid #E2E6EC;border-radius:12px;min-height:56px">
+                <span style="width:20px;height:20px;border-radius:50%;border:1.5px solid #C4CCD8;flex:none;margin-top:2px"></span>
+                <span style="font-size:15px;line-height:1.6">همه را می‌فروشم تا بیشتر ضرر نکنم.</span>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:12px;padding:14px;border:1px solid #E2E6EC;border-radius:12px;min-height:56px">
+                <span style="width:20px;height:20px;border-radius:50%;border:1.5px solid #C4CCD8;flex:none;margin-top:2px"></span>
+                <span style="font-size:15px;line-height:1.6">بخشی را می‌فروشم و بقیه را نگه می‌دارم.</span>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:12px;padding:14px;border:1.5px solid #23459B;background:#EDF1FA;border-radius:12px;min-height:56px">
+                <span style="width:20px;height:20px;border-radius:50%;border:1.5px solid #23459B;background:#23459B;flex:none;margin-top:2px;display:flex;align-items:center;justify-content:center"><span style="width:7px;height:7px;border-radius:50%;background:#FFFFFF"></span></span>
+                <span style="font-size:15px;line-height:1.6;font-weight:500">هیچ کاری نمی‌کنم؛ برنامه‌ام بلندمدت است.</span>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:12px;padding:14px;border:1px solid #E2E6EC;border-radius:12px;min-height:56px">
+                <span style="width:20px;height:20px;border-radius:50%;border:1.5px solid #C4CCD8;flex:none;margin-top:2px"></span>
+                <span style="font-size:15px;line-height:1.6">بیشتر می‌خرم؛ ارزان شده است.</span>
+              </div>
+            </div>
+
+            <div style="margin-top:auto;padding-top:24px;display:flex;flex-direction:column;gap:12px">
+              <div style="height:52px;border-radius:10px;background:#23459B;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:16px">سؤال بعدی</div>
+              <div style="height:44px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#5C6573">فعلاً رد کن</div>
+              <div style="display:flex;align-items:center;gap:6px;justify-content:center;font-size:12px;color:#5C6573">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0E6B4F" stroke-width="2.2" stroke-linecap="round"><path d="M5 13l4 4L19 7"></path></svg>
+                <span>هر گام را همان لحظه ذخیره می‌کنم؛ می‌توانی بعداً ادامه بدهی.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <sc-if value="{{ frameLabels }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-top:16px;max-width:375px">
+            <div style="font-family:Estedad,Vazirmatn,sans-serif;font-weight:700;font-size:18px;margin-bottom:6px">۳ · گام ۶ onboarding — ریسک‌پذیری</div>
+            <ul style="margin:0;padding-inline-start:18px;font-size:13px;line-height:1.9;color:#3C4553">
+              <li>یک سؤال در هر صفحه. progress هفت‌بخشی، نه درصد — کاربر باید انتها را ببیند.</li>
+              <li>فلش بازگشت در RTL به راست اشاره می‌کند (mirror شده).</li>
+              <li>لحن: «جواب درست و غلط ندارد» — دلیلِ پرسیدن گفته می‌شود، چون این سؤال‌ها بی‌ربط به‌نظر می‌رسند.</li>
+              <li>گزینه‌ها کارت‌اند نه رادیوی کوچک: هدف لمسی <span dir="ltr" style="unicode-bidi:isolate">56px</span>.</li>
+            </ul>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="width:375px">
+        <div style="width:375px;background:#F1F3F6;border:1px solid #D7DCE4;border-radius:26px;overflow:hidden;box-shadow:0 1px 2px rgba(20,24,31,.04),0 22px 44px -26px rgba(20,24,31,.28)">
+          <div style="height:28px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:11px;font-weight:600;color:#5C6573;background:#FFFFFF">
+            <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">9:41</span>
+            <span style="display:flex;gap:4px;align-items:center"><span style="width:14px;height:8px;border:1px solid #5C6573;border-radius:2px;display:inline-block"></span><span style="width:4px;height:4px;border-radius:50%;background:#5C6573;display:inline-block"></span></span>
+          </div>
+          <div style="background:#FFFFFF;padding:14px 16px 16px;border-bottom:1px solid #E2E6EC">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+              <div style="display:flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:999px;background:#F1F3F6;border:1px solid #E2E6EC;font-size:13px;font-weight:600">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5C6573" stroke-width="2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"></path></svg>
+                <span>سپتامبر ۲۰۲۶</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C4CCD8" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"></path></svg>
+              </div>
+              <div style="width:36px;height:36px;border-radius:50%;background:#EDF1FA;color:#23459B;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px">ن</div>
+            </div>
+            <div style="font-size:13px;font-weight:500;color:#5C6573;margin-bottom:2px">مانده‌ی این ماه</div>
+            <div dir="ltr" style="unicode-bidi:isolate;font-family:Estedad,sans-serif;font-weight:800;font-size:40px;line-height:46px;font-variant-numeric:tabular-nums;color:#14181F">+$4,250.00</div>
+            <div style="font-size:12px;font-weight:500;color:#5C6573;margin-top:6px">هنوز هیچ هزینه‌ای ثبت نشده — این عدد همان درآمدی است که در ثبت‌نام گفتی.</div>
+          </div>
+
+          <div style="padding:20px 16px;display:flex;flex-direction:column;gap:14px">
+            <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:22px 18px">
+              <h3 style="margin:0 0 8px;font-family:Estedad,Vazirmatn,sans-serif;font-weight:700;font-size:26px;line-height:34px;color:#14181F;text-wrap:pretty">اولین خریدت را ثبت کن</h3>
+              <p style="margin:0 0 18px;font-size:14px;line-height:1.8;color:#3C4553">تا یک هزینه ثبت نکنی، نموداری برای نشان‌دادن ندارم. یک قهوه هم کافی است تا شروع شود.</p>
+              <div style="height:52px;border-radius:10px;background:#23459B;color:#FFFFFF;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:16px">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+                <span>اولین هزینه‌ات را ثبت کن</span>
+              </div>
+            </div>
+
+            <div style="font-size:12px;font-weight:600;color:#5C6573;padding-inline-start:4px">سه راه سریع‌تر از فرم</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:center;gap:12px;background:#FFFFFF;border:1px solid #E2E6EC;border-radius:12px;padding:12px 14px;min-height:56px">
+                <span style="width:36px;height:36px;border-radius:10px;background:#EDF1FA;display:flex;align-items:center;justify-content:center;flex:none"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#23459B" stroke-width="1.9" stroke-linecap="round"><path d="M4 7h16M4 12h10M4 17h13"></path></svg></span>
+                <span style="flex:1">
+                  <span style="display:block;font-size:14px;font-weight:600">بنویس</span>
+                  <span style="display:block;font-size:12px;color:#5C6573">«۴۵ دلار خرید سوپرمارکت و ۱۲ دلار قهوه»</span>
+                </span>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;background:#FFFFFF;border:1px solid #E2E6EC;border-radius:12px;padding:12px 14px;min-height:56px">
+                <span style="width:36px;height:36px;border-radius:10px;background:#EDF1FA;display:flex;align-items:center;justify-content:center;flex:none"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#23459B" stroke-width="1.9" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0014 0M12 18v3"></path></svg></span>
+                <span style="flex:1">
+                  <span style="display:block;font-size:14px;font-weight:600">بگو</span>
+                  <span style="display:block;font-size:12px;color:#5C6573">فارسی حرف بزن، خودم عدد و دسته را درمی‌آورم</span>
+                </span>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;background:#FFFFFF;border:1px solid #E2E6EC;border-radius:12px;padding:12px 14px;min-height:56px">
+                <span style="width:36px;height:36px;border-radius:10px;background:#EDF1FA;display:flex;align-items:center;justify-content:center;flex:none"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#23459B" stroke-width="1.9" stroke-linecap="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"></path><path d="M9.5 9h5M9.5 13h5"></path></svg></span>
+                <span style="flex:1">
+                  <span style="display:block;font-size:14px;font-weight:600">عکس بگیر</span>
+                  <span style="display:block;font-size:12px;color:#5C6573">از فاکتور فقط مبلغ کل را برمی‌دارم</span>
+                </span>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:10px;background:#FFFFFF;border:1px dashed #C4CCD8;border-radius:12px;padding:12px 14px">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5C6573" stroke-width="1.9" stroke-linecap="round"><path d="M12 8v8M8 12h8"></path><circle cx="12" cy="12" r="9"></circle></svg>
+              <span style="font-size:12px;color:#3C4553;line-height:1.7">هزینه‌های ثابتی که در ثبت‌نام گفتی، اول ماه خودکار ثبت می‌شوند.</span>
+            </div>
+          </div>
+          <div style="position:relative;height:124px">
+            <div style="position:absolute;bottom:68px;right:16px;display:flex;align-items:center;gap:8px;height:52px;padding:0 20px;border-radius:999px;background:#23459B;color:#FFFFFF;font-weight:600;font-size:15px;box-shadow:0 8px 24px -10px rgba(35,69,155,.7)">
+              <i class="ph ph-plus" style="font-size:18px"></i>
+              <span>ثبت هزینه</span>
+            </div>
+            <div style="position:absolute;bottom:0;left:0;right:0;height:60px;background:#FFFFFF;border-top:1px solid #E2E6EC;display:grid;grid-template-columns:repeat(4,1fr);align-items:center">
+              <span style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#23459B"><i class="ph-fill ph-house" style="font-size:22px"></i><span style="font-size:10px;font-weight:600">داشبورد</span></span>
+              <span style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#5C6573"><i class="ph ph-list-dashes" style="font-size:22px"></i><span style="font-size:10px;font-weight:500">تراکنش‌ها</span></span>
+              <span style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#5C6573"><i class="ph ph-target" style="font-size:22px"></i><span style="font-size:10px;font-weight:500">هدف‌ها</span></span>
+              <span style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#5C6573"><i class="ph ph-gear" style="font-size:22px"></i><span style="font-size:10px;font-weight:500">تنظیمات</span></span>
+            </div>
+          </div>
+        </div>
+        <sc-if value="{{ frameLabels }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-top:16px;max-width:375px">
+            <div style="font-family:Estedad,Vazirmatn,sans-serif;font-weight:700;font-size:18px;margin-bottom:6px">۴ · داشبورد خالی</div>
+            <ul style="margin:0;padding-inline-start:18px;font-size:13px;line-height:1.9;color:#3C4553">
+              <li>هیچ نمودار خالی و هیچ اسکلتون خاکستری‌ای نیست؛ جایشان یک دعوت به عمل نشسته.</li>
+              <li>عددِ بالا خالی نیست — از داده‌ی onboarding می‌آید و بی‌رنگ است (نه سبز)، چون هنوز معنای «مانده» ندارد.</li>
+              <li>سه راه AI همان‌جا معرفی می‌شوند؛ این تنها جایی است که اپ فیچرش را تبلیغ می‌کند.</li>
+            </ul>
+          </div>
+        </sc-if>
+      </div>
+
+    </div>
+  </section>
+
+  <sc-if value="{{ showSpecs }}" hint-placeholder-val="{{ true }}">
+  <section style="max-width:1080px;margin-bottom:64px">
+    <div style="font-size:12px;font-weight:600;letter-spacing:.14em;color:#5C6573;margin-bottom:8px">۵ — آیکون‌ها</div>
+    <h2 style="margin:0 0 6px;font-family:Estedad,Vazirmatn,sans-serif;font-weight:700;font-size:26px;color:#14181F">Phosphor Regular، چهل گلیف، میزبانی محلی</h2>
+    <p style="margin:0 0 20px;max-width:820px;color:#3C4553">تصمیم: <strong style="font-weight:600">Phosphor</strong> با وزن <span dir="ltr" style="unicode-bidi:isolate">Regular</span>. دلیل: ضخامت خطش (<span dir="ltr" style="unicode-bidi:isolate">1.5px</span> در <span dir="ltr" style="unicode-bidi:isolate">24px</span>) با وزن ۵۰۰ وزیرمتن هم‌وزن است، پوشش «خرید / قبض / حمل‌ونقل / فاکتور» را کامل دارد، و لایسنسش MIT است پس subset کردن و self-host کردنش مجاز است. قاعده‌ها: اندازه‌ی <span dir="ltr" style="unicode-bidi:isolate">20px</span> درون ردیف و <span dir="ltr" style="unicode-bidi:isolate">22–24px</span> در نوار پایین · فقط وزن Regular، و <span dir="ltr" style="unicode-bidi:isolate">Fill</span> فقط برای تبِ فعالِ نوار پایین · آیکون هرگز تنها حاملِ معنا نیست (کنشِ اصلی همیشه برچسب متنی دارد) · فونت به یک subset حدود چهل گلیفی محدود می‌شود، نه کل مجموعه.</p>
+
+    <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:18px;margin-bottom:14px">
+      <div style="font-weight:600;margin-bottom:14px">ناوبری، کنش و منبعِ ثبت</div>
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px 10px">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center"><i class="ph ph-house" style="font-size:24px;color:#23459B"></i><span style="font-size:12px;font-weight:500">داشبورد</span><span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:10px;color:#8B93A1">house</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center"><i class="ph ph-list-dashes" style="font-size:24px;color:#23459B"></i><span style="font-size:12px;font-weight:500">تراکنش‌ها</span><span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:10px;color:#8B93A1">list-dashes</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center"><i class="ph ph-target" style="font-size:24px;color:#23459B"></i><span style="font-size:12px;font-weight:500">هدف‌ها</span><span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:10px;color:#8B93A1">target</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center"><i class="ph ph-gear" style="font-size:24px;color:#23459B"></i><span style="font-size:12px;font-weight:500">تنظیمات</span><span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:10px;color:#8B93A1">gear</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center"><i class="ph ph-wallet" style="font-size:24px;color:#23459B"></i><span style="font-size:12px;font-weight:500">درآمد</span><span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:10px;color:#8B93A1">wallet</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center"><i class="ph ph-arrows-clockwise" style="font-size:24px;color:#23459B"></i><span style="font-size:12px;font-weight:500">هزینه‌ی ثابت</span><span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:10px;color:#8B93A1">arrows-clockwise</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center"><i class="ph ph-plus" style="font-size:24px"></i><span style="font-size:12px;font-weight:500">ثبت</span><span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:10px;color:#8B93A1">plus</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center"><i class="ph ph-keyboard" style="font-size:24px"></i><span style="font-size:12px;font-weight:500">فرم</span><span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:10px;color:#8B93A1">keyboard</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center"><i class="ph ph-textbox" style="font-size:24px"></i><span style="font-size:12px;font-weight:500">متن آزاد</span><span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:10px;color:#8B93A1">textbox</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center"><i class="ph ph-microphone" style="font-size:24px"></i><span style="font-size:12px;font-weight:500">صدا</span><span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:10px;color:#8B93A1">microphone</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center"><i class="ph ph-receipt" style="font-size:24px"></i><span style="font-size:12px;font-weight:500">فاکتور</span><span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:10px;color:#8B93A1">receipt</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center"><i class="ph ph-camera" style="font-size:24px"></i><span style="font-size:12px;font-weight:500">دوربین</span><span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:10px;color:#8B93A1">camera</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center"><i class="ph ph-caret-right" style="font-size:24px"></i><span style="font-size:12px;font-weight:500">بازگشت (RTL)</span><span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:10px;color:#8B93A1">caret-right</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center"><i class="ph ph-caret-left" style="font-size:24px"></i><span style="font-size:12px;font-weight:500">جلو (RTL)</span><span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:10px;color:#8B93A1">caret-left</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center"><i class="ph ph-magnifying-glass" style="font-size:24px"></i><span style="font-size:12px;font-weight:500">جست‌وجو</span><span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:10px;color:#8B93A1">magnifying-glass</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center"><i class="ph ph-funnel" style="font-size:24px"></i><span style="font-size:12px;font-weight:500">فیلتر</span><span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:10px;color:#8B93A1">funnel</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center"><i class="ph ph-calendar-blank" style="font-size:24px"></i><span style="font-size:12px;font-weight:500">تاریخ</span><span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:10px;color:#8B93A1">calendar-blank</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center"><i class="ph ph-pencil-simple" style="font-size:24px"></i><span style="font-size:12px;font-weight:500">ویرایش</span><span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:10px;color:#8B93A1">pencil-simple</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center"><i class="ph ph-trash" style="font-size:24px;color:#AD2E24"></i><span style="font-size:12px;font-weight:500">حذف</span><span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:10px;color:#8B93A1">trash</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center"><i class="ph ph-arrow-counter-clockwise" style="font-size:24px"></i><span style="font-size:12px;font-weight:500">برگردان</span><span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:10px;color:#8B93A1">arrow-counter-clockwise</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center"><i class="ph ph-check-circle" style="font-size:24px;color:#0E6B4F"></i><span style="font-size:12px;font-weight:500">تأیید شد</span><span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:10px;color:#8B93A1">check-circle</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center"><i class="ph ph-warning-circle" style="font-size:24px;color:#AD2E24"></i><span style="font-size:12px;font-weight:500">خطا</span><span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:10px;color:#8B93A1">warning-circle</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center"><i class="ph ph-x" style="font-size:24px"></i><span style="font-size:12px;font-weight:500">بستن</span><span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:10px;color:#8B93A1">x</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center"><i class="ph ph-dots-three-vertical" style="font-size:24px"></i><span style="font-size:12px;font-weight:500">بیشتر</span><span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:10px;color:#8B93A1">dots-three-vertical</span></div>
+      </div>
+      <p style="margin:16px 0 0;font-size:13px;color:#3C4553">هیچ آیکونی برای «هوش مصنوعی» در این مجموعه نیست — نه جرقه، نه ستاره. منبعِ هر تراکنش با آیکونِ کارِ واقعی‌اش نشان داده می‌شود (کیبورد، متن، میکروفون، فاکتور)، چون کاربر با آن کار را کرده، نه با «AI».</p>
+    </div>
+
+    <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:18px">
+      <div style="font-weight:600;margin-bottom:14px">پانزده دسته‌ی seed</div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px">
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px"><i class="ph ph-shopping-cart" style="font-size:20px;color:#23459B"></i><span>خوراک و سوپرمارکت</span></div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px"><i class="ph ph-fork-knife" style="font-size:20px;color:#23459B"></i><span>رستوران و کافه</span></div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px"><i class="ph ph-house-line" style="font-size:20px;color:#23459B"></i><span>مسکن و اجاره</span></div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px"><i class="ph ph-lightning" style="font-size:20px;color:#23459B"></i><span>قبوض</span></div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px"><i class="ph ph-bus" style="font-size:20px;color:#23459B"></i><span>حمل‌ونقل</span></div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px"><i class="ph ph-car" style="font-size:20px;color:#23459B"></i><span>خودرو و سوخت</span></div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px"><i class="ph ph-heartbeat" style="font-size:20px;color:#23459B"></i><span>سلامت و درمان</span></div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px"><i class="ph ph-t-shirt" style="font-size:20px;color:#23459B"></i><span>پوشاک</span></div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px"><i class="ph ph-ticket" style="font-size:20px;color:#23459B"></i><span>سرگرمی</span></div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px"><i class="ph ph-repeat" style="font-size:20px;color:#23459B"></i><span>اشتراک‌ها</span></div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px"><i class="ph ph-graduation-cap" style="font-size:20px;color:#23459B"></i><span>آموزش</span></div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px"><i class="ph ph-gift" style="font-size:20px;color:#23459B"></i><span>هدیه</span></div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px"><i class="ph ph-shield-check" style="font-size:20px;color:#23459B"></i><span>بیمه</span></div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px"><i class="ph ph-hand-coins" style="font-size:20px;color:#23459B"></i><span>بازپرداخت وام</span></div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#5C6573"><i class="ph ph-dots-three-circle" style="font-size:20px"></i><span>متفرقه</span></div>
+      </div>
+    </div>
+  </section>
+  </sc-if>
+
+  <section style="margin-bottom:64px">
+    <div style="max-width:1080px;margin-bottom:26px">
+      <div style="font-size:12px;font-weight:600;letter-spacing:.14em;color:#5C6573;margin-bottom:8px">۶ — سه صفحه‌ی باقی‌مانده</div>
+      <h2 style="margin:0 0 6px;font-family:Estedad,Vazirmatn,sans-serif;font-weight:700;font-size:26px;color:#14181F">لیست، هزینه‌های ثابت، تنظیمات</h2>
+      <p style="margin:0;max-width:820px;color:#3C4553">تصمیمِ ناوبری: نوار پایینِ چهارتایی (داشبورد · تراکنش‌ها · هدف‌ها · تنظیمات) به‌علاوه‌ی FAB بالای آن. درآمد و هزینه‌های ثابت زیر تنظیمات می‌نشینند، نه در نوار پایین — چون ماهی یک‌بار سراغشان می‌روند و جای تبِ دائمی را نمی‌ارزند.</p>
+    </div>
+
+    <div style="display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap">
+
+      <div style="width:375px">
+        <div style="width:375px;background:#F1F3F6;border:1px solid #D7DCE4;border-radius:26px;overflow:hidden;box-shadow:0 1px 2px rgba(20,24,31,.04),0 22px 44px -26px rgba(20,24,31,.28)">
+          <div style="height:28px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:11px;font-weight:600;color:#5C6573;background:#FFFFFF">
+            <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">9:41</span>
+            <span style="display:flex;gap:4px;align-items:center"><span style="width:14px;height:8px;border:1px solid #5C6573;border-radius:2px;display:inline-block"></span><span style="width:4px;height:4px;border-radius:50%;background:#5C6573;display:inline-block"></span></span>
+          </div>
+          <div style="background:#FFFFFF;padding:12px 16px 14px;border-bottom:1px solid #E2E6EC">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <span style="font-weight:600;font-size:19px">تراکنش‌ها</span>
+              <span style="display:flex;gap:6px">
+                <span style="width:40px;height:40px;border-radius:10px;border:1px solid #E2E6EC;display:flex;align-items:center;justify-content:center"><i class="ph ph-magnifying-glass" style="font-size:19px"></i></span>
+                <span style="width:40px;height:40px;border-radius:10px;border:1px solid #23459B;background:#EDF1FA;color:#23459B;display:flex;align-items:center;justify-content:center"><i class="ph ph-funnel" style="font-size:19px"></i></span>
+              </span>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <span style="height:32px;display:inline-flex;align-items:center;gap:5px;padding:0 11px;border-radius:999px;background:#23459B;color:#FFFFFF;font-size:12px;font-weight:600">سپتامبر ۲۰۲۶<i class="ph ph-x" style="font-size:13px"></i></span>
+              <span style="height:32px;display:inline-flex;align-items:center;gap:5px;padding:0 11px;border-radius:999px;background:#23459B;color:#FFFFFF;font-size:12px;font-weight:600">تأییدنشده<i class="ph ph-x" style="font-size:13px"></i></span>
+              <span style="height:32px;display:inline-flex;align-items:center;padding:0 11px;border-radius:999px;background:#F1F3F6;border:1px solid #E2E6EC;font-size:12px;color:#5C6573">همه‌ی دسته‌ها</span>
+            </div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;margin-top:12px;font-size:12px;color:#5C6573">
+              <span>۲ نتیجه</span>
+              <span>جمع <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:600;color:#14181F">−$74.40</span></span>
+            </div>
+          </div>
+
+          <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+            <div style="font-size:12px;font-weight:600;color:#5C6573;padding-inline-start:4px">امروز · ۱۶ سپتامبر</div>
+            <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;overflow:hidden">
+              <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid #F1F3F6">
+                <span style="width:34px;height:34px;border-radius:10px;background:#FDF4DE;color:#8A5A00;display:flex;align-items:center;justify-content:center;flex:none"><i class="ph ph-shopping-cart" style="font-size:18px"></i></span>
+                <span style="flex:1;min-width:0">
+                  <span style="display:block;font-size:14px;font-weight:500;border-bottom:2px dashed #8A5A00;padding-bottom:2px;width:fit-content">Loblaws</span>
+                  <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#8A5A00;margin-top:4px"><i class="ph ph-receipt" style="font-size:13px"></i><span>تأییدنشده · از فاکتور</span></span>
+                </span>
+                <span style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+                  <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:600;font-size:14px">−$62.40</span>
+                  <span style="display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;color:#23459B">بررسی<i class="ph ph-caret-left" style="font-size:12px"></i></span>
+                </span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:12px 14px">
+                <span style="width:34px;height:34px;border-radius:10px;background:#F1F3F6;color:#5C6573;display:flex;align-items:center;justify-content:center;flex:none"><i class="ph ph-bus" style="font-size:18px"></i></span>
+                <span style="flex:1;min-width:0">
+                  <span style="display:block;font-size:14px;font-weight:500">مترو تورنتو</span>
+                  <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#5C6573;margin-top:3px"><i class="ph ph-microphone" style="font-size:13px"></i><span>حمل‌ونقل · ثبت با صدا</span></span>
+                </span>
+                <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:600;font-size:14px">−$3.35</span>
+              </div>
+            </div>
+
+            <div style="font-size:12px;font-weight:600;color:#5C6573;padding-inline-start:4px;margin-top:4px">دیروز · ۱۵ سپتامبر</div>
+            <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;overflow:hidden">
+              <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid #F1F3F6">
+                <span style="width:34px;height:34px;border-radius:10px;background:#F1F3F6;color:#5C6573;display:flex;align-items:center;justify-content:center;flex:none"><i class="ph ph-fork-knife" style="font-size:18px"></i></span>
+                <span style="flex:1;min-width:0">
+                  <span style="display:block;font-size:14px;font-weight:500">قهوه</span>
+                  <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#5C6573;margin-top:3px"><i class="ph ph-textbox" style="font-size:13px"></i><span>رستوران و کافه</span></span>
+                </span>
+                <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:600;font-size:14px">−$5.75</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:#F1F3F6">
+                <span style="flex:1;font-size:13px;color:#5C6573">«اجاره‌ی سپتامبر» حذف شد.</span>
+                <span style="display:inline-flex;align-items:center;gap:5px;height:34px;padding:0 12px;border-radius:999px;background:#FFFFFF;border:1px solid #C4CCD8;font-size:13px;font-weight:600;color:#23459B"><i class="ph ph-arrow-counter-clockwise" style="font-size:15px"></i><span>برگردان</span></span>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:8px;background:#FFFFFF;border:1px solid #E2E6EC;border-radius:12px;padding:11px 13px">
+              <i class="ph ph-pencil-simple" style="font-size:17px;color:#5C6573"></i>
+              <span style="font-size:12px;color:#3C4553;line-height:1.7">ویرایش درجا: روی مبلغ یا دسته بزن، همان‌جا عوض می‌شود.</span>
+            </div>
+          </div>
+
+          <div style="position:relative;height:124px">
+            <div style="position:absolute;bottom:68px;right:16px;display:flex;align-items:center;gap:8px;height:52px;padding:0 20px;border-radius:999px;background:#23459B;color:#FFFFFF;font-weight:600;font-size:15px;box-shadow:0 8px 24px -10px rgba(35,69,155,.7)">
+              <i class="ph ph-plus" style="font-size:18px"></i>
+              <span>ثبت هزینه</span>
+            </div>
+            <div style="position:absolute;bottom:0;left:0;right:0;height:60px;background:#FFFFFF;border-top:1px solid #E2E6EC;display:grid;grid-template-columns:repeat(4,1fr);align-items:center">
+              <span style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#5C6573"><i class="ph ph-house" style="font-size:22px"></i><span style="font-size:10px;font-weight:500">داشبورد</span></span>
+              <span style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#23459B"><i class="ph-fill ph-list-dashes" style="font-size:22px"></i><span style="font-size:10px;font-weight:600">تراکنش‌ها</span></span>
+              <span style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#5C6573"><i class="ph ph-target" style="font-size:22px"></i><span style="font-size:10px;font-weight:500">هدف‌ها</span></span>
+              <span style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#5C6573"><i class="ph ph-gear" style="font-size:22px"></i><span style="font-size:10px;font-weight:500">تنظیمات</span></span>
+            </div>
+          </div>
+        </div>
+        <sc-if value="{{ frameLabels }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-top:16px;max-width:375px">
+            <div style="font-family:Estedad,Vazirmatn,sans-serif;font-weight:700;font-size:18px;margin-bottom:6px">۵ · لیست تراکنش‌ها</div>
+            <ul style="margin:0;padding-inline-start:18px;font-size:13px;line-height:1.9;color:#3C4553">
+              <li>فیلترِ فعال چیپِ حذف‌شدنی است، نه یک شیت پنهان — کاربر باید ببیند چرا جمع عوض شده.</li>
+              <li>«جمعِ نتیجه‌ی فیلتر» بالای لیست می‌آید؛ بدون آن فیلتر یک سرگرمی است.</li>
+              <li>حذف نرم با «برگردان» تا ۵ ثانیه، درجای همان ردیف نه در توستِ گوشه‌ی صفحه.</li>
+              <li>آیکون منبعِ ثبت روی هر ردیف: کیبورد، متن، میکروفون، فاکتور.</li>
+            </ul>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="width:375px">
+        <div style="width:375px;background:#F1F3F6;border:1px solid #D7DCE4;border-radius:26px;overflow:hidden;box-shadow:0 1px 2px rgba(20,24,31,.04),0 22px 44px -26px rgba(20,24,31,.28)">
+          <div style="height:28px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:11px;font-weight:600;color:#5C6573;background:#FFFFFF">
+            <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">9:41</span>
+            <span style="display:flex;gap:4px;align-items:center"><span style="width:14px;height:8px;border:1px solid #5C6573;border-radius:2px;display:inline-block"></span><span style="width:4px;height:4px;border-radius:50%;background:#5C6573;display:inline-block"></span></span>
+          </div>
+          <div style="background:#FFFFFF;padding:12px 16px 14px;border-bottom:1px solid #E2E6EC">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+              <span style="width:40px;height:40px;border-radius:10px;border:1px solid #E2E6EC;display:flex;align-items:center;justify-content:center"><i class="ph ph-caret-right" style="font-size:19px"></i></span>
+              <span style="font-weight:600;font-size:19px">درآمد و هزینه‌ی ثابت</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:#F1F3F6;border-radius:12px">
+              <span style="height:40px;border-radius:9px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px;font-weight:600;color:#5C6573"><i class="ph ph-wallet" style="font-size:17px"></i><span>درآمد</span></span>
+              <span style="height:40px;border-radius:9px;background:#FFFFFF;display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px;font-weight:600"><i class="ph ph-arrows-clockwise" style="font-size:17px"></i><span>هزینه‌ی ثابت</span></span>
+            </div>
+          </div>
+
+          <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;padding-inline-start:4px">
+              <span style="font-size:12px;font-weight:600;color:#5C6573">۴ ردیف فعال</span>
+              <span style="font-size:12px;font-weight:500;color:#5C6573">ماهی <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:600;color:#14181F">$1,712.00</span></span>
+            </div>
+
+            <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;overflow:hidden">
+              <div style="display:flex;align-items:center;gap:10px;padding:13px 14px;border-bottom:1px solid #F1F3F6">
+                <span style="width:34px;height:34px;border-radius:10px;background:#EDF1FA;color:#23459B;display:flex;align-items:center;justify-content:center;flex:none"><i class="ph ph-house-line" style="font-size:18px"></i></span>
+                <span style="flex:1;min-width:0">
+                  <span style="display:block;font-size:14px;font-weight:500">اجاره</span>
+                  <span style="display:block;font-size:11px;color:#5C6573;margin-top:2px">ماهانه · روز ۱ · خودکار</span>
+                </span>
+                <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:600;font-size:14px">$1,250.00</span>
+                <span style="width:40px;height:22px;border-radius:999px;background:#23459B;display:flex;align-items:center;padding:0 3px;flex:none"><span style="width:16px;height:16px;border-radius:50%;background:#FFFFFF;margin-inline-start:auto"></span></span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:13px 14px;border-bottom:1px solid #F1F3F6">
+                <span style="width:34px;height:34px;border-radius:10px;background:#EDF1FA;color:#23459B;display:flex;align-items:center;justify-content:center;flex:none"><i class="ph ph-lightning" style="font-size:18px"></i></span>
+                <span style="flex:1;min-width:0">
+                  <span style="display:block;font-size:14px;font-weight:500">برق و گاز</span>
+                  <span style="display:block;font-size:11px;color:#5C6573;margin-top:2px">ماهانه · روز ۵ · خودکار</span>
+                </span>
+                <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:600;font-size:14px">$142.00</span>
+                <span style="width:40px;height:22px;border-radius:999px;background:#23459B;display:flex;align-items:center;padding:0 3px;flex:none"><span style="width:16px;height:16px;border-radius:50%;background:#FFFFFF;margin-inline-start:auto"></span></span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:13px 14px;border-bottom:1px solid #F1F3F6">
+                <span style="width:34px;height:34px;border-radius:10px;background:#EDF1FA;color:#23459B;display:flex;align-items:center;justify-content:center;flex:none"><i class="ph ph-repeat" style="font-size:18px"></i></span>
+                <span style="flex:1;min-width:0">
+                  <span style="display:block;font-size:14px;font-weight:500">اینترنت و موبایل</span>
+                  <span style="display:block;font-size:11px;color:#5C6573;margin-top:2px">ماهانه · روز ۱۲ · خودکار</span>
+                </span>
+                <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:600;font-size:14px">$120.00</span>
+                <span style="width:40px;height:22px;border-radius:999px;background:#23459B;display:flex;align-items:center;padding:0 3px;flex:none"><span style="width:16px;height:16px;border-radius:50%;background:#FFFFFF;margin-inline-start:auto"></span></span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:13px 14px;opacity:.55">
+                <span style="width:34px;height:34px;border-radius:10px;background:#F1F3F6;color:#5C6573;display:flex;align-items:center;justify-content:center;flex:none"><i class="ph ph-graduation-cap" style="font-size:18px"></i></span>
+                <span style="flex:1;min-width:0">
+                  <span style="display:block;font-size:14px;font-weight:500">کلاس زبان</span>
+                  <span style="display:block;font-size:11px;color:#5C6573;margin-top:2px">غیرفعال از اوت</span>
+                </span>
+                <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:600;font-size:14px">$200.00</span>
+                <span style="width:40px;height:22px;border-radius:999px;background:#C4CCD8;display:flex;align-items:center;padding:0 3px;flex:none"><span style="width:16px;height:16px;border-radius:50%;background:#FFFFFF"></span></span>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:8px;background:#FFFFFF;border:1px dashed #C4CCD8;border-radius:12px;padding:11px 13px">
+              <i class="ph ph-check-circle" style="font-size:17px;color:#0E6B4F"></i>
+              <span style="font-size:12px;color:#3C4553;line-height:1.7">ردیف‌های «خودکار» اول هر ماه یک‌بار ثبت می‌شوند — دو بار اجرا شدن، تراکنش تکراری نمی‌سازد.</span>
+            </div>
+
+            <div style="height:52px;border-radius:10px;border:1px solid #23459B;background:#FFFFFF;color:#23459B;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:15px">
+              <i class="ph ph-plus" style="font-size:18px"></i>
+              <span>افزودن هزینه‌ی ثابت</span>
+            </div>
+            <div style="font-size:12px;color:#5C6573;text-align:center;line-height:1.7">غیرفعال‌کردن یک ردیف تاریخش را پاک نمی‌کند؛ فقط از ماه بعد ثبت نمی‌شود.</div>
+          </div>
+
+          <div style="height:20px"></div>
+        </div>
+        <sc-if value="{{ frameLabels }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-top:16px;max-width:375px">
+            <div style="font-family:Estedad,Vazirmatn,sans-serif;font-weight:700;font-size:18px;margin-bottom:6px">۶ · هزینه‌های ثابت</div>
+            <ul style="margin:0;padding-inline-start:18px;font-size:13px;line-height:1.9;color:#3C4553">
+              <li>درآمد و هزینه‌ی ثابت یک صفحه با segmented control‌اند، نه دو مسیر جدا — ساختار ردیف‌ها یکی است.</li>
+              <li>کلید فعال/غیرفعال به‌جای حذف؛ ردیف غیرفعال با ۵۵٪ شفافیت می‌ماند تا تاریخش گم نشود.</li>
+              <li>«ماهی <span dir="ltr" style="unicode-bidi:isolate">$1,712.00</span>» بالای لیست: عددی که کاربر واقعاً دنبالش است.</li>
+              <li>جمله‌ی idempotency در رابط هم گفته می‌شود، چون کاربر باید بداند چرا تراکنش تکراری نمی‌بیند.</li>
+            </ul>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="width:375px">
+        <div style="width:375px;background:#F1F3F6;border:1px solid #D7DCE4;border-radius:26px;overflow:hidden;box-shadow:0 1px 2px rgba(20,24,31,.04),0 22px 44px -26px rgba(20,24,31,.28)">
+          <div style="height:28px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:11px;font-weight:600;color:#5C6573;background:#FFFFFF">
+            <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">9:41</span>
+            <span style="display:flex;gap:4px;align-items:center"><span style="width:14px;height:8px;border:1px solid #5C6573;border-radius:2px;display:inline-block"></span><span style="width:4px;height:4px;border-radius:50%;background:#5C6573;display:inline-block"></span></span>
+          </div>
+          <div style="background:#FFFFFF;padding:14px 16px 16px;border-bottom:1px solid #E2E6EC;display:flex;align-items:center;gap:12px">
+            <span style="width:48px;height:48px;border-radius:50%;background:#EDF1FA;color:#23459B;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:17px">ن</span>
+            <span style="flex:1">
+              <span style="display:block;font-weight:600;font-size:17px">نیلوفر رستمی</span>
+              <span style="display:block;font-size:12px;color:#5C6573;margin-top:2px">تورنتو، کانادا · <span dir="ltr" style="unicode-bidi:isolate">CAD</span> · متعادل</span>
+            </span>
+            <i class="ph ph-caret-left" style="font-size:20px;color:#5C6573"></i>
+          </div>
+
+          <div style="padding:16px;display:flex;flex-direction:column;gap:16px">
+            <div>
+              <div style="font-size:12px;font-weight:600;color:#5C6573;margin-bottom:8px;padding-inline-start:4px">پول</div>
+              <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;overflow:hidden">
+                <div style="display:flex;align-items:center;gap:10px;padding:14px;border-bottom:1px solid #F1F3F6;min-height:56px">
+                  <i class="ph ph-wallet" style="font-size:20px;color:#23459B"></i>
+                  <span style="flex:1;font-size:14px">منابع درآمد</span>
+                  <span style="font-size:13px;color:#5C6573">۲ ردیف</span>
+                  <i class="ph ph-caret-left" style="font-size:17px;color:#8B93A1"></i>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;padding:14px;border-bottom:1px solid #F1F3F6;min-height:56px">
+                  <i class="ph ph-arrows-clockwise" style="font-size:20px;color:#23459B"></i>
+                  <span style="flex:1;font-size:14px">هزینه‌های ثابت</span>
+                  <span style="font-size:13px;color:#5C6573">۴ ردیف</span>
+                  <i class="ph ph-caret-left" style="font-size:17px;color:#8B93A1"></i>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;padding:14px;border-bottom:1px solid #F1F3F6;min-height:56px">
+                  <i class="ph ph-dots-three-circle" style="font-size:20px;color:#23459B"></i>
+                  <span style="flex:1;font-size:14px">دسته‌ها</span>
+                  <span style="font-size:13px;color:#5C6573">۱۵ + ۲ دلخواه</span>
+                  <i class="ph ph-caret-left" style="font-size:17px;color:#8B93A1"></i>
+                </div>
+                <div style="padding:14px;min-height:56px">
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <i class="ph ph-coins" style="font-size:20px;color:#23459B"></i>
+                    <span style="flex:1;font-size:14px">ارز پایه</span>
+                    <span dir="ltr" style="unicode-bidi:isolate;font-size:13px;font-weight:600">CAD</span>
+                    <i class="ph ph-caret-left" style="font-size:17px;color:#8B93A1"></i>
+                  </div>
+                  <div style="display:flex;align-items:flex-start;gap:7px;margin-top:10px;padding:9px 11px;background:#FDF4DE;border:1px solid #EFDFB4;border-radius:10px">
+                    <i class="ph ph-warning-circle" style="font-size:15px;color:#8A5A00;margin-top:2px"></i>
+                    <span style="font-size:12px;color:#6E4700;line-height:1.7">مبالغ قبلی تبدیل نمی‌شوند و با ارز قدیم می‌مانند.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size:12px;font-weight:600;color:#5C6573;margin-bottom:8px;padding-inline-start:4px">پروفایل</div>
+              <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;overflow:hidden">
+                <div style="display:flex;align-items:center;gap:10px;padding:14px;border-bottom:1px solid #F1F3F6;min-height:56px">
+                  <i class="ph ph-user-circle" style="font-size:20px;color:#23459B"></i>
+                  <span style="flex:1;font-size:14px">نام، کشور، سال تولد</span>
+                  <i class="ph ph-caret-left" style="font-size:17px;color:#8B93A1"></i>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;padding:14px;min-height:56px">
+                  <i class="ph ph-target" style="font-size:20px;color:#23459B"></i>
+                  <span style="flex:1;font-size:14px">پاسخ دوباره به سؤال‌های ریسک</span>
+                  <span style="font-size:13px;color:#5C6573">متعادل</span>
+                  <i class="ph ph-caret-left" style="font-size:17px;color:#8B93A1"></i>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size:12px;font-weight:600;color:#5C6573;margin-bottom:8px;padding-inline-start:4px">حساب</div>
+              <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;overflow:hidden">
+                <div style="display:flex;align-items:center;gap:10px;padding:14px;border-bottom:1px solid #F1F3F6;min-height:56px">
+                  <i class="ph ph-sign-out" style="font-size:20px;color:#5C6573"></i>
+                  <span style="flex:1;font-size:14px">خروج از حساب</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;padding:14px;min-height:56px">
+                  <i class="ph ph-trash" style="font-size:20px;color:#AD2E24"></i>
+                  <span style="flex:1;font-size:14px;color:#AD2E24">حذف حساب و همه‌ی داده‌ها</span>
+                </div>
+              </div>
+              <div style="font-size:12px;color:#5C6573;margin-top:8px;padding-inline-start:4px;line-height:1.7">حذف حساب بازگشت‌پذیر نیست و اسم حساب را برای تأیید می‌خواهد.</div>
+            </div>
+          </div>
+
+          <div style="position:relative;height:124px">
+            <div style="position:absolute;bottom:68px;right:16px;display:flex;align-items:center;gap:8px;height:52px;padding:0 20px;border-radius:999px;background:#23459B;color:#FFFFFF;font-weight:600;font-size:15px;box-shadow:0 8px 24px -10px rgba(35,69,155,.7)">
+              <i class="ph ph-plus" style="font-size:18px"></i>
+              <span>ثبت هزینه</span>
+            </div>
+            <div style="position:absolute;bottom:0;left:0;right:0;height:60px;background:#FFFFFF;border-top:1px solid #E2E6EC;display:grid;grid-template-columns:repeat(4,1fr);align-items:center">
+              <span style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#5C6573"><i class="ph ph-house" style="font-size:22px"></i><span style="font-size:10px;font-weight:500">داشبورد</span></span>
+              <span style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#5C6573"><i class="ph ph-list-dashes" style="font-size:22px"></i><span style="font-size:10px;font-weight:500">تراکنش‌ها</span></span>
+              <span style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#5C6573"><i class="ph ph-target" style="font-size:22px"></i><span style="font-size:10px;font-weight:500">هدف‌ها</span></span>
+              <span style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#23459B"><i class="ph-fill ph-gear" style="font-size:22px"></i><span style="font-size:10px;font-weight:600">تنظیمات</span></span>
+            </div>
+          </div>
+        </div>
+        <sc-if value="{{ frameLabels }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-top:16px;max-width:375px">
+            <div style="font-family:Estedad,Vazirmatn,sans-serif;font-weight:700;font-size:18px;margin-bottom:6px">۷ · تنظیمات</div>
+            <ul style="margin:0;padding-inline-start:18px;font-size:13px;line-height:1.9;color:#3C4553">
+              <li>سه گروه: پول، پروفایل، حساب — نه یک لیست بلندِ هفده‌ردیفی.</li>
+              <li>هشدار ارز پایه همان‌جا و پیش از کلیک نوشته شده، نه در یک دیالوگ بعدِ انتخاب.</li>
+              <li>کنش‌های خطرناک آخرین گروه‌اند و تنها جایی‌اند که رنگ آجری در تنظیمات ظاهر می‌شود.</li>
+              <li>فلش ردیف‌ها در RTL به چپ می‌رود (<span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:12px">caret-left</span>) — جهتِ «رفتن به جلو».</li>
+            </ul>
+          </div>
+        </sc-if>
+      </div>
+
+    </div>
+  </section>
+
+  <section style="margin-bottom:64px">
+    <div style="max-width:1080px;margin-bottom:26px">
+      <div style="font-size:12px;font-weight:600;letter-spacing:.14em;color:#5C6573;margin-bottom:8px">۷ — دسکتاپ · ‎≥<span dir="ltr" style="unicode-bidi:isolate">960px</span></div>
+      <h2 style="margin:0 0 6px;font-family:Estedad,Vazirmatn,sans-serif;font-weight:700;font-size:26px;color:#14181F">همان داشبورد، بدون بزرگ‌کردن بی‌دلیل</h2>
+      <p style="margin:0;max-width:820px;color:#3C4553">تصمیم: یک breakpoint، نه سه. زیر <span dir="ltr" style="unicode-bidi:isolate">960px</span> همان موبایل با نوار پایین؛ از <span dir="ltr" style="unicode-bidi:isolate">960px</span> نوار پایین به سایدبارِ <span dir="ltr" style="unicode-bidi:isolate">232px</span> در سمت راست تبدیل می‌شود، FAB حذف می‌شود و کنش اصلی به هدر می‌رود (روی دسکتاپ دکمه‌ی شناور یعنی مخفی‌کردن چیزی که جا دارد). محتوا تا <span dir="ltr" style="unicode-bidi:isolate">1120px</span> باز می‌شود و بعد وسط می‌ماند — اعداد مالی از کشیده‌شدن سود نمی‌برند. اندازه‌ی فونت‌ها هیچ تغییری نمی‌کند؛ فقط چیدمان از یک ستون به دو ستون می‌رود.</p>
+    </div>
+
+    <div style="width:1280px;background:#F1F3F6;border:1px solid #D7DCE4;border-radius:14px;overflow:hidden;box-shadow:0 1px 2px rgba(20,24,31,.04),0 22px 44px -26px rgba(20,24,31,.28)">
+      <div style="height:34px;background:#FFFFFF;border-bottom:1px solid #E2E6EC;display:flex;align-items:center;padding:0 14px;gap:6px">
+        <span style="width:9px;height:9px;border-radius:50%;background:#E2E6EC"></span>
+        <span style="width:9px;height:9px;border-radius:50%;background:#E2E6EC"></span>
+        <span style="width:9px;height:9px;border-radius:50%;background:#E2E6EC"></span>
+        <span style="margin-inline-start:16px;font-size:11px;color:#8B93A1" dir="ltr">app.dastyar-mali.com/dashboard</span>
+      </div>
+      <div style="display:flex;min-height:720px">
+        <aside style="width:232px;flex:none;background:#FFFFFF;border-inline-end:1px solid #E2E6EC;padding:20px 14px;display:flex;flex-direction:column;gap:22px">
+          <div style="display:flex;align-items:center;gap:8px;padding-inline-start:6px">
+            <span style="width:9px;height:9px;border-radius:50%;background:#23459B"></span>
+            <span style="font-family:Estedad,Vazirmatn,sans-serif;font-weight:700;font-size:17px">دستیار مالی</span>
+          </div>
+          <nav style="display:flex;flex-direction:column;gap:3px">
+            <span style="display:flex;align-items:center;gap:10px;height:44px;padding:0 12px;border-radius:10px;background:#EDF1FA;color:#23459B;font-size:14px;font-weight:600"><i class="ph-fill ph-house" style="font-size:20px"></i><span>داشبورد</span></span>
+            <span style="display:flex;align-items:center;gap:10px;height:44px;padding:0 12px;border-radius:10px;color:#3C4553;font-size:14px"><i class="ph ph-list-dashes" style="font-size:20px"></i><span>تراکنش‌ها</span></span>
+            <span style="display:flex;align-items:center;gap:10px;height:44px;padding:0 12px;border-radius:10px;color:#3C4553;font-size:14px"><i class="ph ph-target" style="font-size:20px"></i><span>هدف‌ها</span></span>
+            <span style="display:flex;align-items:center;gap:10px;height:44px;padding:0 12px;border-radius:10px;color:#3C4553;font-size:14px"><i class="ph ph-wallet" style="font-size:20px"></i><span>درآمد</span></span>
+            <span style="display:flex;align-items:center;gap:10px;height:44px;padding:0 12px;border-radius:10px;color:#3C4553;font-size:14px"><i class="ph ph-arrows-clockwise" style="font-size:20px"></i><span>هزینه‌های ثابت</span></span>
+            <span style="display:flex;align-items:center;gap:10px;height:44px;padding:0 12px;border-radius:10px;color:#3C4553;font-size:14px"><i class="ph ph-gear" style="font-size:20px"></i><span>تنظیمات</span></span>
+          </nav>
+          <div style="margin-top:auto;display:flex;align-items:center;gap:10px;padding:10px;border-top:1px solid #F1F3F6">
+            <span style="width:34px;height:34px;border-radius:50%;background:#EDF1FA;color:#23459B;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px">ن</span>
+            <span style="flex:1;min-width:0">
+              <span style="display:block;font-size:13px;font-weight:500">نیلوفر رستمی</span>
+              <span style="display:block;font-size:11px;color:#5C6573">‎CAD · تورنتو</span>
+            </span>
+          </div>
+        </aside>
+
+        <main style="flex:1;padding:24px 28px;display:flex;flex-direction:column;gap:16px;max-width:1120px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px">
+            <div style="display:flex;align-items:center;gap:6px;height:40px;padding:0 14px;border-radius:999px;background:#FFFFFF;border:1px solid #E2E6EC;font-size:13px;font-weight:600">
+              <i class="ph ph-caret-right" style="font-size:16px;color:#5C6573"></i>
+              <span>سپتامبر ۲۰۲۶</span>
+              <i class="ph ph-caret-left" style="font-size:16px;color:#5C6573"></i>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="display:flex;align-items:center;gap:7px;height:44px;padding:0 14px;border-radius:10px;background:#FFFFFF;border:1px solid #E2E6EC;font-size:14px;font-weight:600;color:#3C4553"><i class="ph ph-funnel" style="font-size:18px"></i><span>فیلتر</span></span>
+              <span style="display:flex;align-items:center;gap:8px;height:44px;padding:0 18px;border-radius:10px;background:#23459B;color:#FFFFFF;font-size:15px;font-weight:600"><i class="ph ph-plus" style="font-size:18px"></i><span>ثبت هزینه</span></span>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1.35fr 1fr 1fr 1fr;gap:14px">
+            <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:18px">
+              <div style="font-size:13px;font-weight:500;color:#5C6573;margin-bottom:2px">مانده‌ی این ماه</div>
+              <div dir="ltr" style="unicode-bidi:isolate;font-family:Estedad,sans-serif;font-weight:800;font-size:40px;line-height:48px;font-variant-numeric:tabular-nums;color:#0E6B4F">+$1,131.60</div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:4px;font-size:12px;font-weight:500;color:#5C6573">
+                <span>۱۴ روز تا پایان ماه</span><span style="width:1px;height:12px;background:#E2E6EC"></span><span>روزی <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">$80.82</span></span>
+              </div>
+            </div>
+            <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:18px">
+              <div style="font-size:13px;font-weight:500;color:#5C6573;margin-bottom:6px">درآمد</div>
+              <div dir="ltr" style="unicode-bidi:isolate;font-weight:600;font-size:24px;line-height:28px;font-variant-numeric:tabular-nums">$4,250.00</div>
+              <div style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#0E6B4F;margin-top:6px"><i class="ph ph-arrow-up" style="font-size:14px"></i><span dir="ltr" style="unicode-bidi:isolate">2.4%</span></div>
+            </div>
+            <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:18px">
+              <div style="font-size:13px;font-weight:500;color:#5C6573;margin-bottom:6px">هزینه</div>
+              <div dir="ltr" style="unicode-bidi:isolate;font-weight:600;font-size:24px;line-height:28px;font-variant-numeric:tabular-nums;border-bottom:2px dashed #8A5A00;display:inline-block;padding-bottom:2px">$3,118.40</div>
+              <div style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#AD2E24;margin-top:6px"><i class="ph ph-arrow-up" style="font-size:14px"></i><span dir="ltr" style="unicode-bidi:isolate">11.6%</span></div>
+            </div>
+            <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:18px">
+              <div style="font-size:13px;font-weight:500;color:#5C6573;margin-bottom:6px">نرخ پس‌انداز</div>
+              <div dir="ltr" style="unicode-bidi:isolate;font-weight:600;font-size:24px;line-height:28px;font-variant-numeric:tabular-nums">26.6%</div>
+              <div style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#AD2E24;margin-top:6px"><i class="ph ph-arrow-down" style="font-size:14px"></i><span dir="ltr" style="unicode-bidi:isolate">8.2</span></div>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:8px;background:#FDF4DE;border:1px solid #EFDFB4;border-radius:12px;padding:11px 14px">
+            <span style="width:18px;height:2px;background:repeating-linear-gradient(90deg,#8A5A00 0 4px,transparent 4px 7px);flex:none"></span>
+            <span style="font-size:13px;font-weight:500;color:#6E4700">۲ تراکنش تأییدنشده در جمع این ماه هست.</span>
+            <span style="margin-inline-start:auto;display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:#23459B">بررسی<i class="ph ph-caret-left" style="font-size:14px"></i></span>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1.25fr;gap:14px">
+            <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:18px">
+              <div style="font-weight:600;font-size:15px;margin-bottom:14px">هزینه به تفکیک دسته</div>
+              <div style="display:flex;align-items:center;gap:18px">
+                <div style="position:relative;width:132px;height:132px;flex:none;border-radius:50%;background:conic-gradient(from -90deg,#23459B 0 144deg,#FFFFFF 144deg 145.6deg,#3E5CB2 145.6deg 215deg,#FFFFFF 215deg 216.6deg,#6280C8 216.6deg 256deg,#FFFFFF 256deg 257.6deg,#93A8DC 257.6deg 289deg,#FFFFFF 289deg 290.6deg,#C2CDEB 290.6deg 314deg,#FFFFFF 314deg 315.6deg,#C9CDD4 315.6deg 360deg)">
+                  <div style="position:absolute;inset:26px;border-radius:50%;background:#FFFFFF;display:flex;flex-direction:column;align-items:center;justify-content:center">
+                    <span style="font-size:11px;font-weight:500;color:#5C6573">بیشترین</span>
+                    <span style="font-size:13px;font-weight:600">مسکن</span>
+                    <span dir="ltr" style="unicode-bidi:isolate;font-size:14px;font-weight:600;color:#23459B;font-variant-numeric:tabular-nums">40%</span>
+                  </div>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+                  <div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="width:9px;height:9px;border-radius:2px;background:#23459B;flex:none"></span><span style="flex:1">مسکن و اجاره</span><span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:500">$1,250.00</span></div>
+                  <div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="width:9px;height:9px;border-radius:2px;background:#3E5CB2;flex:none"></span><span style="flex:1">خوراک و سوپرمارکت</span><span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:500">$612.40</span></div>
+                  <div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="width:9px;height:9px;border-radius:2px;background:#6280C8;flex:none"></span><span style="flex:1">حمل‌ونقل</span><span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:500">$358.00</span></div>
+                  <div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="width:9px;height:9px;border-radius:2px;background:#93A8DC;flex:none"></span><span style="flex:1">رستوران و کافه</span><span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:500">$284.90</span></div>
+                  <div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="width:9px;height:9px;border-radius:2px;background:#C2CDEB;flex:none"></span><span style="flex:1">قبوض</span><span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:500">$213.10</span></div>
+                  <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#5C6573"><span style="width:9px;height:9px;border-radius:2px;background:#C9CDD4;flex:none"></span><span style="flex:1">سایر</span><span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:500">$400.00</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:18px">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px">
+                <span style="font-weight:600;font-size:15px">درآمد و هزینه در ۶ ماه اخیر</span>
+                <span style="display:flex;gap:12px;font-size:12px;color:#5C6573"><span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:#23459B"></span>درآمد</span><span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:#C2CDEB;border:1px solid #93A8DC"></span>هزینه</span></span>
+              </div>
+              <div dir="ltr" style="display:flex;align-items:flex-end;justify-content:space-between;height:150px;gap:18px">
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px"><div style="display:flex;align-items:flex-end;gap:4px;height:124px"><span style="width:18px;height:112px;background:#23459B;border-radius:3px 3px 0 0"></span><span style="width:18px;height:92px;background:#C2CDEB;border:1px solid #93A8DC;border-bottom:0;border-radius:3px 3px 0 0"></span></div><span style="font-size:11px;color:#5C6573;font-family:Vazirmatn,sans-serif">آوریل</span></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px"><div style="display:flex;align-items:flex-end;gap:4px;height:124px"><span style="width:18px;height:115px;background:#23459B;border-radius:3px 3px 0 0"></span><span style="width:18px;height:81px;background:#C2CDEB;border:1px solid #93A8DC;border-bottom:0;border-radius:3px 3px 0 0"></span></div><span style="font-size:11px;color:#5C6573;font-family:Vazirmatn,sans-serif">مه</span></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px"><div style="display:flex;align-items:flex-end;gap:4px;height:124px"><span style="width:18px;height:115px;background:#23459B;border-radius:3px 3px 0 0"></span><span style="width:18px;height:98px;background:#C2CDEB;border:1px solid #93A8DC;border-bottom:0;border-radius:3px 3px 0 0"></span></div><span style="font-size:11px;color:#5C6573;font-family:Vazirmatn,sans-serif">ژوئن</span></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px"><div style="display:flex;align-items:flex-end;gap:4px;height:124px"><span style="width:18px;height:119px;background:#23459B;border-radius:3px 3px 0 0"></span><span style="width:18px;height:82px;background:#C2CDEB;border:1px solid #93A8DC;border-bottom:0;border-radius:3px 3px 0 0"></span></div><span style="font-size:11px;color:#5C6573;font-family:Vazirmatn,sans-serif">ژوئیه</span></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px"><div style="display:flex;align-items:flex-end;gap:4px;height:124px"><span style="width:18px;height:115px;background:#23459B;border-radius:3px 3px 0 0"></span><span style="width:18px;height:76px;background:#C2CDEB;border:1px solid #93A8DC;border-bottom:0;border-radius:3px 3px 0 0"></span></div><span style="font-size:11px;color:#5C6573;font-family:Vazirmatn,sans-serif">اوت</span></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px"><div style="display:flex;align-items:flex-end;gap:4px;height:124px"><span style="width:18px;height:115px;background:#23459B;border-radius:3px 3px 0 0"></span><span style="width:18px;height:85px;background:#C2CDEB;border:1px solid #93A8DC;border-bottom:0;border-radius:3px 3px 0 0"></span></div><span style="font-size:11px;color:#5C6573;font-family:Vazirmatn,sans-serif">سپتامبر</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1.25fr;gap:14px">
+            <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:18px">
+              <div style="font-weight:600;font-size:15px;margin-bottom:14px">هدف‌ها</div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;font-size:13px;margin-bottom:7px"><span>صندوق اضطراری</span><span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-size:12px;color:#5C6573;font-weight:500">$6,200 / $10,000</span></div>
+              <div style="height:8px;border-radius:999px;background:#EDF1FA;overflow:hidden"><div style="width:62%;height:100%;background:#23459B;border-radius:999px"></div></div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;font-size:13px;margin:16px 0 7px"><span>سفر تابستان</span><span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-size:12px;color:#5C6573;font-weight:500">$900 / $4,000</span></div>
+              <div style="height:8px;border-radius:999px;background:#EDF1FA;overflow:hidden"><div style="width:22%;height:100%;background:#6280C8;border-radius:999px"></div></div>
+              <div style="display:flex;align-items:center;gap:7px;margin-top:16px;font-size:12px;color:#5C6573;line-height:1.7"><i class="ph ph-flag" style="font-size:16px;color:#23459B"></i><span>با این نرخ، صندوق اضطراری ۵ ماه دیگر کامل می‌شود.</span></div>
+            </div>
+
+            <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:18px 18px 6px">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px">
+                <span style="font-weight:600;font-size:15px">تراکنش‌های اخیر</span>
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:#23459B">همه<i class="ph ph-caret-left" style="font-size:14px"></i></span>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #F1F3F6">
+                <span style="width:34px;height:34px;border-radius:10px;background:#F1F3F6;color:#5C6573;display:flex;align-items:center;justify-content:center;flex:none"><i class="ph ph-bus" style="font-size:18px"></i></span>
+                <span style="flex:1"><span style="display:block;font-size:14px;font-weight:500">مترو تورنتو</span><span style="display:block;font-size:11px;color:#5C6573">حمل‌ونقل · ۱۶ سپتامبر</span></span>
+                <i class="ph ph-microphone" style="font-size:16px;color:#8B93A1"></i>
+                <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;min-width:92px;text-align:left">−$3.35</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #F1F3F6">
+                <span style="width:34px;height:34px;border-radius:10px;background:#FDF4DE;color:#8A5A00;display:flex;align-items:center;justify-content:center;flex:none"><i class="ph ph-shopping-cart" style="font-size:18px"></i></span>
+                <span style="flex:1"><span style="display:block;font-size:14px;font-weight:500;border-bottom:2px dashed #8A5A00;padding-bottom:2px;width:fit-content">Loblaws</span><span style="display:block;font-size:11px;color:#8A5A00;margin-top:3px">تأییدنشده · از عکس فاکتور</span></span>
+                <i class="ph ph-receipt" style="font-size:16px;color:#8A5A00"></i>
+                <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;min-width:92px;text-align:left">−$62.40</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #F1F3F6">
+                <span style="width:34px;height:34px;border-radius:10px;background:#F1F3F6;color:#5C6573;display:flex;align-items:center;justify-content:center;flex:none"><i class="ph ph-fork-knife" style="font-size:18px"></i></span>
+                <span style="flex:1"><span style="display:block;font-size:14px;font-weight:500">قهوه</span><span style="display:block;font-size:11px;color:#5C6573">رستوران و کافه · ۱۵ سپتامبر</span></span>
+                <i class="ph ph-textbox" style="font-size:16px;color:#8B93A1"></i>
+                <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;min-width:92px;text-align:left">−$5.75</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:11px 0">
+                <span style="width:34px;height:34px;border-radius:10px;background:#E7F2EE;color:#0E6B4F;display:flex;align-items:center;justify-content:center;flex:none"><i class="ph ph-wallet" style="font-size:18px"></i></span>
+                <span style="flex:1"><span style="display:block;font-size:14px;font-weight:500">حقوق سپتامبر</span><span style="display:block;font-size:11px;color:#5C6573">درآمد · ۱ سپتامبر</span></span>
+                <i class="ph ph-keyboard" style="font-size:16px;color:#8B93A1"></i>
+                <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;color:#0E6B4F;min-width:92px;text-align:left">+$4,250.00</span>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+    <sc-if value="{{ frameLabels }}" hint-placeholder-val="{{ true }}">
+      <div style="margin-top:16px;max-width:1080px">
+        <div style="font-family:Estedad,Vazirmatn,sans-serif;font-weight:700;font-size:18px;margin-bottom:6px">۸ · داشبورد دسکتاپ — <span dir="ltr" style="unicode-bidi:isolate">1280px</span></div>
+        <ul style="margin:0;padding-inline-start:18px;font-size:13px;line-height:1.9;color:#3C4553">
+          <li>سایدبار سمت راست است، چون در RTL مبدأ خواندن راست است؛ <span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:12px">order</span> در کد جابه‌جا می‌شود نه در ذهن کاربر.</li>
+          <li>مانده باز هم بزرگ‌ترین عنصر است و در همان اندازه‌ی موبایل (<span dir="ltr" style="unicode-bidi:isolate">40px</span>) می‌ماند — فضای بیشتر به معنای فونت بزرگ‌تر نیست.</li>
+          <li>ستون مبالغِ لیست با <span dir="ltr" style="unicode-bidi:isolate">min-width</span> ثابت تراز شده؛ این تنها جایی است که دسکتاپ چیزی به موبایل اضافه می‌کند.</li>
+          <li>روی دسکتاپ FAB حذف و به دکمه‌ی هدر تبدیل می‌شود؛ درآمد و هزینه‌های ثابت که روی موبایل زیر تنظیمات بودند، اینجا در سایدبار مستقیم دیده می‌شوند.</li>
+        </ul>
+      </div>
+    </sc-if>
+  </section>
+
+  <sc-if value="{{ showSpecs }}" hint-placeholder-val="{{ true }}">
+  <section style="max-width:1080px">
+    <div style="font-size:12px;font-weight:600;letter-spacing:.14em;color:#5C6573;margin-bottom:8px">۸ — متن رابط</div>
+    <h2 style="margin:0 0 6px;font-family:Estedad,Vazirmatn,sans-serif;font-weight:700;font-size:26px;color:#14181F">فعل فعال، بدون تعارف، بدون عذرخواهی</h2>
+    <p style="margin:0 0 22px;max-width:760px;color:#3C4553">اپ با کاربر دوم‌شخص مفرد حرف می‌زند و از خودش اول‌شخص («حدس زدم»، «نشانت می‌دهم»). دلیل: سه روش از چهار روش ثبت، یک عاملِ حدس‌زننده است؛ اگر آن عامل صدا نداشته باشد، خطاهایش بی‌صاحب می‌شوند.</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:18px">
+        <div style="font-weight:600;margin-bottom:12px">دکمه‌ها</div>
+        <div style="display:flex;flex-direction:column;gap:9px;font-size:14px">
+          <div style="display:flex;gap:10px;align-items:baseline"><span style="color:#0E6B4F;font-weight:600;flex:none">✓</span><span>ثبت هزینه · ثبت دو تراکنش · سؤال بعدی · تبدیل به تراکنش · فعلاً رد کن · اولین هزینه‌ات را ثبت کن</span></div>
+          <div style="display:flex;gap:10px;align-items:baseline"><span style="color:#AD2E24;font-weight:600;flex:none">✗</span><span style="color:#5C6573">ارسال · تأیید و ادامه · ذخیره‌سازی اطلاعات · مرحله‌ی بعد · بستن پنجره</span></div>
+        </div>
+        <div style="height:1px;background:#F1F3F6;margin:16px 0"></div>
+        <div style="font-weight:600;margin-bottom:12px">حالت درحال‌انجام</div>
+        <div style="font-size:14px;line-height:1.9;color:#3C4553">«دارم متن را می‌خوانم…» · «دارم فاکتور را می‌خوانم…» · «دارم ثبت می‌کنم…» — فعلِ حالِ استمراری، چون کاربر باید بداند کار متوقف نشده.</div>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:18px">
+        <div style="font-weight:600;margin-bottom:12px">خطاها — چه شد و چه کن</div>
+        <div style="display:flex;flex-direction:column;gap:12px;font-size:14px;line-height:1.75">
+          <div style="border-inline-start:3px solid #AD2E24;padding-inline-start:12px">
+            <div style="font-weight:500">مبلغی در متن پیدا نکردم. عدد و ارز را بنویس، مثل «۴۵ دلار قهوه».</div>
+            <div style="font-size:12px;color:#5C6573;margin-top:4px">قاعده: مبلغ هرگز حدس زده نمی‌شود.</div>
+          </div>
+          <div style="border-inline-start:3px solid #AD2E24;padding-inline-start:12px">
+            <div style="font-weight:500">فاکتور خوانا نبود. از مبلغ کل عکس بگیر یا مبلغ را دستی بزن.</div>
+          </div>
+          <div style="border-inline-start:3px solid #AD2E24;padding-inline-start:12px">
+            <div style="font-weight:500">امروز به سقف ۵۰ پردازش هوشمند رسیدی. تا فردا با فرم ثبت کن.</div>
+          </div>
+          <div style="border-inline-start:3px solid #AD2E24;padding-inline-start:12px">
+            <div style="font-weight:500">اتصال قطع شد. تراکنش را نگه داشتم؛ دوباره بزن «ثبت».</div>
+            <div style="font-size:12px;color:#5C6573;margin-top:4px">هیچ‌کدام «متأسفانه» و «خطایی رخ داد» ندارند.</div>
+          </div>
+        </div>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:18px">
+        <div style="font-weight:600;margin-bottom:12px">حالت‌های خالی</div>
+        <div style="display:flex;flex-direction:column;gap:12px;font-size:14px;line-height:1.75;color:#3C4553">
+          <div><strong style="font-weight:600;color:#14181F">داشبورد:</strong> «اولین خریدت را ثبت کن — تا یک هزینه ثبت نکنی، نموداری برای نشان‌دادن ندارم.»</div>
+          <div><strong style="font-weight:600;color:#14181F">لیست با فیلتر:</strong> «در این بازه چیزی ثبت نشده. بازه را عوض کن یا فیلتر را بردار.»</div>
+          <div><strong style="font-weight:600;color:#14181F">هدف‌ها:</strong> «هنوز هدفی نداری. یک هدف بساز تا بگویم ماهی چقدر باید بگذاری کنار.»</div>
+          <div><strong style="font-weight:600;color:#14181F">ماه آینده:</strong> «این ماه هنوز نرسیده.»</div>
+        </div>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #E2E6EC;border-radius:14px;padding:18px">
+        <div style="font-weight:600;margin-bottom:12px">تأیید و بازگشت</div>
+        <div style="display:flex;flex-direction:column;gap:12px;font-size:14px;line-height:1.75;color:#3C4553">
+          <div><strong style="font-weight:600;color:#14181F">پس از ثبت:</strong> «ثبت شد. <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">$1,069.20</span> برایت مانده.» — تأیید همیشه عدد جدید مانده را می‌گوید، چون این همان چیزی است که کاربر آمده بفهمد.</div>
+          <div><strong style="font-weight:600;color:#14181F">حذف:</strong> «حذف شد.» + «برگردان» تا ۵ ثانیه.</div>
+          <div><strong style="font-weight:600;color:#14181F">تغییر ارز پایه:</strong> «مبالغ قبلی تبدیل نمی‌شوند و با ارز قدیم می‌مانند. مطمئنی؟»</div>
+          <div><strong style="font-weight:600;color:#14181F">پایان onboarding:</strong> «این تصویر مالی توست.»</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:32px;padding:20px 22px;background:#14181F;border-radius:14px;color:#E8EBEF">
+      <div style="font-family:Estedad,Vazirmatn,sans-serif;font-weight:700;font-size:20px;margin-bottom:10px;color:#FFFFFF">مرزهای این سند</div>
+      <ul style="margin:0;padding-inline-start:18px;font-size:14px;line-height:1.9;color:#C4CCD8">
+        <li><strong style="font-weight:600;color:#FFFFFF">آیکون، ناوبری و دسکتاپ تصمیم گرفته شدند</strong> (بخش‌های ۵ تا ۷): Phosphor Regular با subset محلی، نوار پایینِ چهارتایی + FAB روی موبایل، سایدبار راست + دکمه‌ی هدر از <span dir="ltr" style="unicode-bidi:isolate">960px</span>.</li>
+        <li>موکاپ ندارند و لازم هم ندارند: <span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:13px">/goals</span>، فرم‌های ورود و ثبت‌نام، و گام‌های ۱ تا ۵ و ۷ onboarding — همه از الگوهای همین هفت صفحه ساخته می‌شوند (کارت، ردیف لیست، segmented control، گامِ تک‌سؤالی).</li>
+        <li>دارک‌مود بیرون از دامنه‌ی MVP است؛ اما پالت لایت از ramp ساخته شده، پس روزی که لازم شد، برگردانش کار یک روز است نه بازطراحی.</li>
+        <li>یک ریسکِ باز: صفحه‌خوان برای نمودار دونات به خلاصه‌ی عددی نیاز دارد (جدول پنهان یا <span dir="ltr" style="unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:13px">aria-label</span> با سهم هر دسته). این را در M5 باید پیاده کرد، نه در طراحی.</li>
+      </ul>
+    </div>
+  </section>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showSpecs&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;نمایش&quot;},&quot;frameLabels&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;نمایش&quot;},&quot;defaultTab&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;form&quot;,&quot;text&quot;,&quot;voice&quot;,&quot;receipt&quot;],&quot;default&quot;:&quot;text&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;مودال ثبت&quot;}}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { tab: props.defaultTab || 'text', confirmed: false };
+  }
+  pick(t) { return () => this.setState({ tab: t }); }
+  renderVals() {
+    const t = this.state.tab;
+    const on = { bg: '#FFFFFF', fg: '#14181F' };
+    const off = { bg: 'transparent', fg: '#5C6573' };
+    const s = (k) => (t === k ? on : off);
+    return {
+      showSpecs: this.props.showSpecs !== false,
+      frameLabels: this.props.frameLabels !== false,
+      confirmed: this.state.confirmed,
+      notConfirmed: !this.state.confirmed,
+      toggle: () => this.setState(p => ({ confirmed: !p.confirmed })),
+      isForm: t === 'form', isText: t === 'text', isVoice: t === 'voice', isReceipt: t === 'receipt',
+      pickForm: this.pick('form'), pickText: this.pick('text'), pickVoice: this.pick('voice'), pickReceipt: this.pick('receipt'),
+      formBg: s('form').bg, formFg: s('form').fg,
+      textBg: s('text').bg, textFg: s('text').fg,
+      voiceBg: s('voice').bg, voiceFg: s('voice').fg,
+      receiptBg: s('receipt').bg, receiptFg: s('receipt').fg
+    };
+  }
+}
+</script>
+</body>
+</html>

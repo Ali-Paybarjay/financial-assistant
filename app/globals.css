@@ -1,0 +1,236 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@font-face {
+  font-family: Vazirmatn;
+  src: url("/fonts/Vazirmatn-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: Vazirmatn;
+  src: url("/fonts/Vazirmatn-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: Vazirmatn;
+  src: url("/fonts/Vazirmatn-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: Vazirmatn;
+  src: url("/fonts/Vazirmatn-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: Estedad;
+  src: url("/fonts/Estedad-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: Estedad;
+  src: url("/fonts/Estedad-ExtraBold.woff2") format("woff2");
+  font-weight: 800;
+  font-display: swap;
+}
+
+/* ---------------------------------------------------------------------------
+   Design tokens. Source of truth: design_handoff_financial_assistant/
+   PLAN-design-tokens.md. Nothing below this block invents a colour.
+   --------------------------------------------------------------------------- */
+
+@theme {
+  --font-sans: Vazirmatn, system-ui, sans-serif;
+  --font-display: Estedad, Vazirmatn, sans-serif;
+
+  --color-paper: #f1f3f6;
+  --color-surface: #ffffff;
+  --color-ink: #14181f;
+  --color-ink-muted: #5c6573;
+  --color-ink-faint: #8b93a1;
+  --color-hairline: #e2e6ec;
+  --color-hairline-strong: #c4ccd8;
+
+  --color-lapis: #23459b;
+  --color-lapis-pressed: #16307a;
+  --color-lapis-tint: #edf1fa;
+
+  --color-positive: #0e6b4f;
+  --color-positive-tint: #e7f2ee;
+  --color-negative: #ad2e24;
+  --color-negative-tint: #fbebe9;
+
+  --color-guess: #8a5a00;
+  --color-guess-text: #6e4700;
+  --color-guess-tint: #fdf4de;
+  --color-guess-border: #efdfb4;
+
+  --radius-card: 14px;
+  --radius-control: 10px;
+
+  --shadow-float: 0 1px 2px rgb(20 24 31 / 0.04), 0 8px 24px -14px rgb(20 24 31 / 0.16);
+  --shadow-fab: 0 8px 24px -10px rgb(35 69 155 / 0.7);
+
+  --text-display-xl: 40px;
+  --text-display-xl--line-height: 44px;
+  --text-display-l: 28px;
+  --text-display-l--line-height: 34px;
+  --text-num-l: 24px;
+  --text-num-l--line-height: 28px;
+  --text-title: 19px;
+  --text-title--line-height: 26px;
+  --text-body: 15px;
+  --text-body--line-height: 24px;
+  --text-label: 13px;
+  --text-label--line-height: 18px;
+  --text-caption: 12px;
+  --text-caption--line-height: 16px;
+  --text-micro: 11px;
+  --text-micro--line-height: 14px;
+}
+
+/* ---------------------------------------------------------------------------
+   shadcn's semantic layer, pointed at the tokens above rather than its default
+   neutral palette, so installed components inherit this design system instead
+   of importing a second one. Light mode only — dark mode is out of scope for
+   the MVP, so there is no .dark block to drift out of sync.
+   --------------------------------------------------------------------------- */
+
+:root {
+  --background: var(--color-paper);
+  --foreground: var(--color-ink);
+  --card: var(--color-surface);
+  --card-foreground: var(--color-ink);
+  --popover: var(--color-surface);
+  --popover-foreground: var(--color-ink);
+  --primary: var(--color-lapis);
+  --primary-foreground: #ffffff;
+  --secondary: var(--color-lapis-tint);
+  --secondary-foreground: var(--color-lapis);
+  --muted: var(--color-paper);
+  --muted-foreground: var(--color-ink-muted);
+  --accent: var(--color-lapis-tint);
+  --accent-foreground: var(--color-lapis);
+  --destructive: var(--color-negative);
+  --border: var(--color-hairline);
+  --input: var(--color-hairline-strong);
+  --ring: var(--color-lapis);
+
+  --chart-1: #23459b;
+  --chart-2: #3e5cb2;
+  --chart-3: #6280c8;
+  --chart-4: #93a8dc;
+  --chart-5: #c2cdeb;
+  /* The "سایر" bucket. Grey, so it never reads as a real category. */
+  --chart-other: #c9cdd4;
+
+  --radius: 10px;
+
+  --sidebar: var(--color-surface);
+  --sidebar-foreground: var(--color-ink);
+  --sidebar-primary: var(--color-lapis);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--color-lapis-tint);
+  --sidebar-accent-foreground: var(--color-lapis);
+  --sidebar-border: var(--color-hairline);
+  --sidebar-ring: var(--color-lapis);
+}
+
+@theme inline {
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-other: var(--chart-other);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    background: var(--color-paper);
+  }
+
+  body {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-lapis);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: #d6e0f5;
+}
+
+/* The signature element: a 2px rule under any model-produced value.
+   Dashed brass = guessed, solid ink = confirmed. The settle animation runs
+   once when a guess is accepted. */
+@keyframes confidence-settle {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.confidence-settle {
+  animation: confidence-settle 180ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
