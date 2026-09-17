@@ -90,6 +90,7 @@ export const CURRENCY_LABELS: Record<(typeof CURRENCIES)[number], string> = {
   EUR: "یورو",
   GBP: "پوند",
   AUD: "دلار استرالیا",
+  SEK: "کرون سوئد",
   IRT: "تومان",
   IRR: "ریال",
 };
@@ -105,6 +106,7 @@ export const INCOME_PLACEHOLDER: Record<(typeof CURRENCIES)[number], string> = {
   EUR: "4000",
   GBP: "3500",
   AUD: "5500",
+  SEK: "38000",
   IRT: "35000000",
   IRR: "350000000",
 };
