@@ -19,6 +19,7 @@ import {
   Target,
   Trash,
   UserCircle,
+  UsersThree,
   WarningCircle,
 } from "@phosphor-icons/react/dist/ssr";
 import { BottomSheet } from "@/components/bottom-sheet";
@@ -99,6 +100,7 @@ export function SettingsView({
         />
         <Row href="/goals" icon={<Target size={20} />} label="هدف‌ها" />
         <Row href="/import" icon={<Bank size={20} />} label="صورت‌حساب بانکی" />
+        <Row href="/dong" icon={<UsersThree size={20} />} label="دنگ و دونگ" />
         <Row
           onClick={() => setSheet("categories")}
           icon={<SquaresFour size={20} />}

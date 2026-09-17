@@ -6,6 +6,7 @@ import {
   House,
   ListDashes,
   Target,
+  UsersThree,
   Wallet,
 } from "@phosphor-icons/react/dist/ssr";
 // The component type lives on the package root; the SSR entry only exports the
@@ -32,4 +33,5 @@ export const DESKTOP_ONLY_NAV: NavItem[] = [
   { href: "/income", label: "درآمد", icon: Wallet },
   { href: "/income?tab=recurring", label: "هزینه‌های ثابت", icon: ArrowsClockwise },
   { href: "/import", label: "صورت‌حساب بانکی", icon: Bank },
+  { href: "/dong", label: "دنگ و دونگ", icon: UsersThree },
 ];
