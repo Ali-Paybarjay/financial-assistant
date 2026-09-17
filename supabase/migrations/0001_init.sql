@@ -79,6 +79,11 @@ $$;
 create trigger on_auth_user_created after insert on auth.users
   for each row execute function public.handle_new_user();
 
+-- Trigger functions must not be reachable through PostgREST. Triggers check
+-- EXECUTE at CREATE TRIGGER time, not per firing, so this does not disarm them.
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+revoke execute on function public.set_updated_at() from public, anon, authenticated;
+
 -- ------------------------------------------------------------- categories --
 
 create table public.categories (
@@ -263,6 +268,9 @@ create index transactions_user_date_idx on public.transactions (user_id, occurre
   where deleted_at is null;
 create index transactions_user_category_idx on public.transactions (user_id, category_id)
   where deleted_at is null;
+-- The composite above leads with user_id, so it cannot serve the category_id-only
+-- lookup Postgres runs when a category is deleted and ON DELETE SET NULL fires.
+create index transactions_category_idx on public.transactions (category_id);
 create index transactions_media_idx on public.transactions (media_asset_id);
 create index transactions_recurring_idx on public.transactions (recurring_expense_id);
 
