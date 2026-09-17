@@ -1,7 +1,11 @@
 import { expandJalaliYear, jalaliToIso } from "@/lib/jalali";
 import { addDays, daysBetween, type IsoDate } from "@/lib/date";
 import { convertMinor, type CurrencyCode, type Minor } from "@/lib/money";
-import type { ReviewableField, StatementLine } from "@/lib/ai/schemas";
+import type {
+  ReviewableField,
+  StatementClosingBalance,
+  StatementLine,
+} from "@/lib/ai/schemas";
 import type { CategoryRow, StatementDirection } from "@/lib/supabase/database.types";
 
 /**
@@ -98,6 +102,61 @@ export function normalise(
     confidence: usable ? raw.confidence : Math.min(raw.confidence, 0.4),
     needsReview: [...needsReview],
   };
+}
+
+/** What the statement said the account held, once settled like a row. */
+export type NormalisedClosingBalance = {
+  /** In the base currency. May be negative: a card closes owing. */
+  amount: Minor;
+  asOf: IsoDate;
+};
+
+/**
+ * The closing balance, through the same date and currency machinery every row
+ * goes through — so a rial statement read by a toman user does not offer a
+ * balance ten times too large, and 1404-06-31 becomes a real date.
+ *
+ * Returns null rather than a guess for anything it cannot settle. The number
+ * is about to be offered to the user as the truth about their account, which
+ * is the last place a silent approximation belongs.
+ */
+export function normaliseClosingBalance(
+  raw: StatementClosingBalance | null,
+  context: NormaliseContext,
+): NormalisedClosingBalance | null {
+  if (!raw) return null;
+
+  const asOf = resolveDate(raw.date, context.today);
+  if (!asOf) return null;
+
+  try {
+    const amount = convertMinor(
+      raw.amount_minor,
+      context.statementCurrency,
+      context.baseCurrency,
+    );
+    return { amount, asOf };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The newest of the balances reported across a multi-call read.
+ *
+ * A long statement is read in several calls, and three monthly exports of one
+ * account are three files; each may report the balance as of the end of its
+ * own slice. The one the user is owed is the latest, and picking by date
+ * rather than by arrival order is what makes the answer independent of which
+ * call came back first.
+ */
+export function latestBalance(
+  balances: readonly NormalisedClosingBalance[],
+): NormalisedClosingBalance | null {
+  return balances.reduce<NormalisedClosingBalance | null>(
+    (newest, candidate) => (!newest || candidate.asOf >= newest.asOf ? candidate : newest),
+    null,
+  );
 }
 
 /**

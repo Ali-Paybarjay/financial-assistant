@@ -1,3 +1,4 @@
+import { monthRange, todayInTimeZone, type IsoDate } from "@/lib/date";
 import type { AccountRow } from "@/lib/supabase/database.types";
 import type { Minor } from "@/lib/money";
 
@@ -49,4 +50,70 @@ export function totalBalance(accounts: readonly AccountWithBalance[]): Minor {
   return accounts
     .filter((account) => account.is_active)
     .reduce((total, account) => total + account.balance, 0);
+}
+
+/* --------------------------------------------- checking against the bank -- */
+
+/**
+ * Where an account stands on being checked against its statement.
+ *
+ * The product asks for this once a month, at the start of the month, because
+ * that is when banks publish a statement and when the user has one to upload.
+ * So "done" means done *since this month began* — not "done within thirty
+ * days", which would drift a little later every month until the reminder and
+ * the statement stopped lining up.
+ */
+export type ReconcileState = {
+  /** Not yet checked against the bank since this month started. */
+  due: boolean;
+  /** Whole months since the last check; null if it has never been checked. */
+  monthsBehind: number | null;
+};
+
+/**
+ * `timeZone` is not decoration: last_reconciled_at is an instant, and an
+ * account checked at 1am on the first of the month in Tehran was checked in
+ * the previous month in UTC. Comparing the instant in the user's own zone is
+ * what stops the reminder reappearing the moment it is answered.
+ */
+export function reconcileState(
+  account: Pick<AccountRow, "last_reconciled_at" | "opening_balance_on">,
+  today: IsoDate,
+  timeZone: string,
+): ReconcileState {
+  const monthStart = monthRange(timeZone, today).from;
+
+  if (!account.last_reconciled_at) {
+    // Never checked. How overdue that is counts from the day the account was
+    // opened — an account added this morning is not behind on anything.
+    return {
+      due: account.opening_balance_on < monthStart,
+      monthsBehind: null,
+    };
+  }
+
+  const checkedOn = todayInTimeZone(timeZone, new Date(account.last_reconciled_at));
+
+  return {
+    due: checkedOn < monthStart,
+    monthsBehind: wholeMonthsBetween(checkedOn, today),
+  };
+}
+
+/** Calendar months apart, not thirty-day blocks. */
+function wholeMonthsBetween(from: IsoDate, to: IsoDate): number {
+  const [fromYear, fromMonth] = from.split("-").map(Number);
+  const [toYear, toMonth] = to.split("-").map(Number);
+  return Math.max(0, (toYear - fromYear) * 12 + (toMonth - fromMonth));
+}
+
+/** The open accounts the user is being asked to go and update. */
+export function accountsDue<T extends AccountRow>(
+  accounts: readonly T[],
+  today: IsoDate,
+  timeZone: string,
+): T[] {
+  return accounts.filter(
+    (account) => account.is_active && reconcileState(account, today, timeZone).due,
+  );
 }

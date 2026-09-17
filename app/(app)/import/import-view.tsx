@@ -7,6 +7,7 @@ import { ArrowClockwise, CheckCircle, Warning } from "@phosphor-icons/react/dist
 import { Button } from "@/components/ui/button";
 import { StatementUploader } from "@/components/import/statement-uploader";
 import { StatementReport } from "@/components/import/statement-report";
+import { BalanceStep } from "@/components/import/balance-step";
 import { faNumber } from "@/lib/format";
 import { formatDateFa } from "@/lib/date";
 import type { CurrencyCode } from "@/lib/money";
@@ -16,7 +17,10 @@ import type {
   StatementImportRow,
   StatementLineRow,
 } from "@/lib/supabase/database.types";
-import { discardStatementImport } from "./actions";
+import { discardStatementImport, type ApplyResult } from "./actions";
+
+/** What the report hands back once the rows are written. */
+type AppliedState = Extract<ApplyResult, { ok: true }>;
 
 export function ImportView({
   currency,
@@ -24,32 +28,40 @@ export function ImportView({
   categories,
   accounts,
   defaultAccountId,
+  lockedAccountId,
   current,
   lines,
   history,
+  today,
 }: {
   currency: CurrencyCode;
   sourceOptions: CurrencyCode[];
   categories: CategoryRow[];
   accounts: AccountRow[];
   defaultAccountId: string | null;
+  /** Set when the page was opened from one account's update button. */
+  lockedAccountId: string | null;
   current: StatementImportRow | null;
   lines: StatementLineRow[];
   history: StatementImportRow[];
+  today: string;
 }) {
   const router = useRouter();
-  const [applied, setApplied] = useState<{ imported: number; skipped: number } | null>(
-    null,
-  );
+  const lockedAccount = accounts.find((account) => account.id === lockedAccountId);
+  const [applied, setApplied] = useState<AppliedState | null>(null);
+  const [balanceDone, setBalanceDone] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   return (
     <div className="mx-auto w-full max-w-[560px] px-4 py-4">
       <header className="mb-4">
-        <h1 className="text-[22px] font-semibold text-ink">صورت‌حساب بانکی</h1>
+        <h1 className="text-[22px] font-semibold text-ink">
+          {lockedAccount ? `بروزرسانی ${lockedAccount.title}` : "صورت‌حساب بانکی"}
+        </h1>
         <p className="mt-1 text-caption text-ink-muted">
-          پرینت حساب را بده؛ نگاه می‌کنم کدام ورودی و خروجی‌ها قبلاً ثبت شده‌اند و فقط
-          تازه‌ها را اضافه می‌کنم.
+          {lockedAccount
+            ? "پرینت این حساب را بده؛ جاماندها را پیدا می‌کنم، اضافه می‌کنم، و موجودی را با بانک یکی می‌کنم."
+            : "پرینت حساب را بده؛ نگاه می‌کنم کدام ورودی و خروجی‌ها قبلاً ثبت شده‌اند و فقط تازه‌ها را اضافه می‌کنم."}
         </p>
       </header>
 
@@ -63,11 +75,34 @@ export function ImportView({
             {applied.skipped > 0 &&
               ` ${faNumber(applied.skipped)} ردیف را رد کردی.`}
           </p>
+
+          {/* The rows are in. Now the part the rows cannot answer: whether the
+              account actually holds what the ledger says it does. */}
+          {applied.balance && !balanceDone && current && (
+            <BalanceStep
+              accountTitle={applied.balance.accountTitle}
+              ours={applied.balance.ours}
+              theirs={applied.balance.theirs}
+              theirsOn={applied.balance.theirsOn}
+              importId={current.id}
+              currency={currency}
+              today={today}
+              onDone={() => setBalanceDone(true)}
+            />
+          )}
+
           <div className="flex gap-2">
             <Button size="lg" className="flex-1" asChild>
               <Link href="/transactions">دیدن تراکنش‌ها</Link>
             </Button>
-            <Button size="lg" variant="outline" onClick={() => setApplied(null)}>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => {
+                setApplied(null);
+                setBalanceDone(false);
+              }}
+            >
               صورت‌حساب دیگر
             </Button>
           </div>
@@ -127,6 +162,7 @@ export function ImportView({
             sourceOptions={sourceOptions}
             accounts={accounts}
             defaultAccountId={defaultAccountId}
+            lockedAccountId={lockedAccountId}
           />
         </>
       )}

@@ -2,7 +2,7 @@ import { requireViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { listCategories } from "@/lib/queries/categories";
 import { listAccountsWithBalances } from "@/lib/queries/accounts";
-import { preferredAccountId, totalBalance } from "@/lib/accounts";
+import { accountsDue, preferredAccountId, totalBalance } from "@/lib/accounts";
 import {
   listTransactions,
   monthlySeries,
@@ -87,6 +87,7 @@ export default async function DashboardPage({
       categories={categories}
       accounts={accounts}
       accountsTotal={totalBalance(accounts)}
+      accountsDue={accountsDue(accounts, today, viewer.timeZone)}
       defaultAccountId={preferredAccountId(accounts)}
     />
   );

@@ -35,7 +35,8 @@ export type TransactionSource =
   | "receipt"
   | "recurring"
   | "statement";
-export type TransactionType = "expense" | "income";
+/** "transfer" is money moving between two of the user's own accounts. */
+export type TransactionType = "expense" | "income" | "transfer";
 export type CategoryKind = "expense" | "income";
 /** A receipt photo, or a statement file (PDF, CSV, or a photographed page). */
 export type MediaKind = "image" | "document";
@@ -104,6 +105,8 @@ export type AccountRow = {
   is_default: boolean;
   is_active: boolean;
   sort_order: number;
+  /** When the user last checked this account against a statement. */
+  last_reconciled_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -174,6 +177,8 @@ export type TransactionRow = {
   category_id: string | null;
   /** Null is money that moved without touching a tracked account. */
   account_id: string | null;
+  /** Only ever set on a transfer: the account the money arrived in. */
+  to_account_id: string | null;
   merchant: string | null;
   note: string | null;
   occurred_on: string;
@@ -229,6 +234,11 @@ export type StatementImportRow = {
   matched_count: number;
   new_count: number;
   imported_count: number;
+  /** What the statement said the account held when the period ended. */
+  closing_balance: number | null;
+  closing_balance_on: string | null;
+  /** Whether the user accepted that number as the account's balance. */
+  balance_applied: boolean;
   error_message: string | null;
   applied_at: string | null;
   created_at: string;
@@ -293,6 +303,7 @@ export type Database = {
         | "matched_count"
         | "new_count"
         | "imported_count"
+        | "balance_applied"
       >;
       statement_lines: Table<StatementLineRow, "needs_review" | "match_status">;
     };

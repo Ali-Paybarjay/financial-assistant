@@ -99,9 +99,25 @@ async function expectAmountsRead(page: Page) {
   await expect(page.getByText(`${MINUS}$38.40`, { exact: true }).first()).toBeVisible();
   await expect(page.getByText("+$1,850.00", { exact: true }).first()).toBeVisible();
 
-  for (const balance of ["3,120.85", "4,970.85", "4,932.45"]) {
-    await expect(page.getByText(balance)).toHaveCount(0);
+  // No running balance may appear as a row's amount. The closing balance is
+  // allowed on the page, but only in its own tile — so it is excluded from the
+  // rows by asking the list, not the whole page.
+  const rows = page.locator("main");
+  for (const balance of ["3,120.85", "4,970.85"]) {
+    await expect(rows.getByText(balance)).toHaveCount(0);
   }
+}
+
+/**
+ * The closing balance is the one number the row rules spend their whole length
+ * telling the model to ignore, so it is asked for separately and by name. It
+ * must be read — and it must still not have leaked into any row's amount,
+ * which is what expectAmountsRead checks either side of this.
+ */
+async function expectClosingBalanceRead(page: Page) {
+  const tile = page.getByTestId("statement-closing-balance");
+  await expect(tile).toBeVisible();
+  await expect(tile).toContainText("4,932.45");
 }
 
 test("a statement is read, reconciled, imported, and then recognised again", async ({
@@ -112,6 +128,7 @@ test("a statement is read, reconciled, imported, and then recognised again", asy
   await login(page);
   await upload(page);
   await expectAmountsRead(page);
+  await expectClosingBalanceRead(page);
 
   // Only rendered while something is still missing from the ledger. On a
   // repeat run the first pass already finds everything and this is skipped.

@@ -26,6 +26,7 @@ function account(over: Partial<AccountRow> = {}): AccountRow {
     is_default: false,
     is_active: true,
     sort_order: 0,
+    last_reconciled_at: null,
     created_at: "2026-09-01T00:00:00Z",
     updated_at: "2026-09-01T00:00:00Z",
     ...over,

@@ -149,6 +149,14 @@ ${sharedRules(context.statementCurrency)}
 - Skip anything that is not a transaction: column headers, page headers and
   footers, opening and closing balances, subtotals, carried-forward lines,
   totals, and "no transactions in this period" notices.
+- closing_balance is the one exception, and it is a separate field, never a
+  row. Report what the account held when the period ended: the figure printed
+  as "closing balance", "مانده پایان دوره", "موجودی" on the last line, or the
+  balance column of the final transaction — whichever the statement actually
+  shows — with the date it is stated for. It is negative when the account is
+  overdrawn or a card is owed. If the statement prints no balance anywhere,
+  return null; a guessed balance is worse than none, because the user will be
+  offered it as the truth about their account.
 - Report the date exactly as printed, rewritten as YEAR-MONTH-DAY, and say
   which calendar it is. 1404-06-26 is jalali; 2025-09-17 is gregorian. Do NOT
   convert between calendars — that is done after you. A two-digit year on a

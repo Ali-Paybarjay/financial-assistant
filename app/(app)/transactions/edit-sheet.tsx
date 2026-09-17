@@ -58,6 +58,7 @@ export function EditTransactionSheet({
       amount: "",
       categorySlug: "groceries",
       accountId: "",
+      toAccountId: "",
       occurredOn: "",
       merchant: "",
       note: "",
@@ -75,6 +76,7 @@ export function EditTransactionSheet({
       ),
       categorySlug: slug ?? "misc",
       accountId: transaction.account_id ?? "",
+      toAccountId: transaction.to_account_id ?? "",
       occurredOn: transaction.occurred_on,
       merchant: transaction.merchant ?? "",
       note: transaction.note ?? "",
@@ -83,6 +85,7 @@ export function EditTransactionSheet({
   }, [transaction, currency, categories, reset]);
 
   const type = watch("type");
+  const isTransfer = type === "transfer";
   const visibleCategories = categories.filter((category) => category.kind === type);
   const needsReview = new Set(transaction?.needs_review ?? []);
 
@@ -145,12 +148,21 @@ export function EditTransactionSheet({
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="نوع" htmlFor="edit-type">
-              <NativeSelect id="edit-type" {...register("type")}>
-                <option value="expense">هزینه</option>
-                <option value="income">درآمد</option>
+              {/* A transfer keeps its shape. Turning one into an expense would
+                  have to decide what becomes of the account it arrived in, and
+                  the honest answer is to delete it and record what happened. */}
+              <NativeSelect id="edit-type" disabled={isTransfer} {...register("type")}>
+                {isTransfer ? (
+                  <option value="transfer">انتقال</option>
+                ) : (
+                  <>
+                    <option value="expense">هزینه</option>
+                    <option value="income">درآمد</option>
+                  </>
+                )}
               </NativeSelect>
             </Field>
-            <Field label="دسته" htmlFor="edit-category">
+            <Field label="دسته" htmlFor="edit-category" className={isTransfer ? "hidden" : undefined}>
               <Controller
                 control={control}
                 name="categorySlug"
@@ -173,18 +185,39 @@ export function EditTransactionSheet({
 
           <AccountField
             id="edit-account"
+            label={isTransfer ? "از حساب" : "حساب"}
             accounts={accounts}
             selectedId={transaction.account_id}
+            allowNone={!isTransfer}
+            error={errors.accountId?.message}
             {...register("accountId")}
           />
+
+          {isTransfer && (
+            <AccountField
+              id="edit-to-account"
+              label="به حساب"
+              accounts={accounts}
+              selectedId={transaction.to_account_id}
+              allowNone={false}
+              error={errors.toAccountId?.message}
+              {...register("toAccountId")}
+            />
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="تاریخ" htmlFor="edit-date" error={errors.occurredOn?.message}>
               <Input id="edit-date" type="date" dir="ltr" {...register("occurredOn")} />
             </Field>
-            <Field label="فروشنده" htmlFor="edit-merchant">
-              <Input id="edit-merchant" placeholder="اختیاری" {...register("merchant")} />
-            </Field>
+            {isTransfer ? (
+              <Field label="توضیح" htmlFor="edit-note">
+                <Input id="edit-note" placeholder="اختیاری" {...register("note")} />
+              </Field>
+            ) : (
+              <Field label="فروشنده" htmlFor="edit-merchant">
+                <Input id="edit-merchant" placeholder="اختیاری" {...register("merchant")} />
+              </Field>
+            )}
           </div>
 
           <div className="mt-2 flex gap-2">

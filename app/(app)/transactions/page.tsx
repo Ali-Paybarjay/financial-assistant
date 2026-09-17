@@ -21,7 +21,10 @@ export default async function TransactionsPage({
 
   const today = todayInTimeZone(viewer.timeZone);
   const range = monthRange(viewer.timeZone, params.month ?? today);
-  const type = params.type === "income" || params.type === "expense" ? params.type : undefined;
+  const type =
+    params.type === "income" || params.type === "expense" || params.type === "transfer"
+      ? params.type
+      : undefined;
 
   const [categories, accounts] = await Promise.all([listCategories(), listAccounts()]);
   const categoryId = params.category

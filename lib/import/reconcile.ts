@@ -33,6 +33,8 @@ export type LedgerEntry = {
   occurredOn: IsoDate;
   /** Null where the money moved without touching a tracked account. */
   accountId?: string | null;
+  /** Only ever set on a transfer: the account the money arrived in. */
+  toAccountId?: string | null;
 };
 
 export type LineMatch = { transactionId: string; dayGap: number };
@@ -148,8 +150,34 @@ export function ledgerForAccount(
   ledger: readonly LedgerEntry[],
   accountId: string | null,
 ): LedgerEntry[] {
-  if (!accountId) return [...ledger];
-  return ledger.filter((entry) => !entry.accountId || entry.accountId === accountId);
+  if (!accountId) return ledger.map(asSpendOrEarn);
+
+  const kept: LedgerEntry[] = [];
+
+  for (const entry of ledger) {
+    if (entry.type === "transfer") {
+      // One transfer, two statements. The account it left prints an outflow;
+      // the account it arrived in prints an inflow. So the same row becomes a
+      // different leg depending on whose statement is being read — and is
+      // invisible on every other account's.
+      if (entry.accountId === accountId) kept.push({ ...entry, type: "expense" });
+      else if (entry.toAccountId === accountId) kept.push({ ...entry, type: "income" });
+      continue;
+    }
+
+    if (!entry.accountId || entry.accountId === accountId) kept.push(entry);
+  }
+
+  return kept;
+}
+
+/**
+ * A transfer seen from no account in particular. It left somewhere, so an
+ * outflow is the only reading available; an import that names no account is
+ * pre-accounts data and this keeps it behaving as it always did.
+ */
+function asSpendOrEarn(entry: LedgerEntry): LedgerEntry {
+  return entry.type === "transfer" ? { ...entry, type: "expense" } : entry;
 }
 
 export type ReconcileSummary = {

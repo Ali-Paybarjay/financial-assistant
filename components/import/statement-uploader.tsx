@@ -39,11 +39,14 @@ export function StatementUploader({
   sourceOptions,
   accounts,
   defaultAccountId,
+  lockedAccountId,
 }: {
   currency: CurrencyCode;
   sourceOptions: CurrencyCode[];
   accounts: AccountRow[];
   defaultAccountId: string | null;
+  /** When set, the account is not a question: the page was opened for it. */
+  lockedAccountId?: string | null;
 }) {
   const router = useRouter();
   const picker = useRef<HTMLInputElement>(null);
@@ -141,15 +144,20 @@ export function StatementUploader({
       <FormError>{error}</FormError>
 
       {/* Which account this is a statement of. It decides where the rows land
-          and, just as importantly, which existing rows they are compared with. */}
-      <AccountField
-        id="statement-account"
-        label="صورت‌حساب کدام حساب است؟"
-        accounts={accounts}
-        value={accountId}
-        onChange={(event) => setAccountId(event.target.value)}
-        hint="ردیف‌هایی که ثبت کنی به موجودی همین حساب می‌خورند."
-      />
+          and, just as importantly, which existing rows they are compared with.
+          Locked away entirely when the page was opened from one account: the
+          question is already answered, and a select that can silently change
+          the answer is a way to file a statement against the wrong account. */}
+      {!lockedAccountId && (
+        <AccountField
+          id="statement-account"
+          label="صورت‌حساب کدام حساب است؟"
+          accounts={accounts}
+          value={accountId}
+          onChange={(event) => setAccountId(event.target.value)}
+          hint="ردیف‌هایی که ثبت کنی به موجودی همین حساب می‌خورند."
+        />
+      )}
 
       {sourceOptions.length > 1 && (
         <Field
