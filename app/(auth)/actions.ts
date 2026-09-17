@@ -36,8 +36,15 @@ function translateAuthError(message: string): string {
   return "کار پیش نرفت. دوباره بزن؛ اگر باز هم نشد، چند دقیقه بعد امتحان کن.";
 }
 
+/**
+ * Where the links in confirmation and reset emails point. Falls back to the
+ * domain Vercel injects, so a deployment cannot silently mail out localhost
+ * links because someone forgot to set a variable.
+ */
 function appUrl(path: string): string {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const explicit = process.env.NEXT_PUBLIC_APP_URL;
+  const fromVercel = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  const base = explicit || (fromVercel && `https://${fromVercel}`) || "http://localhost:3000";
   return new URL(path, base).toString();
 }
 
