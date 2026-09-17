@@ -20,6 +20,8 @@ const FROM = "مبدأ تست E2E";
 const TO = "مقصد تست E2E";
 const AMOUNT = "60.00";
 const AMOUNT_MINOR = 6000;
+/** An outflow that is really a move to savings — what a statement hands you. */
+const MISFILED = "جابه‌جایی تست E2E";
 
 async function login(page: Page) {
   await page.goto("/login");
@@ -122,4 +124,71 @@ test("an account offers its own update button, and it lands on that account", as
   // opened the page, and a select that could silently change it is how a
   // statement gets filed against the wrong account.
   await expect(page.getByLabel("صورت‌حساب کدام حساب است؟")).toHaveCount(0);
+});
+
+/** The month's expense card, in minor units. */
+async function monthExpense(page: Page): Promise<number> {
+  await page.goto("/dashboard");
+  const card = page.getByTestId("kpi-expense");
+  await expect(card).toBeVisible({ timeout: 30_000 });
+
+  const text = await card.locator('span[dir="ltr"]').first().innerText();
+  const cleaned = text.replace(/\u2212/g, "-").replace(/[^\d.-]/g, "");
+  return Math.round(Number(cleaned) * 100);
+}
+
+test("an expense can be reclassified as a transfer, and the month stops counting it", async ({
+  page,
+}) => {
+  test.setTimeout(180_000);
+
+  // The case a bank statement creates on its own: "transfer to savings" is
+  // printed as an ordinary outflow, so it imports as an expense and the month
+  // counts it as spending until someone says otherwise.
+  await login(page);
+  await ensureAccount(page, FROM, "2000");
+  await ensureAccount(page, TO, "500");
+
+  const fromBefore = await balanceOf(page, FROM);
+  const toBefore = await balanceOf(page, TO);
+  const expenseBefore = await monthExpense(page);
+
+  await page.goto("/dashboard");
+  await page.getByRole("button", { name: "ثبت هزینه", exact: true }).click();
+  await page.getByLabel("مبلغ").fill(AMOUNT);
+  await page.getByLabel("فروشنده").fill(MISFILED);
+  await page.getByLabel("حساب", { exact: true }).selectOption({ label: FROM });
+  await page.getByRole("button", { name: "ثبت هزینه", exact: true }).last().click();
+  await expect(page.getByText(/ثبت شد/)).toBeVisible({ timeout: 30_000 });
+
+  expect(await balanceOf(page, FROM)).toBe(fromBefore - AMOUNT_MINOR);
+  expect(await monthExpense(page)).toBe(expenseBefore + AMOUNT_MINOR);
+
+  // Reclassify it.
+  await page.goto("/transactions");
+  await page.getByRole("button", { name: new RegExp(MISFILED) }).first().click();
+  await page.getByLabel("نوع").selectOption({ label: "انتقال" });
+  await page.getByLabel("به حساب").selectOption({ label: TO });
+
+  // The far account's balance moves too, and that account is not on screen —
+  // so the sheet has to say so before it happens.
+  await expect(page.getByTestId("type-change-note")).toBeVisible();
+
+  await page.getByRole("button", { name: "ذخیره" }).click();
+  await expect(page.getByTestId("type-change-note")).toHaveCount(0, { timeout: 30_000 });
+
+  // The money still left FROM, now it also arrives in TO, and the month no
+  // longer counts it as spending.
+  expect(await balanceOf(page, FROM)).toBe(fromBefore - AMOUNT_MINOR);
+  expect(await balanceOf(page, TO)).toBe(toBefore + AMOUNT_MINOR);
+  expect(await monthExpense(page)).toBe(expenseBefore);
+
+  // Clean up.
+  await page.goto("/transactions");
+  await page.getByRole("button", { name: /انتقال بین حساب‌ها/ }).first().click();
+  await page.getByRole("button", { name: "حذف" }).click();
+  await expect(page.getByText(/حذف شد/)).toBeVisible({ timeout: 30_000 });
+
+  expect(await balanceOf(page, FROM)).toBe(fromBefore);
+  expect(await balanceOf(page, TO)).toBe(toBefore);
 });

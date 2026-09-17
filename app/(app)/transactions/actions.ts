@@ -59,14 +59,20 @@ export async function saveTransaction(raw: unknown): Promise<SaveTransactionResu
     merchant: isTransfer ? null : parsed.data.merchant || null,
     note: parsed.data.note || null,
     occurred_on: parsed.data.occurredOn,
-    source: "form" as const,
     is_confirmed: true,
     needs_review: [],
   };
 
+  // `source` is where a row came from, and editing a row does not change that.
+  // Writing "form" on update erased it: correcting a receipt's merchant, or
+  // reclassifying an imported outflow as a transfer, would leave a row that
+  // claims the user typed it by hand — and statement_line_id still pointing at
+  // the statement it now denies. It is set once, when the row is created.
   const { error } = parsed.data.id
     ? await supabase.from("transactions").update(payload).eq("id", parsed.data.id)
-    : await supabase.from("transactions").insert(payload);
+    : await supabase
+        .from("transactions")
+        .insert({ ...payload, source: "form" as const });
 
   if (error) return { error: GENERIC_ERROR };
 

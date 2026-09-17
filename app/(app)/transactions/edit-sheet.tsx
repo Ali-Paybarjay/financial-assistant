@@ -85,9 +85,27 @@ export function EditTransactionSheet({
   }, [transaction, currency, categories, reset]);
 
   const type = watch("type");
+  const toAccountId = watch("toAccountId");
   const isTransfer = type === "transfer";
   const visibleCategories = categories.filter((category) => category.kind === type);
   const needsReview = new Set(transaction?.needs_review ?? []);
+
+  const openAccounts = accounts.filter((account) => account.is_active);
+  // A row that already is a transfer keeps the option even if one of its
+  // accounts has since been closed; otherwise two open accounts are needed,
+  // because with one there is nowhere to move money to.
+  const canTransfer = transaction?.type === "transfer" || openAccounts.length >= 2;
+
+  // Reclassifying is the point of this control, and a statement makes it
+  // routine: a bank prints "transfer to savings" as an ordinary outflow, so it
+  // imports as an expense and the month counts it as spending until someone
+  // says otherwise. What it must not be is silent — the far account's balance
+  // moves too, and that account is not the one on screen.
+  const becomingTransfer = isTransfer && transaction?.type !== "transfer";
+  const leavingTransfer = !isTransfer && transaction?.type === "transfer";
+  const farAccount = accounts.find(
+    (account) => account.id === (toAccountId || transaction?.to_account_id),
+  );
 
   function onSubmit(values: TransactionForm) {
     startTransition(async () => {
@@ -148,18 +166,10 @@ export function EditTransactionSheet({
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="نوع" htmlFor="edit-type">
-              {/* A transfer keeps its shape. Turning one into an expense would
-                  have to decide what becomes of the account it arrived in, and
-                  the honest answer is to delete it and record what happened. */}
-              <NativeSelect id="edit-type" disabled={isTransfer} {...register("type")}>
-                {isTransfer ? (
-                  <option value="transfer">انتقال</option>
-                ) : (
-                  <>
-                    <option value="expense">هزینه</option>
-                    <option value="income">درآمد</option>
-                  </>
-                )}
+              <NativeSelect id="edit-type" {...register("type")}>
+                <option value="expense">هزینه</option>
+                <option value="income">درآمد</option>
+                {canTransfer && <option value="transfer">انتقال</option>}
               </NativeSelect>
             </Field>
             <Field label="دسته" htmlFor="edit-category" className={isTransfer ? "hidden" : undefined}>
@@ -203,6 +213,17 @@ export function EditTransactionSheet({
               error={errors.toAccountId?.message}
               {...register("toAccountId")}
             />
+          )}
+
+          {(becomingTransfer || leavingTransfer) && (
+            <p
+              data-testid="type-change-note"
+              className="rounded-control border border-guess-border bg-guess-tint px-3 py-2.5 text-caption font-medium text-guess-text"
+            >
+              {becomingTransfer
+                ? "با ذخیره، این مبلغ به موجودی حسابِ مقصد اضافه می‌شود و دیگر در هزینه و درآمد این ماه شمرده نمی‌شود."
+                : `با ذخیره، این مبلغ دیگر به ${farAccount?.title ?? "حساب مقصد"} اضافه نمی‌شود — موجودی آن حساب همین‌قدر کم می‌شود — و از این به بعد در هزینه و درآمد ماه شمرده می‌شود.`}
+            </p>
           )}
 
           <div className="grid grid-cols-2 gap-3">
