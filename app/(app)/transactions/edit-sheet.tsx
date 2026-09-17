@@ -12,8 +12,13 @@ import { NativeSelect } from "@/components/native-select";
 import { AmountInput } from "@/components/amount-input";
 import { Field, FormError } from "@/components/field";
 import { ConfidenceValue } from "@/components/confidence-rule";
+import { AccountField } from "@/components/accounts/account-field";
 import { formatMoney, type CurrencyCode } from "@/lib/money";
-import type { CategoryRow, TransactionRow } from "@/lib/supabase/database.types";
+import type {
+  AccountRow,
+  CategoryRow,
+  TransactionRow,
+} from "@/lib/supabase/database.types";
 import {
   transactionFormSchema,
   type TransactionForm,
@@ -24,12 +29,14 @@ export function EditTransactionSheet({
   transaction,
   currency,
   categories,
+  accounts,
   onClose,
   onDeleted,
 }: {
   transaction: TransactionRow | null;
   currency: CurrencyCode;
   categories: CategoryRow[];
+  accounts: AccountRow[];
   onClose: () => void;
   onDeleted: (id: string, title: string) => void;
 }) {
@@ -50,6 +57,7 @@ export function EditTransactionSheet({
       type: "expense",
       amount: "",
       categorySlug: "groceries",
+      accountId: "",
       occurredOn: "",
       merchant: "",
       note: "",
@@ -60,13 +68,13 @@ export function EditTransactionSheet({
     if (!transaction) return;
     const slug = categories.find((entry) => entry.id === transaction.category_id)?.slug;
     reset({
-      id: transaction.id,
       type: transaction.type,
       amount: formatMoney(transaction.amount, currency, { omitSymbol: true }).replace(
         /,/g,
         "",
       ),
       categorySlug: slug ?? "misc",
+      accountId: transaction.account_id ?? "",
       occurredOn: transaction.occurred_on,
       merchant: transaction.merchant ?? "",
       note: transaction.note ?? "",
@@ -80,7 +88,9 @@ export function EditTransactionSheet({
 
   function onSubmit(values: TransactionForm) {
     startTransition(async () => {
-      const result = await saveTransaction(values);
+      // The id comes from the row, not from a hidden form field: "" is not a
+      // uuid, and nothing renders errors.id to say so.
+      const result = await saveTransaction({ ...values, id: transaction?.id });
       if ("error" in result) setFormError(result.error);
       else {
         onClose();
@@ -161,6 +171,13 @@ export function EditTransactionSheet({
             </Field>
           </div>
 
+          <AccountField
+            id="edit-account"
+            accounts={accounts}
+            selectedId={transaction.account_id}
+            {...register("accountId")}
+          />
+
           <div className="grid grid-cols-2 gap-3">
             <Field label="تاریخ" htmlFor="edit-date" error={errors.occurredOn?.message}>
               <Input id="edit-date" type="date" dir="ltr" {...register("occurredOn")} />
@@ -169,8 +186,6 @@ export function EditTransactionSheet({
               <Input id="edit-merchant" placeholder="اختیاری" {...register("merchant")} />
             </Field>
           </div>
-
-          <input type="hidden" {...register("id")} />
 
           <div className="mt-2 flex gap-2">
             <Button type="submit" size="lg" className="flex-1" disabled={isPending}>

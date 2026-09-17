@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/native-select";
 import { AmountInput } from "@/components/amount-input";
 import { Field, FormError } from "@/components/field";
+import { AccountField } from "@/components/accounts/account-field";
 import { formatMoney, type CurrencyCode } from "@/lib/money";
 import { FREQUENCY_OPTIONS, INCOME_TYPE_OPTIONS } from "@/lib/onboarding/config";
 import {
@@ -19,6 +20,7 @@ import {
   type RecurringExpenseForm,
 } from "@/lib/validation/records";
 import type {
+  AccountRow,
   CategoryRow,
   IncomeSourceRow,
   RecurringExpenseRow,
@@ -58,20 +60,22 @@ export function IncomeSourceSheet({
     reset(
       source
         ? {
-            id: source.id,
             title: source.title,
             type: source.type as IncomeSourceForm["type"],
             amount: amountText(source.amount, currency),
             frequency: source.frequency as IncomeSourceForm["frequency"],
           }
-        : { id: undefined, title: "", type: "salary", amount: "", frequency: "monthly" },
+        : { title: "", type: "salary", amount: "", frequency: "monthly" },
     );
     setFormError(undefined);
   }, [open, source, currency, reset]);
 
   function onSubmit(values: IncomeSourceForm) {
     startTransition(async () => {
-      const result = await saveIncomeSource(values);
+      // The id belongs to the row being edited, not to the form. A hidden
+      // input hands back "" for a new record, "" is not a uuid, and nothing
+      // renders errors.id — so the submit became a silent no-op.
+      const result = await saveIncomeSource({ ...values, id: source?.id });
       if ("error" in result) setFormError(result.error);
       else onOpenChange(false);
     });
@@ -115,8 +119,6 @@ export function IncomeSourceSheet({
           </Field>
         </div>
 
-        <input type="hidden" {...register("id")} />
-
         <div className="mt-2 flex gap-2">
           <Button type="submit" size="lg" className="flex-1" disabled={isPending}>
             {isPending ? "دارم ذخیره می‌کنم…" : "ذخیره"}
@@ -139,12 +141,16 @@ export function RecurringSheet({
   onOpenChange,
   currency,
   categories,
+  accounts,
+  defaultAccountId,
   expense,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currency: CurrencyCode;
   categories: CategoryRow[];
+  accounts: AccountRow[];
+  defaultAccountId: string | null;
   expense: RecurringExpenseRow | null;
 }) {
   const [formError, setFormError] = useState<string>();
@@ -162,6 +168,7 @@ export function RecurringSheet({
     defaultValues: {
       title: "",
       categorySlug: "housing",
+      accountId: defaultAccountId ?? "",
       amount: "",
       dueDay: 1,
       autoPost: true,
@@ -173,19 +180,19 @@ export function RecurringSheet({
     reset(
       expense
         ? {
-            id: expense.id,
             title: expense.title,
             categorySlug: expense.category_id
               ? (slugById.get(expense.category_id) ?? "misc")
               : "misc",
+            accountId: expense.account_id ?? "",
             amount: amountText(expense.amount, currency),
             dueDay: expense.due_day,
             autoPost: expense.auto_post,
           }
         : {
-            id: undefined,
             title: "",
             categorySlug: "housing",
+            accountId: defaultAccountId ?? "",
             amount: "",
             dueDay: 1,
             autoPost: true,
@@ -197,7 +204,10 @@ export function RecurringSheet({
 
   function onSubmit(values: RecurringExpenseForm) {
     startTransition(async () => {
-      const result = await saveRecurringExpense(values);
+      // The id belongs to the row being edited, not to the form. A hidden
+      // input hands back "" for a new record, "" is not a uuid, and nothing
+      // renders errors.id — so the submit became a silent no-op.
+      const result = await saveRecurringExpense({ ...values, id: expense?.id });
       if ("error" in result) setFormError(result.error);
       else onOpenChange(false);
     });
@@ -245,6 +255,14 @@ export function RecurringSheet({
           </Field>
         </div>
 
+        <AccountField
+          id="recurring-account"
+          accounts={accounts}
+          selectedId={expense?.account_id}
+          hint="ردیفی که اول ماه ثبت می‌شود، از موجودی همین حساب کم می‌شود."
+          {...register("accountId")}
+        />
+
         <label className="flex items-center gap-2.5 rounded-control border border-hairline bg-paper p-3">
           <input
             type="checkbox"
@@ -255,8 +273,6 @@ export function RecurringSheet({
             اول هر ماه خودکار ثبت شود
           </span>
         </label>
-
-        <input type="hidden" {...register("id")} />
 
         <div className="mt-2 flex gap-2">
           <Button type="submit" size="lg" className="flex-1" disabled={isPending}>

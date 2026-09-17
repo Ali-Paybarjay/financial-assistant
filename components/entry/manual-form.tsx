@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AmountInput } from "@/components/amount-input";
 import { Field, FormError } from "@/components/field";
+import { AccountField } from "@/components/accounts/account-field";
 import { SegmentedControl } from "@/components/segmented-control";
 import type { CurrencyCode } from "@/lib/money";
-import type { CategoryRow } from "@/lib/supabase/database.types";
+import type { AccountRow, CategoryRow } from "@/lib/supabase/database.types";
 import {
   transactionFormSchema,
   type TransactionForm,
@@ -20,11 +21,15 @@ import { cn } from "@/lib/utils";
 export function ManualForm({
   currency,
   categories,
+  accounts,
+  defaultAccountId,
   today,
   onSaved,
 }: {
   currency: CurrencyCode;
   categories: CategoryRow[];
+  accounts: AccountRow[];
+  defaultAccountId: string | null;
   today: string;
   onSaved: (message: string) => void;
 }) {
@@ -43,6 +48,7 @@ export function ManualForm({
       type: "expense",
       amount: "",
       categorySlug: "groceries",
+      accountId: defaultAccountId ?? "",
       occurredOn: today,
       merchant: "",
       note: "",
@@ -121,6 +127,13 @@ export function ManualForm({
           )}
         />
       </Field>
+
+      <AccountField
+        id="account"
+        accounts={accounts}
+        hint="از موجودی همین حساب کم یا به آن اضافه می‌شود."
+        {...register("accountId")}
+      />
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="تاریخ" htmlFor="occurredOn" error={errors.occurredOn?.message}>

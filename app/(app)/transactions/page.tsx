@@ -1,5 +1,6 @@
 import { requireViewer } from "@/lib/auth";
 import { listCategories } from "@/lib/queries/categories";
+import { listAccounts } from "@/lib/queries/accounts";
 import { listTransactions } from "@/lib/queries/transactions";
 import { monthRange, todayInTimeZone } from "@/lib/date";
 import { TransactionsView } from "./transactions-view";
@@ -10,6 +11,7 @@ export default async function TransactionsPage({
   searchParams: Promise<{
     month?: string;
     category?: string;
+    account?: string;
     type?: string;
     q?: string;
   }>;
@@ -21,10 +23,14 @@ export default async function TransactionsPage({
   const range = monthRange(viewer.timeZone, params.month ?? today);
   const type = params.type === "income" || params.type === "expense" ? params.type : undefined;
 
-  const categories = await listCategories();
+  const [categories, accounts] = await Promise.all([listCategories(), listAccounts()]);
   const categoryId = params.category
     ? categories.find((entry) => entry.slug === params.category)?.id
     : undefined;
+
+  // An id that is not the viewer's own would return nothing anyway under RLS;
+  // checking it here is what keeps the chip from naming a filter that is not on.
+  const accountId = accounts.find((entry) => entry.id === params.account)?.id;
 
   const transactions = await listTransactions({
     from: range.from,
@@ -32,6 +38,7 @@ export default async function TransactionsPage({
     type,
     query: params.q,
     categoryIds: categoryId ? [categoryId] : undefined,
+    accountIds: accountId ? [accountId] : undefined,
   });
 
   return (
@@ -41,8 +48,10 @@ export default async function TransactionsPage({
       month={range.month}
       transactions={transactions}
       categories={categories}
+      accounts={accounts}
       activeFilters={{
         category: params.category,
+        account: accountId,
         type,
         query: params.q,
       }}

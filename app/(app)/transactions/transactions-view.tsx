@@ -18,13 +18,18 @@ import { EditTransactionSheet } from "./edit-sheet";
 import { faNumber } from "@/lib/format";
 import { formatDayMonthFa, shiftMonth, formatMonthFa } from "@/lib/date";
 import type { CurrencyCode } from "@/lib/money";
-import type { CategoryRow, TransactionRow } from "@/lib/supabase/database.types";
+import type {
+  AccountRow,
+  CategoryRow,
+  TransactionRow,
+} from "@/lib/supabase/database.types";
 import { restoreTransaction } from "./actions";
 
 const UNDO_WINDOW_MS = 5000;
 
 type ActiveFilters = {
   category?: string;
+  account?: string;
   type?: "expense" | "income";
   query?: string;
 };
@@ -35,6 +40,7 @@ export function TransactionsView({
   month,
   transactions,
   categories,
+  accounts,
   activeFilters,
 }: {
   currency: CurrencyCode;
@@ -42,6 +48,7 @@ export function TransactionsView({
   month: string;
   transactions: TransactionRow[];
   categories: CategoryRow[];
+  accounts: AccountRow[];
   activeFilters: ActiveFilters;
 }) {
   const router = useRouter();
@@ -58,6 +65,11 @@ export function TransactionsView({
   const categoryById = useMemo(
     () => new Map(categories.map((category) => [category.id, category])),
     [categories],
+  );
+
+  const accountById = useMemo(
+    () => new Map(accounts.map((account) => [account.id, account])),
+    [accounts],
   );
 
   useEffect(() => () => clearTimeout(undoTimer.current), []);
@@ -98,6 +110,10 @@ export function TransactionsView({
       label:
         categories.find((entry) => entry.slug === activeFilters.category)?.name_fa ??
         activeFilters.category,
+    },
+    activeFilters.account && {
+      key: "account",
+      label: accountById.get(activeFilters.account)?.title ?? "یک حساب",
     },
     activeFilters.type && {
       key: "type",
@@ -198,6 +214,9 @@ export function TransactionsView({
                     category={
                       row.category_id ? categoryById.get(row.category_id) : undefined
                     }
+                    accountTitle={
+                      row.account_id ? accountById.get(row.account_id)?.title : undefined
+                    }
                     currency={currency}
                     onSelect={() => setEditing(row)}
                   />
@@ -247,6 +266,7 @@ export function TransactionsView({
         transaction={editing}
         currency={currency}
         categories={categories}
+        accounts={accounts}
         onClose={() => setEditing(null)}
         onDeleted={(id, title) => {
           setEditing(null);
@@ -271,6 +291,24 @@ export function TransactionsView({
               </option>
             ))}
           </NativeSelect>
+
+          {accounts.length > 0 && (
+            <NativeSelect
+              aria-label="حساب"
+              value={activeFilters.account ?? ""}
+              onChange={(event) => {
+                setParam("account", event.target.value || undefined);
+                setFiltersOpen(false);
+              }}
+            >
+              <option value="">همه‌ی حساب‌ها</option>
+              {accounts.map((account) => (
+                <option key={account.id} value={account.id}>
+                  {account.title}
+                </option>
+              ))}
+            </NativeSelect>
+          )}
 
           <NativeSelect
             aria-label="نوع"

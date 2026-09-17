@@ -11,6 +11,7 @@ import { faNumber } from "@/lib/format";
 import { formatDateFa } from "@/lib/date";
 import type { CurrencyCode } from "@/lib/money";
 import type {
+  AccountRow,
   CategoryRow,
   StatementImportRow,
   StatementLineRow,
@@ -21,6 +22,8 @@ export function ImportView({
   currency,
   sourceOptions,
   categories,
+  accounts,
+  defaultAccountId,
   current,
   lines,
   history,
@@ -28,6 +31,8 @@ export function ImportView({
   currency: CurrencyCode;
   sourceOptions: CurrencyCode[];
   categories: CategoryRow[];
+  accounts: AccountRow[];
+  defaultAccountId: string | null;
   current: StatementImportRow | null;
   lines: StatementLineRow[];
   history: StatementImportRow[];
@@ -75,6 +80,9 @@ export function ImportView({
           statementImport={current}
           lines={lines}
           categories={categories}
+          accountTitle={
+            accounts.find((account) => account.id === current.account_id)?.title
+          }
           currency={currency}
           onApplied={setApplied}
         />
@@ -114,7 +122,12 @@ export function ImportView({
               {current.error_message}
             </p>
           )}
-          <StatementUploader currency={currency} sourceOptions={sourceOptions} />
+          <StatementUploader
+            currency={currency}
+            sourceOptions={sourceOptions}
+            accounts={accounts}
+            defaultAccountId={defaultAccountId}
+          />
         </>
       )}
 

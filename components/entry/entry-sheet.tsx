@@ -9,7 +9,7 @@ import { ManualForm } from "./manual-form";
 import { TextTab } from "./text-tab";
 import { ReceiptTab } from "./receipt-tab";
 import type { CurrencyCode } from "@/lib/money";
-import type { CategoryRow } from "@/lib/supabase/database.types";
+import type { AccountRow, CategoryRow } from "@/lib/supabase/database.types";
 
 type Method = "form" | "text" | "receipt";
 
@@ -23,12 +23,16 @@ type Method = "form" | "text" | "receipt";
 export function EntryLauncher({
   currency,
   categories,
+  accounts,
+  defaultAccountId,
   today,
   open,
   onOpenChange,
 }: {
   currency: CurrencyCode;
   categories: CategoryRow[];
+  accounts: AccountRow[];
+  defaultAccountId: string | null;
   today: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -98,6 +102,8 @@ export function EntryLauncher({
               <ManualForm
                 currency={currency}
                 categories={categories}
+                accounts={accounts}
+                defaultAccountId={defaultAccountId}
                 today={today}
                 onSaved={setConfirmation}
               />
@@ -106,6 +112,8 @@ export function EntryLauncher({
               <TextTab
                 currency={currency}
                 categories={categories}
+                accounts={accounts}
+                defaultAccountId={defaultAccountId}
                 onSaved={setConfirmation}
               />
             )}
@@ -113,6 +121,8 @@ export function EntryLauncher({
               <ReceiptTab
                 currency={currency}
                 categories={categories}
+                accounts={accounts}
+                defaultAccountId={defaultAccountId}
                 onSaved={setConfirmation}
               />
             )}

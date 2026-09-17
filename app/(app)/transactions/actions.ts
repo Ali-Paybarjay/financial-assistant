@@ -20,6 +20,8 @@ const GENERIC_ERROR = "ذخیره نشد. دوباره بزن؛ اگر باز ه
 function refresh() {
   revalidatePath("/dashboard");
   revalidatePath("/transactions");
+  // Every balance on that page is derived from these rows.
+  revalidatePath("/accounts");
 }
 
 export async function saveTransaction(raw: unknown): Promise<SaveTransactionResult> {
@@ -44,6 +46,9 @@ export async function saveTransaction(raw: unknown): Promise<SaveTransactionResu
     amount,
     currency: viewer.currency,
     category_id: categories.get(parsed.data.categorySlug) ?? null,
+    // "" is the user choosing no account, and is stored as such. RLS is what
+    // stops an id belonging to someone else being written here.
+    account_id: parsed.data.accountId || null,
     merchant: parsed.data.merchant || null,
     note: parsed.data.note || null,
     occurred_on: parsed.data.occurredOn,
@@ -170,6 +175,8 @@ export async function saveParsedTransactions(input: {
   }[];
   source: "text" | "receipt";
   mediaAssetId?: string;
+  /** Chosen once in the confirm card and applied to every row of it. */
+  accountId?: string | null;
 }): Promise<SaveTransactionResult> {
   const viewer = await requireViewer();
   const supabase = await createClient();
@@ -183,6 +190,7 @@ export async function saveParsedTransactions(input: {
     amount: transaction.amountMinor,
     currency: viewer.currency,
     category_id: categories.get(transaction.categorySlug) ?? null,
+    account_id: input.accountId || null,
     merchant: transaction.merchant,
     note: transaction.note,
     occurred_on: transaction.occurredOn,

@@ -84,6 +84,11 @@ export function normalizeDigits(input: string): string {
       out += String(code - ARABIC_ZERO);
     } else if (char === "٫") {
       out += "."; // U+066B, the Persian decimal mark.
+    } else if (char === MINUS) {
+      // This module renders a negative amount with U+2212, so its own output
+      // must read back in: an account balance goes out to the edit form and
+      // comes back through toMinor, and an ASCII-only check would reject it.
+      out += "-";
     } else if (char === "،") {
       // U+060C is the Persian comma. It is not a decimal mark — it is the key
       // people reach for when they group thousands — so it becomes a comma and

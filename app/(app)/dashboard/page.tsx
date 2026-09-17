@@ -1,6 +1,8 @@
 import { requireViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { listCategories } from "@/lib/queries/categories";
+import { listAccountsWithBalances } from "@/lib/queries/accounts";
+import { preferredAccountId, totalBalance } from "@/lib/accounts";
 import {
   listTransactions,
   monthlySeries,
@@ -34,9 +36,10 @@ export default async function DashboardPage({
   const seriesStart = shiftMonth(range.month, -(SERIES_MONTHS - 1));
 
   const supabase = await createClient();
-  const [categories, totals, previousTotals, series, recent, { data: goals }] =
+  const [categories, accounts, totals, previousTotals, series, recent, { data: goals }] =
     await Promise.all([
       listCategories(),
+      listAccountsWithBalances(),
       monthTotals(range.from, range.to),
       monthTotals(previous.from, previous.to),
       monthlySeries(seriesStart, range.to),
@@ -82,6 +85,9 @@ export default async function DashboardPage({
       recent={recent}
       goals={goals ?? []}
       categories={categories}
+      accounts={accounts}
+      accountsTotal={totalBalance(accounts)}
+      defaultAccountId={preferredAccountId(accounts)}
     />
   );
 }

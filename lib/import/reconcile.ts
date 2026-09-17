@@ -31,6 +31,8 @@ export type LedgerEntry = {
   type: TransactionType;
   amount: Minor;
   occurredOn: IsoDate;
+  /** Null where the money moved without touching a tracked account. */
+  accountId?: string | null;
 };
 
 export type LineMatch = { transactionId: string; dayGap: number };
@@ -123,6 +125,31 @@ export function reconcile(
 
 function bucketKey(type: TransactionType, amount: Minor): string {
   return `${type}:${amount}`;
+}
+
+/**
+ * Narrow the ledger to what a statement of one account could possibly be
+ * about.
+ *
+ * A transaction posted to a *different* account is not this statement's row,
+ * however well the amount and date line up — two cards paying the same
+ * subscription on the same day is the ordinary case, not a freak one, and
+ * matching across them would report one of the two as already recorded and
+ * quietly lose it.
+ *
+ * A transaction with no account stays in: it is money the user logged before
+ * they had accounts, or logged without saying where from, and it is exactly
+ * the row the statement is most likely to be the other half of.
+ *
+ * An import with no account of its own matches against everything, which is
+ * what every import made before this feature existed did.
+ */
+export function ledgerForAccount(
+  ledger: readonly LedgerEntry[],
+  accountId: string | null,
+): LedgerEntry[] {
+  if (!accountId) return [...ledger];
+  return ledger.filter((entry) => !entry.accountId || entry.accountId === accountId);
 }
 
 export type ReconcileSummary = {

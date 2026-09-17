@@ -1,6 +1,7 @@
 import {
   ArrowsClockwise,
   Bank,
+  CreditCard,
   Gear,
   House,
   ListDashes,
@@ -27,6 +28,7 @@ export const PRIMARY_NAV: NavItem[] = [
 
 /** Promoted into the sidebar from 960px; on mobile they live under Settings. */
 export const DESKTOP_ONLY_NAV: NavItem[] = [
+  { href: "/accounts", label: "حساب‌ها", icon: CreditCard },
   { href: "/income", label: "درآمد", icon: Wallet },
   { href: "/income?tab=recurring", label: "هزینه‌های ثابت", icon: ArrowsClockwise },
   { href: "/import", label: "صورت‌حساب بانکی", icon: Bank },

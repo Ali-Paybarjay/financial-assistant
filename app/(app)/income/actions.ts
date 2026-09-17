@@ -18,6 +18,7 @@ const AMOUNT_ERROR = "مبلغ عدد نیست. فقط رقم بنویس، مث�
 function refresh() {
   revalidatePath("/income");
   revalidatePath("/dashboard");
+  revalidatePath("/accounts");
 }
 
 export async function saveIncomeSource(raw: unknown): Promise<RecordResult> {
@@ -71,6 +72,7 @@ export async function saveRecurringExpense(raw: unknown): Promise<RecordResult> 
     user_id: viewer.userId,
     title: parsed.data.title,
     category_id: categories.get(parsed.data.categorySlug) ?? null,
+    account_id: parsed.data.accountId || null,
     amount,
     currency: viewer.currency,
     frequency: "monthly",

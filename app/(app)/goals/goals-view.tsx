@@ -58,7 +58,6 @@ export function GoalsView({
     reset(
       editing
         ? {
-            id: editing.id,
             title: editing.title,
             type: editing.type as GoalForm["type"],
             targetAmount: amountText(editing.target_amount, currency),
@@ -66,7 +65,6 @@ export function GoalsView({
             targetDate: editing.target_date ?? "",
           }
         : {
-            id: undefined,
             title: "",
             type: "emergency_fund",
             targetAmount: "",
@@ -79,7 +77,10 @@ export function GoalsView({
 
   function onSubmit(values: GoalForm) {
     startTransition(async () => {
-      const result = await saveGoal(values);
+      // The id belongs to the row being edited, not to the form. A hidden
+      // input hands back "" for a new record, "" is not a uuid, and nothing
+      // renders errors.id — so the submit became a silent no-op.
+      const result = await saveGoal({ ...values, id: editing?.id });
       if ("error" in result) setFormError(result.error);
       else {
         setOpen(false);
@@ -207,8 +208,6 @@ export function GoalsView({
           <Field label="تا چه تاریخی؟" htmlFor="goal-date">
             <Input id="goal-date" type="date" dir="ltr" {...register("targetDate")} />
           </Field>
-
-          <input type="hidden" {...register("id")} />
 
           <div className="mt-2 flex gap-2">
             <Button type="submit" size="lg" className="flex-1" disabled={isPending}>

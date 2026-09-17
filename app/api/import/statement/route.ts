@@ -12,6 +12,7 @@ import type { NormalisedLine } from "@/lib/import/normalise";
 import type { MediaStatus } from "@/lib/supabase/database.types";
 import {
   MATCH_WINDOW_DAYS,
+  ledgerForAccount,
   reconcile,
   summarise,
   type ReconcilableLine,
@@ -170,12 +171,17 @@ export async function POST(request: NextRequest) {
 
   const results = reconcile(
     reconcilable,
-    ledger.map((row) => ({
-      id: row.id,
-      type: row.type,
-      amount: row.amount,
-      occurredOn: row.occurred_on,
-    })),
+    // A statement of one account is not evidence about another one's rows.
+    ledgerForAccount(
+      ledger.map((row) => ({
+        id: row.id,
+        type: row.type,
+        amount: row.amount,
+        occurredOn: row.occurred_on,
+        accountId: row.account_id,
+      })),
+      statementImport.account_id,
+    ),
   );
   const summary = summarise(reconcilable, results);
 
