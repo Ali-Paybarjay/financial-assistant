@@ -56,6 +56,11 @@ export type StatementDirection = "in" | "out";
 export type AccountKind = "checking" | "savings" | "card" | "cash" | "other";
 export type StatementMatchStatus = "new" | "matched" | "imported" | "skipped";
 
+/** How an expense's shares were arrived at, so the form can reopen as it was. */
+export type DongSplitMode = "equal" | "shares" | "exact";
+/** Money moving between two members with nothing bought. */
+export type DongPaymentKind = "settle" | "loan" | "deposit";
+
 export type ProfileRow = {
   id: string;
   full_name: string | null;
@@ -279,6 +284,100 @@ export type AiUsageLogRow = {
   created_at: string;
 };
 
+/* ------------------------------------------------------- دنگ و دونگ -- */
+
+/** A «دوره»: one trip, one flat, one month of shared meals. */
+export type DongGroupRow = {
+  id: string;
+  user_id: string;
+  title: string;
+  /** One currency for the whole group; this app converts nothing. */
+  currency: string;
+  note: string | null;
+  started_on: string;
+  /** Set when the user declares the group finished. */
+  settled_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/**
+ * A person in a group — a name, not an account. `is_me` marks the viewer;
+ * `is_fund` marks the kitty, which is a member so that paying into it and its
+ * spending are ordinary payments and expenses.
+ */
+export type DongMemberRow = {
+  id: string;
+  group_id: string;
+  user_id: string;
+  name: string;
+  is_me: boolean;
+  is_fund: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type DongExpenseRow = {
+  id: string;
+  group_id: string;
+  user_id: string;
+  title: string;
+  amount: number;
+  paid_by_member_id: string;
+  occurred_on: string;
+  tag: string | null;
+  note: string | null;
+  split_mode: DongSplitMode;
+  created_at: string;
+  updated_at: string;
+};
+
+/** What one member consumed of one expense. The set always covers the bill. */
+export type DongExpenseShareRow = {
+  id: string;
+  expense_id: string;
+  member_id: string;
+  user_id: string;
+  units: number;
+  amount: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type DongPaymentRow = {
+  id: string;
+  group_id: string;
+  user_id: string;
+  from_member_id: string;
+  to_member_id: string;
+  amount: number;
+  kind: DongPaymentKind;
+  occurred_on: string;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/** One row of dong_balances(). Positive net is owed money. */
+export type DongBalanceRow = {
+  member_id: string;
+  paid: number;
+  share: number;
+  sent: number;
+  received: number;
+  net: number;
+};
+
+/** One row of dong_group_totals(), for the groups list. */
+export type DongGroupTotalRow = {
+  group_id: string;
+  member_count: number;
+  expense_count: number;
+  total_spent: number;
+  last_activity_on: string | null;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -306,6 +405,11 @@ export type Database = {
         | "balance_applied"
       >;
       statement_lines: Table<StatementLineRow, "needs_review" | "match_status">;
+      dong_groups: Table<DongGroupRow>;
+      dong_members: Table<DongMemberRow, "is_me" | "is_fund" | "sort_order">;
+      dong_expenses: Table<DongExpenseRow, "split_mode">;
+      dong_expense_shares: Table<DongExpenseShareRow, "units">;
+      dong_payments: Table<DongPaymentRow, "kind">;
     };
     Views: Record<never, never>;
     Functions: {
@@ -316,6 +420,30 @@ export type Database = {
       account_balances: {
         Args: Record<never, never>;
         Returns: AccountBalanceRow[];
+      };
+      dong_balances: {
+        Args: { p_group_id: string };
+        Returns: DongBalanceRow[];
+      };
+      dong_group_totals: {
+        Args: Record<never, never>;
+        Returns: DongGroupTotalRow[];
+      };
+      /** Writes an expense and its shares in one transaction. Returns the id. */
+      dong_save_expense: {
+        Args: {
+          p_group_id: string;
+          p_title: string;
+          p_amount: number;
+          p_paid_by: string;
+          p_occurred_on: string;
+          p_split_mode: DongSplitMode;
+          p_shares: { member_id: string; units: number; amount: number }[];
+          p_tag?: string | null;
+          p_note?: string | null;
+          p_id?: string | null;
+        };
+        Returns: string;
       };
     };
     Enums: Record<never, never>;
