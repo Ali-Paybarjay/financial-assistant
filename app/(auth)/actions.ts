@@ -71,7 +71,12 @@ export async function signup(raw: unknown): Promise<ActionResult> {
     password: parsed.data.password,
     options: {
       data: { full_name: parsed.data.fullName },
-      emailRedirectTo: appUrl("/callback?next=/onboarding/1"),
+      // No query string: Supabase matches redirect_to against the allow list
+      // literally, so `?next=…` turns a listed URL into an unlisted one and
+      // the user is silently bounced to the Site URL instead. The callback
+      // defaults to /dashboard, and the app layout sends anyone with unfinished
+      // onboarding to the right step anyway.
+      emailRedirectTo: appUrl("/callback"),
     },
   });
 
@@ -113,7 +118,7 @@ export async function signInWithGoogle(): Promise<ActionResult> {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
-    options: { redirectTo: appUrl("/callback?next=/dashboard") },
+    options: { redirectTo: appUrl("/callback") },
   });
 
   if (error) return { error: translateAuthError(error.message) };
