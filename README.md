@@ -38,6 +38,20 @@ supabase db push
 pnpm gen:types            # database.types.ts را از schema واقعی بازتولید می‌کند
 ```
 
+## Deploy
+
+روی Vercel، و ریپازیتوری GitHub وصل است — هر push روی `main` خودکار deploy می‌شود.
+
+```bash
+vercel          # preview
+vercel --prod   # production
+vercel logs <url>
+```
+
+متغیرهای محیطی در خود Vercel ست می‌شوند (`vercel env ls`)، نه در فایل. `NEXT_PUBLIC_APP_URL` عمداً ست نشده: اگر نباشد، آدرس از `VERCEL_PROJECT_PRODUCTION_URL` خوانده می‌شود تا با تغییر دامنه از کار نیفتد.
+
+> **یک قدم دستی بعد از اولین deploy:** در Supabase → Authentication → URL Configuration، آدرس production را به‌عنوان **Site URL** و `https://<domain>/callback` را به **Redirect URLs** اضافه کن. بدون این، ثبت‌نام کار می‌کند ولی لینک تأیید ایمیل به localhost برمی‌گردد.
+
 ## دستورها
 
 | دستور | کار |
