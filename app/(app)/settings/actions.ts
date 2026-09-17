@@ -1,0 +1,159 @@
+"use server";
+
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { requireViewer } from "@/lib/auth";
+import { CURRENCIES } from "@/lib/money";
+import { COUNTRIES, EMPLOYMENT_OPTIONS } from "@/lib/onboarding/config";
+
+export type SettingsResult = { error: string } | { ok: true };
+
+const GENERIC_ERROR = "ذخیره نشد. دوباره بزن؛ اگر باز هم نشد، صفحه را تازه کن.";
+
+const currentYear = new Date().getFullYear();
+
+const profileSchema = z.object({
+  fullName: z.string().trim().min(2, "نامت را بنویس").max(80),
+  countryCode: z.enum(COUNTRIES.map((country) => country.code)),
+  birthYear: z
+    .number()
+    .int()
+    .min(1930, "سال تولد را درست وارد کن")
+    .max(currentYear - 13, "باید دست‌کم ۱۳ سال داشته باشی"),
+  employmentStatus: z.enum(EMPLOYMENT_OPTIONS.map((option) => option.value)),
+});
+
+export async function updateProfile(raw: unknown): Promise<SettingsResult> {
+  const parsed = profileSchema.safeParse(raw);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? GENERIC_ERROR };
+
+  const viewer = await requireViewer();
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      full_name: parsed.data.fullName,
+      country_code: parsed.data.countryCode,
+      birth_year: parsed.data.birthYear,
+      employment_status: parsed.data.employmentStatus,
+    })
+    .eq("id", viewer.userId);
+
+  if (error) return { error: GENERIC_ERROR };
+  revalidatePath("/settings");
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/**
+ * Changing the base currency does not convert anything. Existing rows keep the
+ * currency they were recorded in, which is why the UI states that before the
+ * tap rather than after it.
+ */
+export async function updateCurrency(raw: unknown): Promise<SettingsResult> {
+  const parsed = z.enum(CURRENCIES).safeParse(raw);
+  if (!parsed.success) return { error: GENERIC_ERROR };
+
+  const viewer = await requireViewer();
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ base_currency: parsed.data })
+    .eq("id", viewer.userId);
+
+  if (error) return { error: GENERIC_ERROR };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+const categorySchema = z.object({
+  id: z.string().uuid().optional(),
+  nameFa: z.string().trim().min(1, "نام دسته را بنویس").max(40),
+  kind: z.enum(["expense", "income"]),
+});
+
+export async function saveCategory(raw: unknown): Promise<SettingsResult> {
+  const parsed = categorySchema.safeParse(raw);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? GENERIC_ERROR };
+
+  const viewer = await requireViewer();
+  const supabase = await createClient();
+
+  if (parsed.data.id) {
+    const { error } = await supabase
+      .from("categories")
+      .update({ name_fa: parsed.data.nameFa })
+      .eq("id", parsed.data.id);
+    if (error) return { error: GENERIC_ERROR };
+  } else {
+    const slug = `user-${crypto.randomUUID().slice(0, 8)}`;
+    const { error } = await supabase.from("categories").insert({
+      user_id: viewer.userId,
+      name_fa: parsed.data.nameFa,
+      slug,
+      kind: parsed.data.kind,
+      is_system: false,
+      sort_order: 100,
+    });
+    if (error) return { error: GENERIC_ERROR };
+  }
+
+  revalidatePath("/settings");
+  return { ok: true };
+}
+
+export async function deleteCategory(id: string): Promise<SettingsResult> {
+  await requireViewer();
+  const supabase = await createClient();
+
+  // Transactions keep their history: the foreign key is ON DELETE SET NULL,
+  // so removing a category empties the field rather than the row.
+  const { error } = await supabase
+    .from("categories")
+    .delete()
+    .eq("id", id)
+    .eq("is_system", false);
+
+  if (error) return { error: GENERIC_ERROR };
+  revalidatePath("/settings");
+  return { ok: true };
+}
+
+/** Sends the user back through the risk questions without losing anything else. */
+export async function resetRiskAnswers(): Promise<never> {
+  const viewer = await requireViewer();
+  const supabase = await createClient();
+
+  await supabase
+    .from("profiles")
+    .update({ risk_score: null, risk_label: null })
+    .eq("id", viewer.userId);
+
+  revalidatePath("/settings");
+  redirect("/settings/risk");
+}
+
+/**
+ * Irreversible, and gated on the user typing their own name. Deleting the auth
+ * user cascades through every table, so there is nothing left to clean up.
+ */
+export async function deleteAccount(confirmation: string): Promise<SettingsResult> {
+  const viewer = await requireViewer();
+
+  const expected = (viewer.profile.full_name ?? "").trim();
+  if (!expected || confirmation.trim() !== expected) {
+    return { error: "نامت را دقیقاً همان‌طور که نوشته شده تایپ کن." };
+  }
+
+  const { error } = await createAdminClient().auth.admin.deleteUser(viewer.userId);
+  if (error) return { error: "حذف نشد. دوباره بزن." };
+
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect("/login");
+}
