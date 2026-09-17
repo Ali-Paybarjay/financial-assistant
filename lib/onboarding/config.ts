@@ -67,15 +67,16 @@ export function stepMeta(step: number): StepMeta | undefined {
   return STEPS.find((entry) => entry.step === step);
 }
 
-/** Where the audience actually lives, per the product brief. */
+/** Where the audience actually lives, most likely first. */
 export const COUNTRIES = [
+  { code: "IR", flag: "🇮🇷", name: "ایران", currency: "IRT" },
   { code: "CA", flag: "🇨🇦", name: "کانادا", currency: "CAD" },
   { code: "US", flag: "🇺🇸", name: "آمریکا", currency: "USD" },
   { code: "GB", flag: "🇬🇧", name: "بریتانیا", currency: "GBP" },
   { code: "DE", flag: "🇩🇪", name: "آلمان", currency: "EUR" },
   { code: "NL", flag: "🇳🇱", name: "هلند", currency: "EUR" },
   { code: "FR", flag: "🇫🇷", name: "فرانسه", currency: "EUR" },
-  { code: "SE", flag: "🇸🇪", name: "سوئد", currency: "EUR" },
+  { code: "SE", flag: "🇸🇪", name: "سوئد", currency: "SEK" },
   { code: "AU", flag: "🇦🇺", name: "استرالیا", currency: "AUD" },
   { code: "AT", flag: "🇦🇹", name: "اتریش", currency: "EUR" },
   { code: "BE", flag: "🇧🇪", name: "بلژیک", currency: "EUR" },
@@ -89,6 +90,23 @@ export const CURRENCY_LABELS: Record<(typeof CURRENCIES)[number], string> = {
   EUR: "یورو",
   GBP: "پوند",
   AUD: "دلار استرالیا",
+  IRT: "تومان",
+  IRR: "ریال",
+};
+
+/**
+ * A plausible monthly income, only as a hint at the order of magnitude. A
+ * placeholder of "4500" in front of someone who earns tomans reads as a
+ * misunderstanding of the question.
+ */
+export const INCOME_PLACEHOLDER: Record<(typeof CURRENCIES)[number], string> = {
+  CAD: "4500",
+  USD: "4500",
+  EUR: "4000",
+  GBP: "3500",
+  AUD: "5500",
+  IRT: "35000000",
+  IRR: "350000000",
 };
 
 export const EMPLOYMENT_OPTIONS = [

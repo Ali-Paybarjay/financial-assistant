@@ -23,7 +23,7 @@ export const FIELD_LABELS: Record<ReviewableField, string> = {
 
 export const parsedTransactionSchema = z.object({
   type: z.enum(["expense", "income"]),
-  /** Minor units — cents. The model is told the currency has two decimals. */
+  /** Minor units. The prompt tells the model this currency's decimal places. */
   amount_minor: z.number().int().positive(),
   currency: z.string().length(3),
   category_slug: z.string().min(1),

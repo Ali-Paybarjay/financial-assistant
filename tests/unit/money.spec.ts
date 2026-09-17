@@ -35,6 +35,14 @@ describe("toMinor", () => {
     expect(toMinor("1,234.56", "CAD")).toBe(123456);
   });
 
+  it("keeps whole units whole for the toman and the rial", () => {
+    expect(toMinor("45000", "IRT")).toBe(45000);
+    expect(toMinor("2,500,000", "IRR")).toBe(2500000);
+    // A decimal point in a currency that has none rounds rather than scales.
+    expect(toMinor("12.6", "IRT")).toBe(13);
+    expect(toMinor("۴۵٬۰۰۰", "IRT")).toBe(45000);
+  });
+
   it("rejects anything that is not a plain amount", () => {
     expect(() => toMinor("", "CAD")).toThrow(MoneyParseError);
     expect(() => toMinor("abc", "CAD")).toThrow(MoneyParseError);
@@ -54,6 +62,14 @@ describe("formatMoney", () => {
   it("renders Latin digits with a thousands separator", () => {
     expect(formatMoney(113160, "CAD")).toBe("$1,131.60");
     expect(formatMoney(807, "USD")).toBe("$8.07");
+  });
+
+  it("puts the Persian unit after the amount", () => {
+    expect(formatMoney(45000, "IRT")).toBe("45,000 تومان");
+    expect(formatMoney(2500000, "IRR")).toBe("2,500,000 ریال");
+    expect(formatMoney(-45000, "IRT")).toBe("−45,000 تومان");
+    expect(formatMoney(45000, "IRT", { signed: true })).toBe("+45,000 تومان");
+    expect(formatMoney(45000, "IRT", { omitSymbol: true })).toBe("45,000");
   });
 
   it("uses a true minus sign, not a hyphen", () => {

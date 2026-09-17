@@ -22,6 +22,12 @@ describe("countryFromTimeZone", () => {
     expect(countryFromTimeZone("Canada/Eastern")).toBe("CA");
   });
 
+  it("reads Iran from both spellings of its zone", () => {
+    expect(countryFromTimeZone("Asia/Tehran")).toBe("IR");
+    // The legacy alias some browsers still report.
+    expect(countryFromTimeZone("Iran")).toBe("IR");
+  });
+
   it("reads the European zones the audience actually lives in", () => {
     expect(countryFromTimeZone("Europe/London")).toBe("GB");
     expect(countryFromTimeZone("Europe/Berlin")).toBe("DE");
@@ -30,12 +36,30 @@ describe("countryFromTimeZone", () => {
   });
 
   it("returns null rather than guessing for a country the app cannot store", () => {
-    // Iran is not in COUNTRIES; a prefill of the wrong country would fail the
-    // form's own enum and read as the app knowing something it does not.
-    expect(countryFromTimeZone("Asia/Tehran")).toBeNull();
+    // A prefill of an unlisted country would fail the form's own enum and read
+    // as the app knowing something it does not.
     expect(countryFromTimeZone("Europe/Dublin")).toBeNull();
+    expect(countryFromTimeZone("Asia/Tokyo")).toBeNull();
     expect(countryFromTimeZone("")).toBeNull();
     expect(countryFromTimeZone(null)).toBeNull();
+  });
+
+  // The invariant, rather than a list that has to be edited every time the
+  // country list grows: whatever comes back must be storable.
+  it("never returns a code outside the country list", () => {
+    const zones = [
+      "Asia/Tehran",
+      "America/Toronto",
+      "Europe/London",
+      "Australia/Brisbane",
+      "US/Mountain",
+      "Asia/Tokyo",
+      "Africa/Lagos",
+    ];
+    for (const zone of zones) {
+      const code = countryFromTimeZone(zone);
+      if (code !== null) expect(isSupportedCountry(code)).toBe(true);
+    }
   });
 });
 
@@ -43,11 +67,12 @@ describe("countryFromLocales", () => {
   it("takes the region off the first tag that carries one", () => {
     expect(countryFromLocales(["fa", "en-CA"])).toBe("CA");
     expect(countryFromLocales(["en-GB"])).toBe("GB");
+    expect(countryFromLocales(["fa-IR"])).toBe("IR");
   });
 
   it("ignores a bare language, an unsupported region, and a malformed tag", () => {
     expect(countryFromLocales(["fa", "en"])).toBeNull();
-    expect(countryFromLocales(["fa-IR"])).toBeNull();
+    expect(countryFromLocales(["en-IE"])).toBeNull();
     expect(countryFromLocales(["not a locale"])).toBeNull();
     expect(countryFromLocales([])).toBeNull();
   });
@@ -64,7 +89,7 @@ describe("currencyForCountry", () => {
 describe("isSupportedCountry", () => {
   it("accepts only codes the profile CHECK constraint would allow", () => {
     expect(isSupportedCountry("CA")).toBe(true);
-    expect(isSupportedCountry("IR")).toBe(false);
+    expect(isSupportedCountry("IE")).toBe(false);
     expect(isSupportedCountry("ca")).toBe(false);
     expect(isSupportedCountry(null)).toBe(false);
   });
