@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,12 @@ import {
   EMPLOYMENT_OPTIONS,
   type StepMeta,
 } from "@/lib/onboarding/config";
+import {
+  countryFromBrowser,
+  currencyForCountry,
+  isSupportedCountry,
+  type CountryCode,
+} from "@/lib/onboarding/geo";
 import { step1Schema, type Step1Input } from "@/lib/validation/onboarding";
 import type { ProfileRow } from "@/lib/supabase/database.types";
 import { saveStep1 } from "../../actions";
@@ -24,9 +30,33 @@ import { saveStep1 } from "../../actions";
 const clientSchema = step1Schema.omit({ timezone: true });
 type ClientInput = Omit<Step1Input, "timezone">;
 
-export function Step1({ meta, profile }: { meta: StepMeta; profile: ProfileRow }) {
+export type Step1Prefill = {
+  /** The name on the account they signed in with, if the provider sent one. */
+  fullName: string | null;
+  /** What the edge network made of their IP address. */
+  countryCode: CountryCode | null;
+};
+
+export function Step1({
+  meta,
+  profile,
+  prefill,
+}: {
+  meta: StepMeta;
+  profile: ProfileRow;
+  prefill: Step1Prefill;
+}) {
   const [formError, setFormError] = useState<string>();
   const [isPending, startTransition] = useTransition();
+
+  // country_code is written only by this step, so its presence is the one
+  // reliable sign that the user has answered rather than been guessed at.
+  const savedCountry = isSupportedCountry(profile.country_code)
+    ? profile.country_code
+    : null;
+  const [countryIsGuess, setCountryIsGuess] = useState(savedCountry === null);
+
+  const initialCountry = savedCountry ?? prefill.countryCode ?? "CA";
 
   const {
     register,
@@ -36,14 +66,27 @@ export function Step1({ meta, profile }: { meta: StepMeta; profile: ProfileRow }
   } = useForm<ClientInput>({
     resolver: zodResolver(clientSchema),
     defaultValues: {
-      fullName: profile.full_name ?? "",
-      countryCode: (profile.country_code as ClientInput["countryCode"]) ?? "CA",
-      baseCurrency: (profile.base_currency as ClientInput["baseCurrency"]) ?? "CAD",
+      fullName: profile.full_name?.trim() || prefill.fullName || "",
+      countryCode: initialCountry,
+      baseCurrency: savedCountry
+        ? ((profile.base_currency as ClientInput["baseCurrency"]) ?? "CAD")
+        : currencyForCountry(initialCountry),
       birthYear: profile.birth_year ?? undefined,
       employmentStatus:
         (profile.employment_status as ClientInput["employmentStatus"]) ?? "employed",
     },
   });
+
+  // The browser's own clock is the better guess — a VPN moves the IP address
+  // but not the timezone — and it only exists after mount, so the first paint
+  // shows the edge network's answer and this corrects it a frame later.
+  useEffect(() => {
+    if (savedCountry) return;
+    const guess = countryFromBrowser();
+    if (!guess) return;
+    setValue("countryCode", guess);
+    setValue("baseCurrency", currencyForCountry(guess));
+  }, [savedCountry, setValue]);
 
   function onSubmit(values: ClientInput) {
     setFormError(undefined);
@@ -84,16 +127,18 @@ export function Step1({ meta, profile }: { meta: StepMeta; profile: ProfileRow }
           <Field
             label="کشور محل زندگی"
             htmlFor="countryCode"
+            note={countryIsGuess ? "حدس زدم" : undefined}
             error={errors.countryCode?.message}
           >
             <NativeSelect
               id="countryCode"
+              className={countryIsGuess ? "border-dashed border-guess" : undefined}
               {...register("countryCode", {
                 onChange: (event) => {
+                  setCountryIsGuess(false);
                   // Picking a country is almost always picking its currency.
-                  const country = COUNTRIES.find((c) => c.code === event.target.value);
-                  if (country) {
-                    setValue("baseCurrency", country.currency as Step1Input["baseCurrency"]);
+                  if (isSupportedCountry(event.target.value)) {
+                    setValue("baseCurrency", currencyForCountry(event.target.value));
                   }
                 },
               })}
@@ -109,10 +154,15 @@ export function Step1({ meta, profile }: { meta: StepMeta; profile: ProfileRow }
           <Field
             label="ارز پایه"
             htmlFor="baseCurrency"
+            note={countryIsGuess ? "از روی کشور" : undefined}
             hint="در این نسخه همه‌ی مبلغ‌ها با همین ارز ثبت می‌شوند."
             error={errors.baseCurrency?.message}
           >
-            <NativeSelect id="baseCurrency" {...register("baseCurrency")}>
+            <NativeSelect
+              id="baseCurrency"
+              className={countryIsGuess ? "border-dashed border-guess" : undefined}
+              {...register("baseCurrency", { onChange: () => setCountryIsGuess(false) })}
+            >
               {CURRENCIES.map((code) => (
                 <option key={code} value={code}>
                   {CURRENCY_LABELS[code]} ({code})

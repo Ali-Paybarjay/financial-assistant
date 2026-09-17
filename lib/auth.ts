@@ -1,6 +1,7 @@
 import "server-only";
 
 import { redirect } from "next/navigation";
+import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import type { ProfileRow } from "@/lib/supabase/database.types";
 import { isCurrencyCode, type CurrencyCode } from "@/lib/money";
@@ -11,7 +12,31 @@ export type Viewer = {
   profile: ProfileRow;
   currency: CurrencyCode;
   timeZone: string;
+  /**
+   * What the sign-in provider said about the person. Only ever used to prefill
+   * a field the user has not answered yet — the profile row stays the truth.
+   */
+  identity: { fullName: string | null };
 };
+
+/**
+ * Providers disagree on where the name lives: Google sends `full_name` and
+ * `name`, some OIDC servers send only the two halves. An email/password signup
+ * puts what the user typed in `full_name`. Anything blank is skipped, and the
+ * email is never mangled into a name — "fxpabarja" is not what anyone is called.
+ */
+function providerFullName(user: User): string | null {
+  const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
+  const text = (value: unknown) => (typeof value === "string" ? value.trim() : "");
+
+  const candidates = [
+    text(meta.full_name),
+    text(meta.name),
+    [text(meta.given_name), text(meta.family_name)].filter(Boolean).join(" "),
+  ];
+
+  return candidates.find((candidate) => candidate.length > 0) ?? null;
+}
 
 /**
  * The single way a server component or action gets the current user. Throws the
@@ -40,5 +65,6 @@ export async function requireViewer(): Promise<Viewer> {
     profile,
     currency: isCurrencyCode(profile.base_currency) ? profile.base_currency : "CAD",
     timeZone: profile.timezone || "UTC",
+    identity: { fullName: providerFullName(user) },
   };
 }
