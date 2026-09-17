@@ -100,3 +100,76 @@ ${sharedRules(context.currency)}
   array. A wrong total is worse than no answer.
 `.trim();
 }
+
+export type StatementPromptContext = PromptContext & {
+  /** The unit the statement is written in — an Iranian bank prints rial. */
+  statementCurrency: CurrencyCode;
+  /** Set when the caller is walking a long document one window at a time. */
+  pageWindow?: { from: number; to: number };
+};
+
+/**
+ * Reading a bank statement. The rules below are not the receipt rules with the
+ * word changed: a statement has a running balance column that is larger than
+ * every amount on the page, subtotals that look like transactions, and dates
+ * in a calendar the rest of this app does not use.
+ */
+export function statementParsePrompt(context: StatementPromptContext): string {
+  const window = context.pageWindow
+    ? `
+Return ONLY the rows printed on pages ${context.pageWindow.from} to
+${context.pageWindow.to} of this document. Ignore rows on any other page; they
+are read separately. Report page_count as the total number of pages in the
+whole document, not the number in this range.`
+    : `
+Report page_count as the number of pages in the document, or null if there is
+only one image and no page numbering.`;
+
+  return `
+You read a bank account statement and return one row per transaction on it.
+
+The statement is written in ${context.statementCurrency}. Their today is
+${context.today}.
+
+Available categories:
+${categoryList(context.categories)}
+
+${sharedRules(context.statementCurrency)}
+
+- The amount of a row is what moved, NEVER the running balance. A statement
+  prints a balance column (مانده، موجودی، balance) that is usually the largest
+  number on the line and changes on every row. Taking it as the amount is the
+  single most damaging mistake you can make here. If a row shows both a debit
+  or credit and a balance, the amount is the debit or credit.
+- Separate debit and credit columns (بدهکار / بستانکار, برداشت / واریز,
+  withdrawal / deposit) decide direction: an entry in the debit column is
+  "out", one in the credit column is "in". A single signed column decides it by
+  sign. If the statement is a card ledger with no columns at all, a purchase is
+  "out" and a refund or salary is "in".
+- Skip anything that is not a transaction: column headers, page headers and
+  footers, opening and closing balances, subtotals, carried-forward lines,
+  totals, and "no transactions in this period" notices.
+- Report the date exactly as printed, rewritten as YEAR-MONTH-DAY, and say
+  which calendar it is. 1404-06-26 is jalali; 2025-09-17 is gregorian. Do NOT
+  convert between calendars — that is done after you. A two-digit year on a
+  Persian statement (04/06/26) is jalali; write it as 1404-06-26.
+- description is the row text exactly as printed, including any reference or
+  trace number. It is the evidence the user checks you against, so do not
+  tidy, translate, shorten or summarise it.
+- merchant is the counterparty, when the description names one: a shop, an
+  employer, a person. "POS-472913 HYPERSTAR SHIRAZ" has the merchant
+  HYPERSTAR. A bare reference number does not name anyone, so return null.
+- Choosing the category from a bank description is always an inference, so
+  list "category" in needs_review unless the description states it outright.
+  Where the description says nothing useful — a bare transfer, a reference
+  number, a code — use "misc" for an out row and "other-income" for an in row
+  rather than guessing at something specific. An honest "متفرقه" the user can
+  correct beats a confident wrong answer.
+- Bank charges, fees, interest paid and card annual fees are "out" rows under
+  "misc". Interest received is an "in" row under "other-income".
+- A row you cannot read an amount for is omitted entirely. A statement with
+  one row missing is a problem the user can see; a statement with one row
+  wrong is not.
+${window}
+`.trim();
+}

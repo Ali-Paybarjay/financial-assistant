@@ -1,5 +1,6 @@
 import {
   ArrowsClockwise,
+  Bank,
   Gear,
   House,
   ListDashes,
@@ -28,4 +29,5 @@ export const PRIMARY_NAV: NavItem[] = [
 export const DESKTOP_ONLY_NAV: NavItem[] = [
   { href: "/income", label: "درآمد", icon: Wallet },
   { href: "/income?tab=recurring", label: "هزینه‌های ثابت", icon: ArrowsClockwise },
+  { href: "/import", label: "صورت‌حساب بانکی", icon: Bank },
 ];

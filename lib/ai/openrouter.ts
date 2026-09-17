@@ -4,13 +4,17 @@ const ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 
 export const MODEL = "anthropic/claude-sonnet-5";
 
-/** The brief's ceiling. The route also declares a longer maxDuration so the
- *  platform never kills the request before we can return a Persian error. */
-const TIMEOUT_MS = 30_000;
+/** The brief's ceiling for an interactive parse. The route also declares a
+ *  longer maxDuration so the platform never kills the request before we can
+ *  return a Persian error. A statement import overrides it: two hundred rows
+ *  of JSON take longer to generate than one receipt total. */
+const DEFAULT_TIMEOUT_MS = 30_000;
 
 export type ChatContent =
   | { type: "text"; text: string }
-  | { type: "image_url"; image_url: { url: string } };
+  | { type: "image_url"; image_url: { url: string } }
+  /** A document, as a data: URL. PDFs take this path, not image_url. */
+  | { type: "file"; file: { filename: string; file_data: string } };
 
 export type CompletionResult = {
   content: string;
@@ -38,18 +42,20 @@ export async function complete({
   content,
   jsonSchema,
   maxTokens = 2000,
+  timeoutMs = DEFAULT_TIMEOUT_MS,
 }: {
   system: string;
   content: ChatContent[];
   jsonSchema: unknown;
   maxTokens?: number;
+  timeoutMs?: number;
 }): Promise<CompletionResult> {
   const key = process.env.OPENROUTER_API_KEY;
   if (!key) throw new ModelError("OPENROUTER_API_KEY is not set", "provider");
 
   const startedAt = Date.now();
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   let response: Response;
   try {
@@ -68,6 +74,11 @@ export async function complete({
         // Schema enforcement differs between providers serving the same model,
         // so only route to ones that actually honour response_format.
         provider: { require_parameters: true },
+        // Claude reads PDFs itself. Without this, OpenRouter would bill a
+        // separate OCR pass whose output is worse on Persian than the model's.
+        ...(content.some((part) => part.type === "file")
+          ? { plugins: [{ id: "file-parser", pdf: { engine: "native" } }] }
+          : {}),
         messages: [
           { role: "system", content: system },
           { role: "user", content },

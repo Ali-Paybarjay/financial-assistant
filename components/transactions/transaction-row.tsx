@@ -2,6 +2,7 @@
 
 import {
   ArrowsClockwise,
+  Bank,
   CaretLeft,
   Keyboard,
   Microphone,
@@ -23,6 +24,7 @@ const SOURCE_ICON: Record<string, Icon> = {
   voice: Microphone,
   receipt: Receipt,
   recurring: ArrowsClockwise,
+  statement: Bank,
 };
 
 const SOURCE_LABEL: Record<string, string> = {
@@ -31,6 +33,7 @@ const SOURCE_LABEL: Record<string, string> = {
   voice: "از صدا",
   receipt: "از عکس فاکتور",
   recurring: "هزینه‌ی ثابت",
+  statement: "از صورت‌حساب",
 };
 
 export function TransactionRowItem({

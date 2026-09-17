@@ -28,14 +28,30 @@ type Table<Row, Defaulted extends keyof Row = never> = {
   Relationships: [];
 };
 
-export type TransactionSource = "form" | "text" | "voice" | "receipt" | "recurring";
+export type TransactionSource =
+  | "form"
+  | "text"
+  | "voice"
+  | "receipt"
+  | "recurring"
+  | "statement";
 export type TransactionType = "expense" | "income";
 export type CategoryKind = "expense" | "income";
-/** Receipts only: in-app voice recording is out of scope. */
-export type MediaKind = "image";
+/** A receipt photo, or a statement file (PDF, CSV, or a photographed page). */
+export type MediaKind = "image" | "document";
 export type MediaStatus = "uploaded" | "processing" | "parsed" | "failed";
 export type GoalStatus = "active" | "achieved" | "paused" | "cancelled";
 export type RiskLabel = "conservative" | "balanced" | "growth";
+export type StatementImportStatus =
+  | "uploading"
+  | "parsing"
+  | "review"
+  | "applied"
+  | "failed"
+  | "discarded";
+/** Money leaving the account, or arriving in it. */
+export type StatementDirection = "in" | "out";
+export type StatementMatchStatus = "new" | "matched" | "imported" | "skipped";
 
 export type ProfileRow = {
   id: string;
@@ -110,6 +126,7 @@ export type MediaAssetRow = {
   mime_type: string;
   size_bytes: number;
   status: MediaStatus;
+  statement_import_id: string | null;
   extracted: unknown | null;
   error_message: string | null;
   created_at: string;
@@ -130,6 +147,7 @@ export type TransactionRow = {
   media_asset_id: string | null;
   recurring_expense_id: string | null;
   posted_month: string | null;
+  statement_line_id: string | null;
   ai_confidence: number | null;
   ai_raw: unknown | null;
   is_confirmed: boolean;
@@ -162,6 +180,45 @@ export type VariableExpenseBaselineRow = {
   updated_at: string;
 };
 
+export type StatementImportRow = {
+  id: string;
+  user_id: string;
+  status: StatementImportStatus;
+  source_currency: string;
+  target_currency: string;
+  period_from: string | null;
+  period_to: string | null;
+  file_count: number;
+  line_count: number;
+  matched_count: number;
+  new_count: number;
+  imported_count: number;
+  error_message: string | null;
+  applied_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type StatementLineRow = {
+  id: string;
+  import_id: string;
+  user_id: string;
+  row_index: number;
+  occurred_on: string;
+  direction: StatementDirection;
+  amount: number;
+  description: string | null;
+  merchant: string | null;
+  category_id: string | null;
+  ai_confidence: number | null;
+  needs_review: string[];
+  match_status: StatementMatchStatus;
+  matched_transaction_id: string | null;
+  match_day_gap: number | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type AiUsageLogRow = {
   id: string;
   user_id: string;
@@ -188,6 +245,16 @@ export type Database = {
       goals: Table<GoalRow, "saved_amount" | "priority" | "status">;
       variable_expense_baselines: Table<VariableExpenseBaselineRow>;
       ai_usage_logs: Table<AiUsageLogRow>;
+      statement_imports: Table<
+        StatementImportRow,
+        | "status"
+        | "file_count"
+        | "line_count"
+        | "matched_count"
+        | "new_count"
+        | "imported_count"
+      >;
+      statement_lines: Table<StatementLineRow, "needs_review" | "match_status">;
     };
     Views: Record<never, never>;
     Functions: {

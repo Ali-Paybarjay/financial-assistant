@@ -249,3 +249,52 @@ export function savingsRate(incomeMinor: Minor, expenseMinor: Minor): number | n
   if (incomeMinor <= 0) return null;
   return Math.round(((incomeMinor - expenseMinor) / incomeMinor) * 1000) / 10;
 }
+
+/**
+ * Currencies that are the same money written at a different scale. The rial
+ * and the toman are one currency with two units — ten rial to the toman — and
+ * an Iranian bank prints statements in rial while the account holder thinks in
+ * toman. Importing one into the other without this would be a ten-fold error
+ * on every row.
+ *
+ * Nothing else belongs here. A genuine cross-currency import needs the rate
+ * that applied on the day of each transaction, which this app does not have.
+ */
+const UNIT_SIBLINGS: Partial<Record<CurrencyCode, Partial<Record<CurrencyCode, number>>>> =
+  {
+    // Multiply by the factor to go from the key currency to the inner one.
+    IRR: { IRT: 0.1 },
+    IRT: { IRR: 10 },
+  };
+
+export class CurrencyMismatchError extends Error {}
+
+/** The currencies a statement may be written in for a given base currency. */
+export function convertibleFrom(currency: CurrencyCode): CurrencyCode[] {
+  const siblings = Object.keys(UNIT_SIBLINGS[currency] ?? {}) as CurrencyCode[];
+  return [currency, ...siblings];
+}
+
+/**
+ * `convertMinor(450000, 'IRR', 'IRT')` -> 45000.
+ *
+ * Throws on any pair that is not the same currency or its sibling unit: a
+ * silent wrong conversion is worse than a refused import.
+ */
+export function convertMinor(
+  amount: Minor,
+  from: CurrencyCode,
+  to: CurrencyCode,
+): Minor {
+  if (from === to) return amount;
+
+  const factor = UNIT_SIBLINGS[from]?.[to];
+  if (factor === undefined) {
+    throw new CurrencyMismatchError(`Cannot convert ${from} to ${to}`);
+  }
+
+  const converted = amount * factor;
+  // Rial amounts are whole tomans in all but name, but a stray 5 rial on a fee
+  // row must not silently vanish into 0.
+  return converted < 0 ? -Math.round(-converted) : Math.round(converted);
+}

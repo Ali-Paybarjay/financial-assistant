@@ -27,7 +27,7 @@ export async function remainingCalls(timeZone: string): Promise<number> {
 
 export type UsageRecord = {
   userId: string;
-  feature: "parse_text" | "parse_receipt";
+  feature: "parse_text" | "parse_receipt" | "parse_statement";
   model: string;
   inputTokens?: number;
   outputTokens?: number;
