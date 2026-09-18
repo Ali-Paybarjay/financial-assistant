@@ -7,25 +7,28 @@ import { FormError } from "@/components/field";
 import { ConfirmCard, toDraft, type DraftTransaction } from "./confirm-card";
 import { faCount } from "@/lib/format";
 import type { CurrencyCode } from "@/lib/money";
-import type { AccountRow, CategoryRow } from "@/lib/supabase/database.types";
+import type { AccountRow, CategoryRow, GoalRow } from "@/lib/supabase/database.types";
 import { saveParsedTransactions } from "@/app/(app)/transactions/actions";
 
 export function TextTab({
   currency,
   categories,
   accounts,
+  goals,
   defaultAccountId,
   onSaved,
 }: {
   currency: CurrencyCode;
   categories: CategoryRow[];
   accounts: AccountRow[];
+  goals: GoalRow[];
   defaultAccountId: string | null;
   onSaved: (message: string) => void;
 }) {
   const [text, setText] = useState("");
   const [drafts, setDrafts] = useState<DraftTransaction[] | null>(null);
   const [accountId, setAccountId] = useState(defaultAccountId ?? "");
+  const [goalId, setGoalId] = useState("");
   const [error, setError] = useState<string>();
   const [isReading, startReading] = useTransition();
   const [isSaving, startSaving] = useTransition();
@@ -57,6 +60,7 @@ export function TextTab({
       const result = await saveParsedTransactions({
         source: "text",
         accountId,
+        goalId,
         transactions: drafts.map((draft) => ({
           type: draft.type,
           amountMinor: draft.amount_minor,
@@ -90,6 +94,9 @@ export function TextTab({
           categories={categories}
           accounts={accounts}
           accountId={accountId}
+          goals={goals}
+          goalId={goalId}
+          onGoalChange={setGoalId}
           onAccountChange={setAccountId}
           isPending={isSaving}
           onChange={(index, next) =>
