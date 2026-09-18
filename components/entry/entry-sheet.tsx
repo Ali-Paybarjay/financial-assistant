@@ -9,7 +9,7 @@ import { ManualForm } from "./manual-form";
 import { TextTab } from "./text-tab";
 import { ReceiptTab } from "./receipt-tab";
 import type { CurrencyCode } from "@/lib/money";
-import type { AccountRow, CategoryRow } from "@/lib/supabase/database.types";
+import type { AccountRow, CategoryRow, GoalRow } from "@/lib/supabase/database.types";
 
 type Method = "form" | "text" | "receipt";
 
@@ -24,6 +24,7 @@ export function EntryLauncher({
   currency,
   categories,
   accounts,
+  goals,
   defaultAccountId,
   today,
   open,
@@ -32,6 +33,8 @@ export function EntryLauncher({
   currency: CurrencyCode;
   categories: CategoryRow[];
   accounts: AccountRow[];
+  /** Active goals, so a purchase can say which one it spent, as it is recorded. */
+  goals: GoalRow[];
   defaultAccountId: string | null;
   today: string;
   open: boolean;
@@ -103,6 +106,7 @@ export function EntryLauncher({
                 currency={currency}
                 categories={categories}
                 accounts={accounts}
+                goals={goals}
                 defaultAccountId={defaultAccountId}
                 today={today}
                 onSaved={setConfirmation}

@@ -42,6 +42,7 @@ export function TransactionRowItem({
   category,
   accountTitle,
   toAccountTitle,
+  goalTitle,
   currency,
   onSelect,
 }: {
@@ -51,6 +52,8 @@ export function TransactionRowItem({
   accountTitle?: string;
   /** The far end of a transfer. */
   toAccountTitle?: string;
+  /** The goal this row funded or spent, when it names one. */
+  goalTitle?: string;
   currency: CurrencyCode;
   onSelect: () => void;
 }) {
@@ -100,6 +103,11 @@ export function TransactionRowItem({
             ? `تأییدنشده · ${SOURCE_LABEL[transaction.source] ?? ""}`
             : isTransfer
               ? [
+                  // The goal leads, because it is the only thing on this line
+                  // that cannot be worked out from anywhere else — and without
+                  // it, money set aside for something is indistinguishable
+                  // from money that just moved.
+                  goalTitle ? `پس‌اندازِ ${goalTitle}` : null,
                   // Reads right to left: "to B ← from A" in source order gives
                   // «از A به B» on screen.
                   accountTitle && toAccountTitle
@@ -109,7 +117,12 @@ export function TransactionRowItem({
                 ]
                   .filter(Boolean)
                   .join(" · ")
-              : [category?.name_fa, accountTitle, formatDateFa(transaction.occurred_on)]
+              : [
+                  goalTitle ? `بابت ${goalTitle}` : null,
+                  category?.name_fa,
+                  accountTitle,
+                  formatDateFa(transaction.occurred_on),
+                ]
                   .filter(Boolean)
                   .join(" · ")}
         </span>

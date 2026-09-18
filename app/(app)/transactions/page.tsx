@@ -57,7 +57,7 @@ export default async function TransactionsPage({
       transactions={transactions}
       categories={categories}
       accounts={accounts}
-      goals={goals.filter((goal) => goal.status === "active")}
+      goals={goals}
       activeFilters={{
         category: params.category,
         account: accountId,

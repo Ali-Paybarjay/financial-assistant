@@ -15,6 +15,7 @@ import { formatMoney, type CurrencyCode } from "@/lib/money";
 import {
   FREQUENCY_OPTIONS,
   INCOME_TYPE_OPTIONS,
+  MONTH_OPTIONS,
   RECURRING_FREQUENCY_OPTIONS,
 } from "@/lib/onboarding/config";
 import {
@@ -34,6 +35,9 @@ import { deleteRecord, saveIncomeSource, saveRecurringExpense } from "./actions"
 function amountText(minor: number, currency: CurrencyCode): string {
   return formatMoney(minor, currency, { omitSymbol: true }).replace(/,/g, "");
 }
+
+/** 1–12. Only ever a default for the month select, never a stored value. */
+const THIS_MONTH = new Date().getUTCMonth() + 1;
 
 export function IncomeSourceSheet({
   open,
@@ -177,6 +181,9 @@ export function RecurringSheet({
       amount: "",
       frequency: "monthly",
       dueDay: 1,
+      // Only read for a non-monthly bill. Defaulting to this month means the
+      // select opens on something sensible rather than on January.
+      dueMonth: THIS_MONTH,
       autoPost: true,
     },
   });
@@ -194,6 +201,7 @@ export function RecurringSheet({
             amount: amountText(expense.amount, currency),
             frequency: expense.frequency as RecurringExpenseForm["frequency"],
             dueDay: expense.due_day,
+            dueMonth: expense.due_month ?? THIS_MONTH,
             autoPost: expense.auto_post,
           }
         : {
@@ -203,6 +211,7 @@ export function RecurringSheet({
             amount: "",
             frequency: "monthly",
             dueDay: 1,
+            dueMonth: THIS_MONTH,
             autoPost: true,
           },
     );
@@ -279,6 +288,31 @@ export function RecurringSheet({
           </Field>
         </div>
 
+        {/* Which day is not enough for a bill that is not due every month.
+            Without it the generator has no way to know when to post one. */}
+        {frequency !== "monthly" && (
+          <Field
+            label={frequency === "yearly" ? "کدام ماه" : "از کدام ماه شروع می‌شود"}
+            htmlFor="recurring-month"
+            hint={
+              frequency === "quarterly"
+                ? "از همان ماه، و بعد هر سه ماه یک‌بار."
+                : undefined
+            }
+          >
+            <NativeSelect
+              id="recurring-month"
+              {...register("dueMonth", { valueAsNumber: true })}
+            >
+              {MONTH_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </NativeSelect>
+          </Field>
+        )}
+
         <AccountField
           id="recurring-account"
           accounts={accounts}
@@ -287,26 +321,18 @@ export function RecurringSheet({
           {...register("accountId")}
         />
 
-        {frequency === "monthly" ? (
-          <label className="flex items-center gap-2.5 rounded-control border border-hairline bg-paper p-3">
-            <input
-              type="checkbox"
-              className="size-4 accent-lapis"
-              {...register("autoPost")}
-            />
-            <span className="text-caption text-ink">
-              اول هر ماه خودکار ثبت شود
-            </span>
-          </label>
-        ) : (
-          // Said rather than silently switched off: a checkbox that stays
-          // ticked and does nothing is how a user ends up trusting a row that
-          // never appears.
-          <p className="rounded-control border border-hairline bg-paper px-3 py-2.5 text-caption text-ink-muted">
-            فقط قبض‌های ماهانه خودکار ثبت می‌شوند. این یکی را روزی که آمد خودت ثبت کن؛
-            سهمش از هزینه‌ی هر ماه همین حالا حساب می‌شود.
-          </p>
-        )}
+        <label className="flex items-center gap-2.5 rounded-control border border-hairline bg-paper p-3">
+          <input
+            type="checkbox"
+            className="size-4 accent-lapis"
+            {...register("autoPost")}
+          />
+          <span className="text-caption text-ink">
+            {frequency === "monthly"
+              ? "اول هر ماه خودکار ثبت شود"
+              : "سرِ موعدش خودکار ثبت شود"}
+          </span>
+        </label>
 
         <div className="mt-2 flex gap-2">
           <Button type="submit" size="lg" className="flex-1" disabled={isPending}>

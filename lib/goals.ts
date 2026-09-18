@@ -75,6 +75,31 @@ export type SavingsPlan = {
   unassigned: Minor;
 };
 
+export type SavingsCheck = {
+  /** Sitting in savings with no goal claiming it. */
+  unassigned: Minor;
+  /** Claimed by goals but not actually sitting in savings. */
+  unbacked: Minor;
+};
+
+/**
+ * Whether the savings accounts and the goals tell the same story.
+ *
+ * The goals page is otherwise entirely about flow — what to move each month —
+ * and says nothing about the stock. Two numbers that should match and are
+ * never compared is how a user ends up with money set aside for nothing, or
+ * with goals that quietly claim more than the account holds. At most one side
+ * of this is non-zero; they are two readings of one difference, kept apart
+ * because the sentence to write about each is different.
+ */
+export function checkSavings(savingsTotal: Minor, goalsHeld: Minor): SavingsCheck {
+  const difference = savingsTotal - goalsHeld;
+  return {
+    unassigned: Math.max(0, difference),
+    unbacked: Math.max(0, -difference),
+  };
+}
+
 function progressOf(goal: GoalWithProgress): number {
   if (goal.target_amount <= 0) return 0;
   // Floored as well as capped: a goal that has been overspent is at zero, not

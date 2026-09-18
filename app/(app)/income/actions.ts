@@ -77,11 +77,12 @@ export async function saveRecurringExpense(raw: unknown): Promise<RecordResult> 
     currency: viewer.currency,
     frequency: parsed.data.frequency,
     due_day: parsed.data.dueDay,
-    // Only monthly bills are generated automatically: post_recurring_for_month
-    // posts the month it is given, and a quarterly or yearly bill has no
-    // column saying *which* month it lands in. Storing auto_post = true on one
-    // would promise a row that never appears, which is worse than saying so.
-    auto_post: parsed.data.frequency === "monthly" ? parsed.data.autoPost : false,
+    // A monthly bill is due every month, so naming one would be meaningless.
+    // The database enforces the same pairing; dropping it here is what keeps
+    // a frequency changed from yearly to monthly from carrying its old month
+    // along and being refused.
+    due_month: parsed.data.frequency === "monthly" ? null : parsed.data.dueMonth,
+    auto_post: parsed.data.autoPost,
   };
 
   const { error } = parsed.data.id

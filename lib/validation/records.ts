@@ -27,6 +27,8 @@ export const recurringExpenseFormSchema = z.object({
   amount: amountText,
   frequency: z.enum(RECURRING_FREQUENCY_OPTIONS.map((option) => option.value)),
   dueDay: z.number().int().min(1, "روز بین ۱ تا ۳۱").max(31, "روز بین ۱ تا ۳۱"),
+  /** Ignored for a monthly bill; the action is what drops it. */
+  dueMonth: z.number().int().min(1).max(12),
   autoPost: z.boolean(),
 });
 

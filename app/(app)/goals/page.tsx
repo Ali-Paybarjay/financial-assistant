@@ -44,6 +44,16 @@ export default async function GoalsPage() {
   const open = accounts.filter((account) => account.is_active);
   const savingsAccounts = open.filter((account) => account.kind === "savings");
 
+  // The stock, against which the plan's flow can be checked: what the savings
+  // accounts hold, and what the open goals say they are holding.
+  const savingsTotal = savingsAccounts.reduce(
+    (total, account) => total + account.balance,
+    0,
+  );
+  const goalsHeld = goals
+    .filter((goal) => goal.status === "active")
+    .reduce((total, goal) => total + Math.max(0, goal.saved), 0);
+
   return (
     <GoalsView
       currency={viewer.currency}
@@ -53,6 +63,8 @@ export default async function GoalsPage() {
       fundedThisMonth={Object.fromEntries(funded)}
       accounts={open}
       savingsAccounts={savingsAccounts}
+      savingsTotal={savingsTotal}
+      goalsHeld={goalsHeld}
       // Money is set aside *out of* the account it would otherwise be spent
       // from, so the source defaults to the everyday one, never to savings.
       defaultFromAccountId={preferredAccountId(
