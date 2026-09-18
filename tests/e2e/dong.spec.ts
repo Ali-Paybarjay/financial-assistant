@@ -142,15 +142,19 @@ test("an empty month still shows the way into the pages the tab bar omits", asyn
   await login(page);
   await page.goto("/dashboard?month=2025-01-01");
 
-  const dong = page.getByRole("link", { name: /دنگ و دونگ/ }).first();
+  // By destination, not by label: the card says «دنگ و دونگ» once there are
+  // groups and «ساختن اولین دوره» before that, and what is being asserted is
+  // that the dashboard leads there at all — not what the link happens to read.
+  // Scoped to <main>, because the sidebar carries its own link to the same
+  // place and is merely hidden below 960px rather than absent — matching it
+  // would pass while the phone still had no way in, which is the whole bug.
+  const dong = page.locator('main a[href="/dong"]').first();
   await expect(dong).toBeVisible({ timeout: 30_000 });
 
-  // The accounts card renders only once an account exists, so its absence is
-  // not a failure — its presence pointing somewhere else would be.
-  const accounts = page.getByRole("link", { name: /موجودی حساب‌ها/ });
-  if (await accounts.first().isVisible().catch(() => false)) {
-    await expect(accounts.first()).toHaveAttribute("href", "/accounts");
-  }
+  // Same for accounts, which has the same two states.
+  await expect(page.locator('main a[href="/accounts"]').first()).toBeVisible({
+    timeout: 30_000,
+  });
 
   await dong.click();
   await page.waitForURL(/\/dong$/);
