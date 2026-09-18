@@ -61,6 +61,13 @@ export type MonthTotals = {
   income: number;
   expense: number;
   unconfirmedCount: number;
+  /**
+   * Rows this month that were generated from a fixed bill. Counted in the
+   * same pass rather than in a query of its own: a past month with none of
+   * these is how the user finds out their recurring bills were never
+   * generated for a month they did not open the app in.
+   */
+  recurringCount: number;
   byCategory: Map<string | null, number>;
 };
 
@@ -107,10 +114,12 @@ export async function monthTotals(from: string, to: string): Promise<MonthTotals
     income: 0,
     expense: 0,
     unconfirmedCount: 0,
+    recurringCount: 0,
     byCategory: new Map(),
   };
 
   for (const row of rows) {
+    if (row.source === "recurring") totals.recurringCount += 1;
     if (!isSpendOrEarn(row)) continue;
     if (row.type === "income") {
       totals.income += row.amount;

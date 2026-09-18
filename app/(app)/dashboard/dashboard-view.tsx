@@ -32,6 +32,7 @@ export function DashboardView({
   today,
   month,
   isCurrentMonth,
+  missedRecurring,
   daysLeft,
   totals,
   previousTotals,
@@ -51,6 +52,8 @@ export function DashboardView({
   today: string;
   month: string;
   isCurrentMonth: boolean;
+  /** A past month that never had its fixed bills generated. */
+  missedRecurring: boolean;
   daysLeft: number;
   totals: { income: number; expense: number; unconfirmedCount: number };
   previousTotals: { income: number; expense: number };
@@ -177,6 +180,18 @@ export function DashboardView({
       </div>
 
       <div className="flex flex-col gap-3 p-4 min-[960px]:mt-3 min-[960px]:p-0">
+        {/* Above everything, because it says the figures below it are
+            incomplete. Shown only on a past month that actually has none,
+            so it is a fact about the month being looked at rather than a
+            standing disclaimer nobody reads. */}
+        {missedRecurring && (
+          <p className="rounded-card border border-guess-border bg-guess-tint px-4 py-3 text-caption text-guess-text">
+            هزینه‌های ثابتِ این ماه ساخته نشده‌اند. هر ماه فقط وقتی اپ را باز کنی ساخته
+            می‌شوند، و این ماه بازش نکرده‌ای — پس عددهای پایین کمتر از واقعیت‌اند.
+            می‌توانی دستی ثبتشان کنی.
+          </p>
+        )}
+
         {isEmpty ? (
           <>
             <EmptyDashboard onStart={() => setEntryOpen(true)} />
