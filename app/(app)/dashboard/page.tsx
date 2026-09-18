@@ -2,6 +2,7 @@ import { requireViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { listCategories } from "@/lib/queries/categories";
 import { listAccountsWithBalances } from "@/lib/queries/accounts";
+import { listOpenDongGroups } from "@/lib/queries/dong";
 import { accountsDue, preferredAccountId, totalBalance } from "@/lib/accounts";
 import {
   listTransactions,
@@ -36,10 +37,20 @@ export default async function DashboardPage({
   const seriesStart = shiftMonth(range.month, -(SERIES_MONTHS - 1));
 
   const supabase = await createClient();
-  const [categories, accounts, totals, previousTotals, series, recent, { data: goals }] =
+  const [
+    categories,
+    accounts,
+    dongGroups,
+    totals,
+    previousTotals,
+    series,
+    recent,
+    { data: goals },
+  ] =
     await Promise.all([
       listCategories(),
       listAccountsWithBalances(),
+      listOpenDongGroups(),
       monthTotals(range.from, range.to),
       monthTotals(previous.from, previous.to),
       monthlySeries(seriesStart, range.to),
@@ -88,6 +99,7 @@ export default async function DashboardPage({
       accounts={accounts}
       accountsTotal={totalBalance(accounts)}
       accountsDue={accountsDue(accounts, today, viewer.timeZone)}
+      dongGroups={dongGroups}
       defaultAccountId={preferredAccountId(accounts)}
     />
   );

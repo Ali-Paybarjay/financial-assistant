@@ -125,3 +125,33 @@ test("splits a bill, and settles it", async ({ page }) => {
   await deleteOpenGroup(page);
   await expect(page.getByRole("link", { name: new RegExp(GROUP) })).toHaveCount(0);
 });
+
+/**
+ * The bug this guards against was not in the feature, it was in how you reach
+ * it: the tab bar holds four items by design and the sidebar that carries the
+ * rest starts at 960px, so on the phone this suite runs at, «دنگ و دونگ» and
+ * the accounts page were reachable only from inside Settings.
+ *
+ * The month is deliberately one with nothing in it. That is the state a new
+ * user is in, and it used to replace the whole dashboard — entry points and
+ * all — with an invitation to log a first expense.
+ */
+test("an empty month still shows the way into the pages the tab bar omits", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto("/dashboard?month=2025-01-01");
+
+  const dong = page.getByRole("link", { name: /دنگ و دونگ/ }).first();
+  await expect(dong).toBeVisible({ timeout: 30_000 });
+
+  // The accounts card renders only once an account exists, so its absence is
+  // not a failure — its presence pointing somewhere else would be.
+  const accounts = page.getByRole("link", { name: /موجودی حساب‌ها/ });
+  if (await accounts.first().isVisible().catch(() => false)) {
+    await expect(accounts.first()).toHaveAttribute("href", "/accounts");
+  }
+
+  await dong.click();
+  await page.waitForURL(/\/dong$/);
+});
