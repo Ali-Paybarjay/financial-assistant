@@ -61,3 +61,48 @@ export async function deleteGoal(id: string): Promise<GoalResult> {
   revalidatePath("/dashboard");
   return { ok: true };
 }
+
+/**
+ * Move a goal one place up or down its list.
+ *
+ * Order is not decoration any more: the savings plan hands out each month's
+ * spare money in this order, so a user who cannot change it cannot say what
+ * their own money is for.
+ */
+export async function reorderGoal(id: string, direction: -1 | 1): Promise<GoalResult> {
+  await requireViewer();
+  const supabase = await createClient();
+
+  const { data: goals, error: readError } = await supabase
+    .from("goals")
+    .select("id")
+    .order("priority")
+    .order("created_at");
+
+  if (readError || !goals) return { error: GENERIC_ERROR };
+
+  const index = goals.findIndex((goal) => goal.id === id);
+  const target = index + direction;
+  // Already at the end it was asked to move towards. Nothing to do, and
+  // nothing went wrong.
+  if (index < 0 || target < 0 || target >= goals.length) return { ok: true };
+
+  const order = goals.map((goal) => goal.id);
+  [order[index], order[target]] = [order[target], order[index]];
+
+  // Every priority is renumbered rather than the two being swapped. Onboarding
+  // writes them once and nothing has edited them since, so most lists are all
+  // zeros — swapping two of those would swap nothing — and renumbering also
+  // closes the gaps a deleted goal leaves behind.
+  const writes = await Promise.all(
+    order.map((goalId, position) =>
+      supabase.from("goals").update({ priority: position }).eq("id", goalId),
+    ),
+  );
+
+  if (writes.some((write) => write.error)) return { error: GENERIC_ERROR };
+
+  revalidatePath("/goals");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}

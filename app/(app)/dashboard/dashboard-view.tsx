@@ -16,6 +16,7 @@ import { TransactionRowItem } from "@/components/transactions/transaction-row";
 import { EntryLauncher } from "@/components/entry/entry-sheet";
 import { faNumber, faPercent } from "@/lib/format";
 import { formatMonthFa, shiftMonth } from "@/lib/date";
+import { requiredMonthly } from "@/lib/goals";
 import type { CurrencyCode } from "@/lib/money";
 import type { MonthPoint } from "@/lib/queries/transactions";
 import type { AccountWithBalance } from "@/lib/accounts";
@@ -214,13 +215,23 @@ export function DashboardView({
             <div className="flex flex-col gap-3 min-[960px]:grid min-[960px]:grid-cols-[1fr_1.25fr] min-[960px]:items-start">
               {goals.length > 0 && (
                 <section className="rounded-card border border-hairline bg-surface p-4">
-                  <h2 className="mb-3 text-[15px] font-semibold text-ink">هدف‌ها</h2>
+                  <div className="mb-3 flex items-baseline justify-between gap-2">
+                    <h2 className="text-[15px] font-semibold text-ink">هدف‌ها</h2>
+                    <Link href="/goals" className="text-caption font-medium text-lapis">
+                      برنامه
+                    </Link>
+                  </div>
                   <ul className="flex flex-col gap-3">
                     {goals.map((goal) => {
                       const progress = Math.min(
                         100,
                         Math.round((goal.saved_amount / goal.target_amount) * 100),
                       );
+                      // What the date costs per month. Whether it fits the
+                      // month is the goals page's job — this card has no
+                      // surplus to weigh it against, and a number is still
+                      // worth more here than a bar on its own.
+                      const required = requiredMonthly(goal, today);
                       return (
                         <li key={goal.id} className="flex flex-col gap-1.5">
                           <div className="flex items-baseline justify-between gap-2">
@@ -245,6 +256,12 @@ export function DashboardView({
                               style={{ width: `${progress}%` }}
                             />
                           </div>
+                          {required !== null && (
+                            <p className="text-caption text-ink-muted">
+                              ماهی <Money minor={required} currency={currency} /> تا به
+                              تاریخش برسی
+                            </p>
+                          )}
                         </li>
                       );
                     })}
