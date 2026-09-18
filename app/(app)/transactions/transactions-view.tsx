@@ -70,6 +70,9 @@ export function TransactionsView({
     [categories],
   );
 
+  // Every goal, not just the open ones: a row that funded a goal you have
+  // since closed should still say which goal that was.
+  const goalById = useMemo(() => new Map(goals.map((goal) => [goal.id, goal])), [goals]);
   const accountById = useMemo(
     () => new Map(accounts.map((account) => [account.id, account])),
     [accounts],
@@ -242,6 +245,9 @@ export function TransactionsView({
                       row.to_account_id
                         ? accountById.get(row.to_account_id)?.title
                         : undefined
+                    }
+                    goalTitle={
+                      row.goal_id ? goalById.get(row.goal_id)?.title : undefined
                     }
                     currency={currency}
                     onSelect={() => setEditing(row)}

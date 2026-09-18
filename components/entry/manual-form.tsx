@@ -8,10 +8,11 @@ import { Input } from "@/components/ui/input";
 import { AmountInput } from "@/components/amount-input";
 import { Field, FormError } from "@/components/field";
 import { AccountField } from "@/components/accounts/account-field";
+import { NativeSelect } from "@/components/native-select";
 import { SegmentedControl } from "@/components/segmented-control";
 import { ArrowsLeftRight } from "@phosphor-icons/react/dist/ssr";
 import type { CurrencyCode } from "@/lib/money";
-import type { AccountRow, CategoryRow } from "@/lib/supabase/database.types";
+import type { AccountRow, CategoryRow, GoalRow } from "@/lib/supabase/database.types";
 import {
   transactionFormSchema,
   type TransactionForm,
@@ -23,6 +24,7 @@ export function ManualForm({
   currency,
   categories,
   accounts,
+  goals,
   defaultAccountId,
   today,
   onSaved,
@@ -30,6 +32,7 @@ export function ManualForm({
   currency: CurrencyCode;
   categories: CategoryRow[];
   accounts: AccountRow[];
+  goals: GoalRow[];
   defaultAccountId: string | null;
   today: string;
   onSaved: (message: string) => void;
@@ -51,6 +54,7 @@ export function ManualForm({
       categorySlug: "groceries",
       accountId: defaultAccountId ?? "",
       toAccountId: "",
+      goalId: "",
       occurredOn: today,
       merchant: "",
       note: "",
@@ -177,6 +181,31 @@ export function ManualForm({
           hint="از موجودی همین حساب کم یا به آن اضافه می‌شود."
           {...register("accountId")}
         />
+      )}
+
+      {/* Asked here, not only in the edit sheet: the day you buy the thing you
+          were saving for is the day you know it was for that goal, and making
+          the user save the row first and go back to label it is how the link
+          never gets made. Income is never goal money, so it is not offered. */}
+      {type !== "income" && goals.length > 0 && (
+        <Field
+          label="بابت کدام هدف؟"
+          htmlFor="goal"
+          hint={
+            isTransfer
+              ? "اگر این انتقال پس‌اندازِ یک هدف است، اینجا بگو."
+              : "اگر این خرید از پس‌انداز همان هدف بوده، اینجا بگو تا از موجودی هدف کم شود."
+          }
+        >
+          <NativeSelect id="goal" {...register("goalId")}>
+            <option value="">هیچ‌کدام</option>
+            {goals.map((goal) => (
+              <option key={goal.id} value={goal.id}>
+                {goal.title}
+              </option>
+            ))}
+          </NativeSelect>
+        </Field>
       )}
 
       <div className="grid grid-cols-2 gap-3">
