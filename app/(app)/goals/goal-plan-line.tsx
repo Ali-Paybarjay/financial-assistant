@@ -26,7 +26,13 @@ export function GoalPlanLine({
 
   switch (plan.standing) {
     case "done":
-      return <Line tone="positive">رسیدی. این هدف تمام است.</Line>;
+      return (
+        <Line tone="positive">
+          {plan.goal.status === "achieved"
+            ? "بستیش. چیزی از این ماه برنمی‌دارد."
+            : "رسیدی. این هدف تمام است."}
+        </Line>
+      );
 
     case "paused":
       return <Line tone="muted">متوقف است؛ چیزی از این ماه برنمی‌دارد.</Line>;

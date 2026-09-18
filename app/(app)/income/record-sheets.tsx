@@ -12,7 +12,11 @@ import { AmountInput } from "@/components/amount-input";
 import { Field, FormError } from "@/components/field";
 import { AccountField } from "@/components/accounts/account-field";
 import { formatMoney, type CurrencyCode } from "@/lib/money";
-import { FREQUENCY_OPTIONS, INCOME_TYPE_OPTIONS } from "@/lib/onboarding/config";
+import {
+  FREQUENCY_OPTIONS,
+  INCOME_TYPE_OPTIONS,
+  RECURRING_FREQUENCY_OPTIONS,
+} from "@/lib/onboarding/config";
 import {
   incomeSourceFormSchema,
   recurringExpenseFormSchema,
@@ -163,6 +167,7 @@ export function RecurringSheet({
     handleSubmit,
     reset,
     formState: { errors },
+    watch,
   } = useForm<RecurringExpenseForm>({
     resolver: zodResolver(recurringExpenseFormSchema),
     defaultValues: {
@@ -170,6 +175,7 @@ export function RecurringSheet({
       categorySlug: "housing",
       accountId: defaultAccountId ?? "",
       amount: "",
+      frequency: "monthly",
       dueDay: 1,
       autoPost: true,
     },
@@ -186,6 +192,7 @@ export function RecurringSheet({
               : "misc",
             accountId: expense.account_id ?? "",
             amount: amountText(expense.amount, currency),
+            frequency: expense.frequency as RecurringExpenseForm["frequency"],
             dueDay: expense.due_day,
             autoPost: expense.auto_post,
           }
@@ -194,6 +201,7 @@ export function RecurringSheet({
             categorySlug: "housing",
             accountId: defaultAccountId ?? "",
             amount: "",
+            frequency: "monthly",
             dueDay: 1,
             autoPost: true,
           },
@@ -201,6 +209,8 @@ export function RecurringSheet({
     setFormError(undefined);
     // slugById is derived from `categories`, which is what actually changes.
   }, [open, expense, currency, categories, reset]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const frequency = watch("frequency");
 
   function onSubmit(values: RecurringExpenseForm) {
     startTransition(async () => {
@@ -226,9 +236,23 @@ export function RecurringSheet({
           <Input id="recurring-title" placeholder="مثلاً اجاره" {...register("title")} />
         </Field>
 
-        <Field label="مبلغ ماهانه" htmlFor="recurring-amount" error={errors.amount?.message}>
-          <AmountInput id="recurring-amount" currency={currency} {...register("amount")} />
-        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="مبلغ" htmlFor="recurring-amount" error={errors.amount?.message}>
+            <AmountInput id="recurring-amount" currency={currency} {...register("amount")} />
+          </Field>
+          {/* The amount is per payment, so how often it is paid is the other
+              half of it. Without this every bill was read as monthly, and a
+              yearly premium counted twelve times over in what a month costs. */}
+          <Field label="هر چند وقت" htmlFor="recurring-frequency">
+            <NativeSelect id="recurring-frequency" {...register("frequency")}>
+              {RECURRING_FREQUENCY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </NativeSelect>
+          </Field>
+        </div>
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="دسته" htmlFor="recurring-category">
@@ -263,16 +287,26 @@ export function RecurringSheet({
           {...register("accountId")}
         />
 
-        <label className="flex items-center gap-2.5 rounded-control border border-hairline bg-paper p-3">
-          <input
-            type="checkbox"
-            className="size-4 accent-lapis"
-            {...register("autoPost")}
-          />
-          <span className="text-caption text-ink">
-            اول هر ماه خودکار ثبت شود
-          </span>
-        </label>
+        {frequency === "monthly" ? (
+          <label className="flex items-center gap-2.5 rounded-control border border-hairline bg-paper p-3">
+            <input
+              type="checkbox"
+              className="size-4 accent-lapis"
+              {...register("autoPost")}
+            />
+            <span className="text-caption text-ink">
+              اول هر ماه خودکار ثبت شود
+            </span>
+          </label>
+        ) : (
+          // Said rather than silently switched off: a checkbox that stays
+          // ticked and does nothing is how a user ends up trusting a row that
+          // never appears.
+          <p className="rounded-control border border-hairline bg-paper px-3 py-2.5 text-caption text-ink-muted">
+            فقط قبض‌های ماهانه خودکار ثبت می‌شوند. این یکی را روزی که آمد خودت ثبت کن؛
+            سهمش از هزینه‌ی هر ماه همین حالا حساب می‌شود.
+          </p>
+        )}
 
         <div className="mt-2 flex gap-2">
           <Button type="submit" size="lg" className="flex-1" disabled={isPending}>
