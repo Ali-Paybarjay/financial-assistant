@@ -281,8 +281,13 @@ describe("checkSavings", () => {
 
 /* ---------------------------------------------------------- the surplus -- */
 
-function point(month: string, income: number, expense: number) {
-  return { month, income, expense };
+/**
+ * `logged` is how many rows the user recorded themselves. It defaults to one,
+ * since most of these cases are about a month that was genuinely kept; the
+ * tests that care pass it explicitly.
+ */
+function point(month: string, income: number, expense: number, logged = 1) {
+  return { month, income, expense, logged };
 }
 
 function source(over: Partial<IncomeSourceRow> = {}): IncomeSourceRow {
@@ -365,11 +370,28 @@ describe("observedSurplus", () => {
   it("skips a month with nothing recorded in it", () => {
     // A month the user did not log is not a month they earned nothing.
     const surplus = observedSurplus(
-      [point("2026-07-01", 0, 0), point("2026-08-01", 100, 60)],
+      [point("2026-07-01", 0, 0, 0), point("2026-08-01", 100, 60)],
       current,
     );
 
     expect(surplus).toEqual({ amount: 40, basis: "observed", months: 1 });
+  });
+
+  it("skips a month whose only entry is a bill the app generated", () => {
+    // Confirming a long-missed rent creates exactly this shape: a large
+    // expense, no income, and nothing the user actually recorded. Read as a
+    // lived month it would say the user is 800 in the hole every month and
+    // drag the entire plan negative — which is what it did, once.
+    const surplus = observedSurplus(
+      [point("2026-07-01", 0, 800, 0), point("2026-08-01", 100, 60)],
+      current,
+    );
+
+    expect(surplus).toEqual({ amount: 40, basis: "observed", months: 1 });
+  });
+
+  it("falls back to the declared figure when every month is only generated", () => {
+    expect(observedSurplus([point("2026-07-01", 0, 800, 0)], current)).toBeNull();
   });
 
   it("is null before there is any history to read", () => {
