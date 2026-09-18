@@ -14,6 +14,7 @@ import { DongSummary } from "@/components/dashboard/dong-summary";
 import { ReconcileBanner } from "@/components/accounts/reconcile-banner";
 import { TransactionRowItem } from "@/components/transactions/transaction-row";
 import { EntryLauncher } from "@/components/entry/entry-sheet";
+import { MissedBanner, MissedReview } from "./missed-review";
 import { faNumber, faPercent } from "@/lib/format";
 import { formatMonthFa, shiftMonth } from "@/lib/date";
 import { requiredMonthly, type GoalWithProgress } from "@/lib/goals";
@@ -21,7 +22,11 @@ import type { CurrencyCode } from "@/lib/money";
 import type { MonthPoint } from "@/lib/queries/transactions";
 import type { AccountWithBalance } from "@/lib/accounts";
 import type { DongDashboardGroup } from "@/lib/queries/dong";
-import type { CategoryRow, TransactionRow } from "@/lib/supabase/database.types";
+import type {
+  CategoryRow,
+  MissedRecurringRow,
+  TransactionRow,
+} from "@/lib/supabase/database.types";
 
 /** How many goals the dashboard card lists before it stops being a summary. */
 const CARD_GOALS = 4;
@@ -32,7 +37,7 @@ export function DashboardView({
   today,
   month,
   isCurrentMonth,
-  missedRecurring,
+  missed,
   daysLeft,
   totals,
   previousTotals,
@@ -52,8 +57,8 @@ export function DashboardView({
   today: string;
   month: string;
   isCurrentMonth: boolean;
-  /** A past month that never had its fixed bills generated. */
-  missedRecurring: boolean;
+  /** Fixed bills of past months that were never generated, oldest first. */
+  missed: MissedRecurringRow[];
   daysLeft: number;
   totals: { income: number; expense: number; unconfirmedCount: number };
   previousTotals: { income: number; expense: number };
@@ -72,6 +77,7 @@ export function DashboardView({
 }) {
   const router = useRouter();
   const [entryOpen, setEntryOpen] = useState(false);
+  const [missedOpen, setMissedOpen] = useState(false);
 
   const balance = totals.income - totals.expense;
   const perDay = daysLeft > 0 ? Math.round(balance / daysLeft) : balance;
@@ -181,16 +187,9 @@ export function DashboardView({
 
       <div className="flex flex-col gap-3 p-4 min-[960px]:mt-3 min-[960px]:p-0">
         {/* Above everything, because it says the figures below it are
-            incomplete. Shown only on a past month that actually has none,
-            so it is a fact about the month being looked at rather than a
-            standing disclaimer nobody reads. */}
-        {missedRecurring && (
-          <p className="rounded-card border border-guess-border bg-guess-tint px-4 py-3 text-caption text-guess-text">
-            هزینه‌های ثابتِ این ماه ساخته نشده‌اند. هر ماه فقط وقتی اپ را باز کنی ساخته
-            می‌شوند، و این ماه بازش نکرده‌ای — پس عددهای پایین کمتر از واقعیت‌اند.
-            می‌توانی دستی ثبتشان کنی.
-          </p>
-        )}
+            incomplete — and it is a button, because the app cannot settle
+            these on its own but can act on the answers. */}
+        <MissedBanner count={missed.length} onOpen={() => setMissedOpen(true)} />
 
         {isEmpty ? (
           <>
@@ -341,6 +340,13 @@ export function DashboardView({
           </>
         )}
       </div>
+
+      <MissedReview
+        missed={missed}
+        currency={currency}
+        open={missedOpen}
+        onOpenChange={setMissedOpen}
+      />
 
       <EntryLauncher
         currency={currency}
