@@ -8,7 +8,7 @@ import { FormError } from "@/components/field";
 import { ConfirmCard, toDraft, type DraftTransaction } from "./confirm-card";
 import { createClient } from "@/lib/supabase/client";
 import type { CurrencyCode } from "@/lib/money";
-import type { AccountRow, CategoryRow } from "@/lib/supabase/database.types";
+import type { AccountRow, CategoryRow, GoalRow } from "@/lib/supabase/database.types";
 import {
   createReceiptUpload,
   saveParsedTransactions,
@@ -18,12 +18,14 @@ export function ReceiptTab({
   currency,
   categories,
   accounts,
+  goals,
   defaultAccountId,
   onSaved,
 }: {
   currency: CurrencyCode;
   categories: CategoryRow[];
   accounts: AccountRow[];
+  goals: GoalRow[];
   defaultAccountId: string | null;
   onSaved: (message: string) => void;
 }) {
@@ -31,6 +33,7 @@ export function ReceiptTab({
   const galleryInput = useRef<HTMLInputElement>(null);
   const [drafts, setDrafts] = useState<DraftTransaction[] | null>(null);
   const [accountId, setAccountId] = useState(defaultAccountId ?? "");
+  const [goalId, setGoalId] = useState("");
   const [mediaAssetId, setMediaAssetId] = useState<string>();
   const [error, setError] = useState<string>();
   const [status, setStatus] = useState<string>();
@@ -101,6 +104,7 @@ export function ReceiptTab({
       const result = await saveParsedTransactions({
         source: "receipt",
         accountId,
+        goalId,
         mediaAssetId,
         transactions: drafts.map((draft) => ({
           type: draft.type,
@@ -130,6 +134,9 @@ export function ReceiptTab({
           categories={categories}
           accounts={accounts}
           accountId={accountId}
+          goals={goals}
+          goalId={goalId}
+          onGoalChange={setGoalId}
           onAccountChange={setAccountId}
           isPending={isSaving}
           onChange={(index, next) =>

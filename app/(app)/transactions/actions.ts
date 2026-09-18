@@ -193,6 +193,8 @@ export async function saveParsedTransactions(input: {
   mediaAssetId?: string;
   /** Chosen once in the confirm card and applied to every row of it. */
   accountId?: string | null;
+  /** Likewise: one photographed receipt is one purchase, for one goal. */
+  goalId?: string | null;
 }): Promise<SaveTransactionResult> {
   const viewer = await requireViewer();
   const supabase = await createClient();
@@ -207,6 +209,9 @@ export async function saveParsedTransactions(input: {
     currency: viewer.currency,
     category_id: categories.get(transaction.categorySlug) ?? null,
     account_id: input.accountId || null,
+    // Income is never goal money, and the database refuses it there. A parse
+    // that returns a mix of rows keeps the goal on the spends only.
+    goal_id: transaction.type === "income" ? null : input.goalId || null,
     merchant: transaction.merchant,
     note: transaction.note,
     occurred_on: transaction.occurredOn,

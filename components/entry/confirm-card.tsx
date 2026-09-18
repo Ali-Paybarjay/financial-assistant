@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/native-select";
 import { Money } from "@/components/money";
 import { AccountField } from "@/components/accounts/account-field";
+import { Field } from "@/components/field";
 import { faCount } from "@/lib/format";
 import { formatDateFa } from "@/lib/date";
 import type { CurrencyCode } from "@/lib/money";
-import type { AccountRow, CategoryRow } from "@/lib/supabase/database.types";
+import type { AccountRow, CategoryRow, GoalRow } from "@/lib/supabase/database.types";
 import type { ParsedTransaction } from "@/lib/ai/schemas";
 import { FIELD_LABELS, type ReviewableField } from "@/lib/ai/schemas";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,9 @@ export function ConfirmCard({
   accounts,
   accountId,
   onAccountChange,
+  goals,
+  goalId,
+  onGoalChange,
   onChange,
   onSubmit,
   onCancel,
@@ -46,6 +50,9 @@ export function ConfirmCard({
   accounts: AccountRow[];
   accountId: string;
   onAccountChange: (accountId: string) => void;
+  goals: GoalRow[];
+  goalId: string;
+  onGoalChange: (goalId: string) => void;
   onChange: (index: number, next: DraftTransaction) => void;
   onSubmit: () => void;
   onCancel: () => void;
@@ -103,6 +110,32 @@ export function ConfirmCard({
         onChange={(event) => onAccountChange(event.target.value)}
         hint="همه‌ی ردیف‌های این کارت به همین حساب می‌خورند."
       />
+
+      {/* Same reasoning as the account, and the same reason it is asked here
+          rather than left to the edit sheet: a photographed receipt for the
+          thing you were saving for is exactly when you know which goal it
+          spent. Income rows never take one, so a card with only income in it
+          is not asked. */}
+      {goals.length > 0 && drafts.some((draft) => draft.type !== "income") && (
+        <Field
+          label="بابت کدام هدف؟"
+          htmlFor="confirm-goal"
+          hint="اگر این خرید از پس‌انداز همان هدف بوده، اینجا بگو تا از موجودی هدف کم شود."
+        >
+          <NativeSelect
+            id="confirm-goal"
+            value={goalId}
+            onChange={(event) => onGoalChange(event.target.value)}
+          >
+            <option value="">هیچ‌کدام</option>
+            {goals.map((goal) => (
+              <option key={goal.id} value={goal.id}>
+                {goal.title}
+              </option>
+            ))}
+          </NativeSelect>
+        </Field>
+      )}
 
       <div className="flex gap-2">
         <Button size="lg" className="flex-1" onClick={onSubmit} disabled={isPending}>
