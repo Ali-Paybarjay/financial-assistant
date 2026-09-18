@@ -65,6 +65,11 @@ vercel logs <url>
 | `pnpm test:e2e` | تست E2E |
 | `pnpm gen:types` | بازتولید تایپ‌های دیتابیس از Supabase |
 
+روی هر pull request، همان چیزی که `pnpm verify` اجرا می‌کند در GitHub Actions هم اجرا می‌شود
+([`.github/workflows/verify.yml`](.github/workflows/verify.yml)) — بدون هیچ secretی، چون
+هیچ‌چیز این پروژه موقع build به دیتابیس دست نمی‌زند. تست E2E عمداً آنجا نیست: به یک پروژه‌ی
+Supabase واقعی و حساب‌های تست وصل است و ردیف می‌نویسد، پس دستی اجرا می‌شود.
+
 ## قواعد غیرقابل‌مذاکره
 
 ۱. **پول هرگز float نیست.** تمام مبالغ `bigint` بر حسب سنت. تنها مسیر مجاز تبدیل و جمع `lib/money.ts` است و تنها مسیر نمایش کامپوننت `<Money />`. هیچ‌جا `Intl.NumberFormat` دستی روی مبلغ صدا زده نمی‌شود.

@@ -1,0 +1,68 @@
+# The checks that used to run only when someone remembered to run them.
+#
+# Everything here is what `pnpm verify` runs locally, split into named steps
+# so a red build says which gate failed rather than just "verify".
+#
+# It needs no secrets. The build was checked with .env.local removed and
+# .next cleared, and completes: nothing in this project reads the database at
+# build time. That is worth keeping — a workflow with no secrets is one that
+# runs on a fork, and one that cannot leak anything if a step is ever asked
+# to print its environment.
+#
+# The end-to-end suite is deliberately not here. It drives a real Supabase
+# project with real accounts, so it needs credentials and it writes rows; run
+# it with `pnpm test:e2e` against a dev server.
+
+name: verify
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# A second push to the same branch makes the first run pointless.
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.4.2
+
+      - uses: actions/setup-node@v4
+        with:
+          # The version everything in this repo has been verified against.
+          # Production builds on Vercel, which runs its own build on every
+          # pull request, so that path is already covered.
+          node-version: 22
+          cache: pnpm
+
+      # --frozen-lockfile: a lockfile that does not match package.json is a
+      # difference between what was tested and what would ship.
+      - run: pnpm install --frozen-lockfile
+
+      - name: Types
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      # Logical properties only. The whole interface is right-to-left, and a
+      # stray ml-/mr- is invisible until someone opens the app in Persian.
+      - name: RTL
+        run: pnpm check:rtl
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
