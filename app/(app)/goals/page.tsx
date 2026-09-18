@@ -1,6 +1,9 @@
 import { requireViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { monthlySeries } from "@/lib/queries/transactions";
+import { listAccountsWithBalances } from "@/lib/queries/accounts";
+import { fundedInMonth, listGoalsWithProgress } from "@/lib/queries/goals";
+import { preferredAccountId } from "@/lib/accounts";
 import { monthRange, todayInTimeZone } from "@/lib/date";
 import { monthlySurplus, surplusWindowStart } from "@/lib/cashflow";
 import { planSavings } from "@/lib/goals";
@@ -13,9 +16,11 @@ export default async function GoalsPage() {
   const today = todayInTimeZone(viewer.timeZone);
   const current = monthRange(viewer.timeZone, today);
 
-  const [{ data: goals }, { data: sources }, { data: recurring }, { data: baselines }, series] =
+  const [goals, accounts, funded, { data: sources }, { data: recurring }, { data: baselines }, series] =
     await Promise.all([
-      supabase.from("goals").select("*").order("priority").order("created_at"),
+      listGoalsWithProgress(),
+      listAccountsWithBalances(),
+      fundedInMonth(current.from, current.to),
       supabase.from("income_sources").select("*"),
       supabase.from("recurring_expenses").select("*"),
       supabase.from("variable_expense_baselines").select("*"),
@@ -34,7 +39,25 @@ export default async function GoalsPage() {
   // The goals arrive in priority order, and that is the order the surplus is
   // handed out in — what the page shows and what the plan assumes are the
   // same list.
-  const plan = planSavings(goals ?? [], surplus.amount, today);
+  const plan = planSavings(goals, surplus.amount, today);
 
-  return <GoalsView currency={viewer.currency} plan={plan} surplus={surplus} />;
+  const open = accounts.filter((account) => account.is_active);
+  const savingsAccounts = open.filter((account) => account.kind === "savings");
+
+  return (
+    <GoalsView
+      currency={viewer.currency}
+      plan={plan}
+      surplus={surplus}
+      today={today}
+      fundedThisMonth={Object.fromEntries(funded)}
+      accounts={open}
+      savingsAccounts={savingsAccounts}
+      // Money is set aside *out of* the account it would otherwise be spent
+      // from, so the source defaults to the everyday one, never to savings.
+      defaultFromAccountId={preferredAccountId(
+        open.filter((account) => account.kind !== "savings"),
+      )}
+    />
+  );
 }

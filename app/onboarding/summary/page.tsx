@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { requireViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Money } from "@/components/money";
-import { monthlyFixed, monthlyIncome } from "@/lib/cashflow";
+import { declaredSurplus, monthlyFixed, monthlyIncome, monthlyVariable } from "@/lib/cashflow";
 import { RISK_LABELS } from "@/lib/onboarding/config";
 import { ExitButton } from "@/components/onboarding/exit-button";
 import { FinishButton } from "./finish-button";
@@ -12,15 +12,27 @@ export default async function SummaryPage() {
   if (viewer.profile.onboarding_completed_at) redirect("/dashboard");
 
   const supabase = await createClient();
-  const [{ data: sources }, { data: recurring }, { data: goals }] = await Promise.all([
-    supabase.from("income_sources").select("*").eq("is_active", true),
-    supabase.from("recurring_expenses").select("*").eq("is_active", true),
-    supabase.from("goals").select("title, target_amount").eq("status", "active"),
-  ]);
+  const [{ data: sources }, { data: recurring }, { data: baselines }, { data: goals }] =
+    await Promise.all([
+      supabase.from("income_sources").select("*").eq("is_active", true),
+      supabase.from("recurring_expenses").select("*").eq("is_active", true),
+      supabase.from("variable_expense_baselines").select("*"),
+      supabase.from("goals").select("title, target_amount").eq("status", "active"),
+    ]);
 
   const incomePerMonth = monthlyIncome(sources ?? []);
   const fixedPerMonth = monthlyFixed(recurring ?? []);
-  const leftover = incomePerMonth - fixedPerMonth;
+  const variablePerMonth = monthlyVariable(baselines ?? []);
+
+  // The same function the savings plan is built on, not a second subtraction
+  // that happens to agree today. This screen is where the user first meets
+  // «what's left», and a plan that later quotes a different number for it is a
+  // plan they have no reason to believe.
+  const leftover = declaredSurplus({
+    sources: sources ?? [],
+    recurring: recurring ?? [],
+    baselines: baselines ?? [],
+  }).amount;
 
   const riskLabel = viewer.profile.risk_label
     ? RISK_LABELS[viewer.profile.risk_label]
@@ -47,7 +59,13 @@ export default async function SummaryPage() {
         <SummaryRow label="هزینه‌های ثابت ماهانه">
           <Money minor={fixedPerMonth} currency={viewer.currency} size="kpi" />
         </SummaryRow>
-        <SummaryRow label="بعد از هزینه‌های ثابت برایت می‌ماند">
+        {/* The estimates from step 4. Leaving them out of the subtraction made
+            this screen promise a saving rate that groceries ate before the
+            month was out. */}
+        <SummaryRow label="هزینه‌های متغیر — تخمین خودت">
+          <Money minor={variablePerMonth} currency={viewer.currency} size="kpi" />
+        </SummaryRow>
+        <SummaryRow label="آخر ماه برایت می‌ماند">
           <Money
             minor={leftover}
             currency={viewer.currency}
@@ -60,8 +78,8 @@ export default async function SummaryPage() {
 
       {leftover < 0 && (
         <p className="mt-3 rounded-control border border-guess-border bg-guess-tint px-3 py-2.5 text-caption font-medium text-guess-text">
-          هزینه‌های ثابتت از درآمدت بیشتر است. اگر عددی را اشتباه زده‌ای، از تنظیمات
-          درستش کن.
+          هزینه‌هایت از درآمدت بیشتر است. اگر عددی را اشتباه زده‌ای، از تنظیمات درستش
+          کن.
         </p>
       )}
 

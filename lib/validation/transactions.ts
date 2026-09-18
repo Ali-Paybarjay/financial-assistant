@@ -18,6 +18,13 @@ export const transactionFormSchema = z
     accountId: optionalAccountId,
     /** Only a transfer has one: the account the money arrived in. */
     toAccountId: optionalAccountId,
+    /**
+     * Which goal this row is about, if any. On a transfer it is money being
+     * set aside; on an expense it is that money being spent. Income never has
+     * one — money arriving is not money set aside — and the database refuses
+     * it there too.
+     */
+    goalId: z.union([z.string().uuid(), z.literal("")]).optional(),
     occurredOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "تاریخ را انتخاب کن"),
     merchant: z.string().trim().max(120).optional(),
     note: z.string().trim().max(500).optional(),

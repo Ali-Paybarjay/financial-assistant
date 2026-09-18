@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { contributionMonths, planSavings } from "@/lib/goals";
+import { contributionMonths, planSavings, type GoalWithProgress } from "@/lib/goals";
 import { declaredSurplus, monthlySurplus, observedSurplus } from "@/lib/cashflow";
 import type {
-  GoalRow,
   IncomeSourceRow,
   RecurringExpenseRow,
   VariableExpenseBaselineRow,
@@ -10,19 +9,26 @@ import type {
 
 const TODAY = "2026-09-18";
 
-function goal(over: Partial<GoalRow> = {}): GoalRow {
+/**
+ * `saved` is what the ledger says is set aside right now, which is the only
+ * figure the plan measures against. `opening_saved` is just where it started.
+ */
+function goal(over: Partial<GoalWithProgress> = {}): GoalWithProgress {
   return {
     id: "goal-1",
     user_id: "user-1",
     title: "سفر تابستان",
     type: "travel",
     target_amount: 120_000,
-    saved_amount: 0,
+    opening_saved: 0,
     target_date: null,
     priority: 0,
     status: "active",
     created_at: "2026-09-01T00:00:00Z",
     updated_at: "2026-09-01T00:00:00Z",
+    saved: 0,
+    funded: 0,
+    spent: 0,
     ...over,
   };
 }
@@ -63,7 +69,7 @@ describe("planSavings", () => {
 
   it("counts what is already saved against the target", () => {
     const plan = planSavings(
-      [goal({ target_amount: 120_000, saved_amount: 90_000, target_date: "2026-12-31" })],
+      [goal({ target_amount: 120_000, saved: 90_000, target_date: "2026-12-31" })],
       50_000,
       TODAY,
     );
@@ -165,7 +171,7 @@ describe("planSavings", () => {
 
   it("plans nothing for a goal already reached", () => {
     const plan = planSavings(
-      [goal({ target_amount: 10_000, saved_amount: 10_000, target_date: "2026-12-31" })],
+      [goal({ target_amount: 10_000, saved: 10_000, target_date: "2026-12-31" })],
       50_000,
       TODAY,
     );
@@ -186,6 +192,53 @@ describe("planSavings", () => {
     expect(plan.goals[0].allocated).toBe(0);
     expect(plan.goals[0].monthsToArrive).toBeNull();
     expect(plan.shortfall).toBe(40_000);
+  });
+
+  it("measures progress against what the ledger holds, not the opening figure", () => {
+    // 20,000 was already set aside before the app knew, 70,000 has been moved
+    // into savings since, and 30,000 of it has been spent on the goal.
+    const plan = planSavings(
+      [
+        goal({
+          target_amount: 120_000,
+          opening_saved: 20_000,
+          funded: 70_000,
+          spent: 30_000,
+          saved: 60_000,
+          target_date: "2026-12-31",
+        }),
+      ],
+      50_000,
+      TODAY,
+    );
+
+    expect(plan.goals[0].remaining).toBe(60_000);
+    expect(plan.goals[0].progress).toBe(50);
+    expect(plan.goals[0].required).toBe(20_000);
+  });
+
+  it("does not render a goal spent past zero as negative progress", () => {
+    const plan = planSavings(
+      [goal({ target_amount: 120_000, funded: 10_000, spent: 25_000, saved: -15_000 })],
+      0,
+      TODAY,
+    );
+
+    expect(plan.goals[0].progress).toBe(0);
+    // And the shortfall is the whole target again, not less than it.
+    expect(plan.goals[0].remaining).toBe(135_000);
+  });
+
+  it("treats a goal closed by hand as done, money left over or not", () => {
+    const plan = planSavings(
+      [goal({ status: "achieved", target_amount: 120_000, target_date: "2026-12-31" })],
+      50_000,
+      TODAY,
+    );
+
+    expect(plan.goals[0].standing).toBe("done");
+    expect(plan.required).toBe(0);
+    expect(plan.unassigned).toBe(50_000);
   });
 
   it("leaves a paused goal out of the month's claims", () => {

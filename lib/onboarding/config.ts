@@ -138,6 +138,21 @@ export const FREQUENCY_OPTIONS = [
   { value: "one_time", label: "یک‌بار" },
 ] as const;
 
+/**
+ * What a fixed bill can repeat on. Narrower than income's list because the
+ * database only allows these three, and because a weekly bill is not a fixed
+ * expense — it is spending, and belongs in the ledger row by row.
+ */
+export const RECURRING_FREQUENCY_OPTIONS = [
+  { value: "monthly", label: "ماهانه" },
+  { value: "quarterly", label: "هر سه ماه" },
+  { value: "yearly", label: "سالانه" },
+] as const;
+
+export const RECURRING_FREQUENCY_LABEL = new Map<string, string>(
+  RECURRING_FREQUENCY_OPTIONS.map((option) => [option.value, option.label]),
+);
+
 /** Tap a chip and it becomes a row with an amount field. */
 export const RECURRING_SUGGESTIONS = [
   { title: "اجاره", slug: "housing", dueDay: 1 },

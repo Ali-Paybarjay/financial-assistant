@@ -13,6 +13,21 @@ import type { GoalRow } from "@/lib/supabase/database.types";
  * Pure, and pinned by tests/unit/goals.spec.ts. The reads live in the page.
  */
 
+/**
+ * A goal once the ledger has been read, the way AccountWithBalance is an
+ * account once its rows have been. `saved` is the only number anything should
+ * measure progress against; `opening_saved` on its own is just where it
+ * started.
+ */
+export type GoalWithProgress = GoalRow & {
+  /** opening_saved + funded − spent. Negative when it was overspent. */
+  saved: Minor;
+  /** Moved into savings for it. */
+  funded: Minor;
+  /** Spent on it — real expenses, on the day they happened. */
+  spent: Minor;
+};
+
 export type GoalStanding =
   /** Already saved. Nothing to plan. */
   | "done"
@@ -30,7 +45,7 @@ export type GoalStanding =
   | "paused";
 
 export type GoalPlan = {
-  goal: GoalRow;
+  goal: GoalWithProgress;
   /** Still to be found. Never negative — an overshoot is not a debt. */
   remaining: Minor;
   /** 0–100, capped. */
@@ -60,9 +75,12 @@ export type SavingsPlan = {
   unassigned: Minor;
 };
 
-function progressOf(goal: GoalRow): number {
+function progressOf(goal: GoalWithProgress): number {
   if (goal.target_amount <= 0) return 0;
-  return Math.min(100, Math.round((goal.saved_amount / goal.target_amount) * 100));
+  // Floored as well as capped: a goal that has been overspent is at zero, not
+  // at a negative width the progress bar would render as nothing anyway.
+  const percent = Math.round((goal.saved / goal.target_amount) * 100);
+  return Math.min(100, Math.max(0, percent));
 }
 
 /**
@@ -84,8 +102,8 @@ export function contributionMonths(today: IsoDate, targetDate: IsoDate): number 
  * Rounded up: rounding down leaves the target short by a unit for every month
  * that passes, which is exactly the kind of miss that makes a plan worthless.
  */
-export function requiredMonthly(goal: GoalRow, today: IsoDate): Minor | null {
-  const remaining = Math.max(0, goal.target_amount - goal.saved_amount);
+export function requiredMonthly(goal: GoalWithProgress, today: IsoDate): Minor | null {
+  const remaining = Math.max(0, goal.target_amount - goal.saved);
   if (remaining === 0 || goal.status !== "active" || !goal.target_date) return null;
 
   // Past the date, or inside the month it falls in: there is no month left to
@@ -95,8 +113,8 @@ export function requiredMonthly(goal: GoalRow, today: IsoDate): Minor | null {
 }
 
 /** One goal, before any money has been handed out. */
-function baseline(goal: GoalRow, today: IsoDate): GoalPlan {
-  const remaining = Math.max(0, goal.target_amount - goal.saved_amount);
+function baseline(goal: GoalWithProgress, today: IsoDate): GoalPlan {
+  const remaining = Math.max(0, goal.target_amount - goal.saved);
   const shared = {
     goal,
     remaining,
@@ -106,7 +124,10 @@ function baseline(goal: GoalRow, today: IsoDate): GoalPlan {
     arrivesOn: null,
   };
 
-  if (remaining === 0) {
+  // Closed by hand counts as done even with money still to go: the user is
+  // the authority on whether they are finished with a goal, not the target
+  // they typed into it months ago.
+  if (remaining === 0 || goal.status === "achieved") {
     return { ...shared, monthsLeft: null, required: null, standing: "done" };
   }
 
@@ -160,7 +181,7 @@ function baseline(goal: GoalRow, today: IsoDate): GoalPlan {
  * is the truth.
  */
 export function planSavings(
-  goals: readonly GoalRow[],
+  goals: readonly GoalWithProgress[],
   surplus: Minor,
   today: IsoDate,
 ): SavingsPlan {

@@ -1,7 +1,7 @@
 import { requireViewer } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
 import { listCategories } from "@/lib/queries/categories";
 import { listAccountsWithBalances } from "@/lib/queries/accounts";
+import { listGoalsWithProgress } from "@/lib/queries/goals";
 import { listOpenDongGroups } from "@/lib/queries/dong";
 import { accountsDue, preferredAccountId, totalBalance } from "@/lib/accounts";
 import {
@@ -36,7 +36,6 @@ export default async function DashboardPage({
   const previous = monthRange(viewer.timeZone, shiftMonth(range.month, -1));
   const seriesStart = shiftMonth(range.month, -(SERIES_MONTHS - 1));
 
-  const supabase = await createClient();
   const [
     categories,
     accounts,
@@ -45,7 +44,7 @@ export default async function DashboardPage({
     previousTotals,
     series,
     recent,
-    { data: goals },
+    allGoals,
   ] =
     await Promise.all([
       listCategories(),
@@ -55,13 +54,12 @@ export default async function DashboardPage({
       monthTotals(previous.from, previous.to),
       monthlySeries(seriesStart, range.to),
       listTransactions({ from: range.from, to: range.to, limit: 10 }),
-      supabase
-        .from("goals")
-        .select("*")
-        .eq("status", "active")
-        .order("priority")
-        .limit(4),
+      // Progress comes from the ledger, so the card cannot quietly disagree
+      // with the goals page about how far along something is.
+      listGoalsWithProgress(),
     ]);
+
+  const goals = allGoals.filter((goal) => goal.status === "active").slice(0, 4);
 
   const seriesPoints = Array.from({ length: SERIES_MONTHS }, (_, index) => {
     const month = shiftMonth(seriesStart, index);
@@ -94,7 +92,7 @@ export default async function DashboardPage({
       byCategory={byCategory}
       series={seriesPoints}
       recent={recent}
-      goals={goals ?? []}
+      goals={goals}
       categories={categories}
       accounts={accounts}
       accountsTotal={totalBalance(accounts)}

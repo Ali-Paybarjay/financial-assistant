@@ -126,6 +126,17 @@ export type AccountBalanceRow = {
   last_activity_on: string | null;
 };
 
+/** What goal_progress() returns: a goal's standing, derived from the ledger. */
+export type GoalProgressRow = {
+  goal_id: string;
+  /** Moved into savings for it. */
+  funded: number;
+  /** Spent on it. */
+  spent: number;
+  /** opening_saved + funded − spent. Negative when it was overspent. */
+  saved: number;
+};
+
 export type IncomeSourceRow = {
   id: string;
   user_id: string;
@@ -192,6 +203,11 @@ export type TransactionRow = {
   recurring_expense_id: string | null;
   posted_month: string | null;
   statement_line_id: string | null;
+  /**
+   * Which goal this row is about. On a transfer it is money being set aside;
+   * on an expense it is that money being spent. Never on income.
+   */
+  goal_id: string | null;
   ai_confidence: number | null;
   ai_raw: unknown | null;
   is_confirmed: boolean;
@@ -207,7 +223,12 @@ export type GoalRow = {
   title: string;
   type: string;
   target_amount: number;
-  saved_amount: number;
+  /**
+   * What was already set aside before the app knew. Everything since comes
+   * from the ledger — read a goal's real progress through goal_progress(),
+   * never from this column.
+   */
+  opening_saved: number;
   target_date: string | null;
   priority: number;
   status: GoalStatus;
@@ -397,7 +418,7 @@ export type Database = {
       recurring_expenses: Table<RecurringExpenseRow, "is_active" | "auto_post">;
       media_assets: Table<MediaAssetRow, "status">;
       transactions: Table<TransactionRow, "is_confirmed" | "needs_review">;
-      goals: Table<GoalRow, "saved_amount" | "priority" | "status">;
+      goals: Table<GoalRow, "opening_saved" | "priority" | "status">;
       variable_expense_baselines: Table<VariableExpenseBaselineRow>;
       ai_usage_logs: Table<AiUsageLogRow>;
       statement_imports: Table<
@@ -426,6 +447,10 @@ export type Database = {
       account_balances: {
         Args: Record<never, never>;
         Returns: AccountBalanceRow[];
+      };
+      goal_progress: {
+        Args: Record<never, never>;
+        Returns: GoalProgressRow[];
       };
       dong_balances: {
         Args: { p_group_id: string };
