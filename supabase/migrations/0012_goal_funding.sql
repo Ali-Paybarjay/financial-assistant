@@ -38,14 +38,30 @@ create index if not exists transactions_goal_idx on public.transactions (goal_id
 -- Renamed rather than repurposed in place, so that every read of it fails to
 -- compile until it has been looked at. A column that quietly changes meaning
 -- is how a progress bar ends up showing a number nobody can explain.
-alter table public.goals rename column saved_amount to opening_saved;
+--
+-- Guarded because a rename is the one statement here with no `if not exists`
+-- of its own, and a migration that cannot be run twice is a migration that
+-- breaks the second time anyone replays the folder.
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'goals'
+      and column_name = 'saved_amount'
+  ) then
+    alter table public.goals rename column saved_amount to opening_saved;
+  end if;
+end
+$$;
 
 comment on column public.goals.opening_saved is
   'What was already set aside before the app knew. Everything after it is derived from transactions.goal_id; use goal_progress().';
 
 -- ------------------------------------------------- what a goal holds now --
 
--- The mirror of account_balances(): one definition of a goal''s progress, in
+-- The mirror of account_balances(): one definition of what a goal holds, in
 -- SQL, beside the ledger it comes from.
 create or replace function public.goal_progress()
 returns table (
