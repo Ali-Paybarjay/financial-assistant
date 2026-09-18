@@ -126,6 +126,18 @@ export function TransactionRowItem({
                   .filter(Boolean)
                   .join(" · ")}
         </span>
+
+        {/* On an unconfirmed row the line above is given over to the guess, so
+            the goal would otherwise vanish until the row is confirmed. It gets
+            its own line rather than joining that one, because that line is
+            brass — the colour means «the model guessed this» — and the goal is
+            something the user chose. Saying it in brass would be a lie about
+            where it came from. */}
+        {unconfirmed && goalTitle && (
+          <span className="truncate text-caption text-ink-muted">
+            {isTransfer ? `پس‌اندازِ ${goalTitle}` : `بابت ${goalTitle}`}
+          </span>
+        )}
       </span>
 
       <span className="flex shrink-0 flex-col items-end gap-0.5">
