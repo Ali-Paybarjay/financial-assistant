@@ -1,4 +1,5 @@
 import { requireViewer } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { listCategories } from "@/lib/queries/categories";
 import { listAccountsWithBalances } from "@/lib/queries/accounts";
 import { listGoalsWithProgress } from "@/lib/queries/goals";
@@ -64,6 +65,27 @@ export default async function DashboardPage({
   // decide its own limit.
   const goals = allGoals.filter((goal) => goal.status === "active");
 
+  /**
+   * Fixed bills are only ever generated for the month the user is in, so a
+   * month they did not open the app in never got its rent. PLAN.md said this
+   * limit would be stated in the UI and it never was — it lived in a code
+   * comment, where the person whose history is missing a month cannot read
+   * it.
+   *
+   * Asked only when a past month turns out to have none, so the common case
+   * pays for nothing.
+   */
+  let missedRecurring = false;
+  if (range.month !== current.month && totals.recurringCount === 0) {
+    const supabase = await createClient();
+    const { count } = await supabase
+      .from("recurring_expenses")
+      .select("id", { count: "exact", head: true })
+      .eq("is_active", true)
+      .eq("auto_post", true);
+    missedRecurring = (count ?? 0) > 0;
+  }
+
   const seriesPoints = Array.from({ length: SERIES_MONTHS }, (_, index) => {
     const month = shiftMonth(seriesStart, index);
     return series.get(month) ?? { month, income: 0, expense: 0 };
@@ -85,6 +107,7 @@ export default async function DashboardPage({
       today={today}
       month={range.month}
       isCurrentMonth={range.month === current.month}
+      missedRecurring={missedRecurring}
       daysLeft={daysLeftInMonth(viewer.timeZone, today)}
       totals={{
         income: totals.income,
