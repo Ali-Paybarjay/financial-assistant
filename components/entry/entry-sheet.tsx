@@ -117,6 +117,7 @@ export function EntryLauncher({
                 currency={currency}
                 categories={categories}
                 accounts={accounts}
+                goals={goals}
                 defaultAccountId={defaultAccountId}
                 onSaved={setConfirmation}
               />
@@ -126,6 +127,7 @@ export function EntryLauncher({
                 currency={currency}
                 categories={categories}
                 accounts={accounts}
+                goals={goals}
                 defaultAccountId={defaultAccountId}
                 onSaved={setConfirmation}
               />
