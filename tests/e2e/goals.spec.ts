@@ -47,12 +47,29 @@ test("a goal says what to put aside each month, and when it arrives", async ({
   const card = page.getByRole("listitem").filter({ hasText: TITLE });
   const open = () => card.first().getByRole("button").first().click();
 
-  // A leftover from an interrupted run would make the create step ambiguous.
-  if (await card.count()) {
+  /**
+   * Delete the goal, and wait for the sheet to close before looking at the
+   * list.
+   *
+   * Asserting the card is gone while the sheet is still open proves nothing:
+   * the sheet is a modal, so Radix marks the rest of the page aria-hidden,
+   * `getByRole` sees no listitems at all, and the count is 0 whether or not
+   * anything was deleted. That is not a hypothetical — it let this test pass
+   * while leaving its goal behind on the account, once per run.
+   */
+  const remove = async () => {
+    const before = await card.count();
     await open();
     await page.getByRole("button", { name: "حذف" }).click();
-    await expect(card).toHaveCount(0, { timeout: 15_000 });
-  }
+    await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 15_000 });
+    await expect(card).toHaveCount(before - 1, { timeout: 15_000 });
+  };
+
+  // Leftovers from interrupted runs would make the create step ambiguous, and
+  // there can be more than one: `if` cleared a single row per run, so while
+  // the bug above was dropping deletes they piled up faster than they were
+  // swept. A loop is what makes the sweep total rather than one-per-run.
+  while (await card.count()) await remove();
 
   await page.getByRole("button", { name: "هدف تازه" }).click();
   await page.getByLabel("عنوان").fill(TITLE);
@@ -72,7 +89,5 @@ test("a goal says what to put aside each month, and when it arrives", async ({
     page.getByRole("heading", { name: "برنامه‌ی پس‌انداز" }),
   ).toBeVisible();
 
-  await open();
-  await page.getByRole("button", { name: "حذف" }).click();
-  await expect(card).toHaveCount(0, { timeout: 15_000 });
+  await remove();
 });

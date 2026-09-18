@@ -59,7 +59,10 @@ export default async function DashboardPage({
       listGoalsWithProgress(),
     ]);
 
-  const goals = allGoals.filter((goal) => goal.status === "active").slice(0, 4);
+  // The whole active list, not the four the card shows: the entry sheet needs
+  // to offer every goal a purchase could belong to, and the card is free to
+  // decide its own limit.
+  const goals = allGoals.filter((goal) => goal.status === "active");
 
   const seriesPoints = Array.from({ length: SERIES_MONTHS }, (_, index) => {
     const month = shiftMonth(seriesStart, index);

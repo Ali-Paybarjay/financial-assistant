@@ -163,6 +163,12 @@ export type RecurringExpenseRow = {
   currency: string;
   frequency: string;
   due_day: number;
+  /**
+   * Which month a non-monthly bill falls in: that month for a yearly one,
+   * that month and every third after it for a quarterly one. Null exactly
+   * when the frequency is monthly, which the database enforces.
+   */
+  due_month: number | null;
   is_active: boolean;
   auto_post: boolean;
   created_at: string;

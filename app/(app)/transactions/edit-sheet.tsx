@@ -39,7 +39,7 @@ export function EditTransactionSheet({
   currency: CurrencyCode;
   categories: CategoryRow[];
   accounts: AccountRow[];
-  /** Active goals, so a row can say which one it set aside for or spent. */
+  /** Every goal, open or closed. Which of them to offer is decided below. */
   goals: GoalRow[];
   onClose: () => void;
   onDeleted: (id: string, title: string) => void;
@@ -95,6 +95,14 @@ export function EditTransactionSheet({
   const isTransfer = type === "transfer";
   const visibleCategories = categories.filter((category) => category.kind === type);
   const needsReview = new Set(transaction?.needs_review ?? []);
+
+  // The open goals, plus whichever one this row already names even if it has
+  // since been closed. Without that second half, opening a row tagged to a
+  // closed goal and pressing save would quietly drop the tag — the select
+  // would have no option matching it, so it would fall back to «هیچ‌کدام».
+  const offerableGoals = goals.filter(
+    (goal) => goal.status === "active" || goal.id === transaction?.goal_id,
+  );
 
   const openAccounts = accounts.filter((account) => account.is_active);
   // A row that already is a transfer keeps the option even if one of its
@@ -225,7 +233,7 @@ export function EditTransactionSheet({
               On a transfer this says «I set this aside for X»; on an expense,
               «I spent X's money on it» — which is the day saved money finally
               becomes a spend. */}
-          {type !== "income" && goals.length > 0 && (
+          {type !== "income" && offerableGoals.length > 0 && (
             <Field
               label="بابت کدام هدف؟"
               htmlFor="edit-goal"
@@ -237,7 +245,7 @@ export function EditTransactionSheet({
             >
               <NativeSelect id="edit-goal" {...register("goalId")}>
                 <option value="">هیچ‌کدام</option>
-                {goals.map((goal) => (
+                {offerableGoals.map((goal) => (
                   <option key={goal.id} value={goal.id}>
                     {goal.title}
                   </option>

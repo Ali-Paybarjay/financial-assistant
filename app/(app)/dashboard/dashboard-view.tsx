@@ -23,6 +23,9 @@ import type { AccountWithBalance } from "@/lib/accounts";
 import type { DongDashboardGroup } from "@/lib/queries/dong";
 import type { CategoryRow, TransactionRow } from "@/lib/supabase/database.types";
 
+/** How many goals the dashboard card lists before it stops being a summary. */
+const CARD_GOALS = 4;
+
 export function DashboardView({
   currency,
   name,
@@ -72,6 +75,10 @@ export function DashboardView({
   const isEmpty = recent.length === 0;
   const categoryById = new Map(categories.map((category) => [category.id, category]));
   const accountById = new Map(accounts.map((account) => [account.id, account]));
+  // Every goal, not just the open ones: a row that funded a goal you have
+  // since closed should still say which goal that was.
+  const goalById = new Map(goals.map((goal) => [goal.id, goal]));
+  const openGoals = goals.filter((goal) => goal.status === "active");
 
   function goToMonth(delta: number) {
     router.push(`/dashboard?month=${shiftMonth(month, delta)}`);
@@ -209,7 +216,7 @@ export function DashboardView({
             </div>
 
             <div className="flex flex-col gap-3 min-[960px]:grid min-[960px]:grid-cols-[1fr_1.25fr] min-[960px]:items-start">
-              {goals.length > 0 && (
+              {openGoals.length > 0 && (
                 <section className="rounded-card border border-hairline bg-surface p-4">
                   <div className="mb-3 flex items-baseline justify-between gap-2">
                     <h2 className="text-[15px] font-semibold text-ink">هدف‌ها</h2>
@@ -218,7 +225,10 @@ export function DashboardView({
                     </Link>
                   </div>
                   <ul className="flex flex-col gap-3">
-                    {goals.map((goal) => {
+                    {/* The card shows the first few; the whole list is here so
+                        the entry sheet can offer every goal a purchase might
+                        belong to. */}
+                    {openGoals.slice(0, CARD_GOALS).map((goal) => {
                       const progress = Math.min(
                         100,
                         Math.round((goal.saved / goal.target_amount) * 100),
@@ -300,6 +310,9 @@ export function DashboardView({
                         ? accountById.get(row.to_account_id)?.title
                         : undefined
                     }
+                    goalTitle={
+                      row.goal_id ? goalById.get(row.goal_id)?.title : undefined
+                    }
                     currency={currency}
                     onSelect={() => router.push("/transactions")}
                   />
@@ -318,6 +331,7 @@ export function DashboardView({
         currency={currency}
         categories={categories}
         accounts={accounts}
+        goals={openGoals}
         defaultAccountId={defaultAccountId}
         today={today}
         open={entryOpen}

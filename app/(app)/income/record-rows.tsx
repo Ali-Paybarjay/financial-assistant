@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import type { CurrencyCode } from "@/lib/money";
 import {
   FREQUENCY_OPTIONS,
+  MONTH_OPTIONS,
   RECURRING_FREQUENCY_LABEL,
 } from "@/lib/onboarding/config";
 import type {
@@ -161,7 +162,10 @@ export function RecurringRowItem({
         // A yearly premium listed as monthly is a twelvefold lie about what
         // the month costs.
         RECURRING_FREQUENCY_LABEL.get(expense.frequency) ?? "ماهانه",
-        `روز ${faNumber(expense.due_day)}`,
+        // A day alone does not locate a bill that is not due every month.
+        expense.due_month
+          ? `${MONTH_OPTIONS[expense.due_month - 1]?.label} ${faNumber(expense.due_day)}`
+          : `روز ${faNumber(expense.due_day)}`,
         expense.auto_post ? "خودکار" : "دستی",
         category?.name_fa,
         expense.is_active ? null : "غیرفعال",
