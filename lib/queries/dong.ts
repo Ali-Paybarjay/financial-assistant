@@ -9,6 +9,7 @@ import type {
   DongGroupRow,
   DongGroupTotalRow,
   DongMemberRow,
+  DongMyBalanceRow,
   DongPaymentRow,
 } from "@/lib/supabase/database.types";
 import type { MemberBalance } from "@/lib/dong";
@@ -177,4 +178,51 @@ export async function getDongGroup(groupId: string): Promise<DongGroupDetail> {
     expenses: totals,
     payments: (payments ?? []) as DongPaymentRow[],
   };
+}
+
+/** One open group as the dashboard shows it: its name, and where the viewer stands. */
+export type DongDashboardGroup = {
+  id: string;
+  title: string;
+  currency: CurrencyCode;
+  memberCount: number;
+  /** The viewer's own net. Null when no member of the group is marked as them. */
+  net: Minor | null;
+};
+
+/**
+ * The open groups, for the dashboard card.
+ *
+ * Nothing is summed across them: each group carries its own currency and this
+ * app converts nothing, so they are rendered one per row rather than as a
+ * total that would silently add tomans to euros.
+ */
+export async function listOpenDongGroups(): Promise<DongDashboardGroup[]> {
+  const supabase = await createClient();
+
+  const [{ data: groups }, { data: totals }, { data: mine }] = await Promise.all([
+    supabase.from("dong_groups").select("*").is("settled_at", null),
+    supabase.rpc("dong_group_totals"),
+    supabase.rpc("dong_my_balances"),
+  ]);
+
+  const countByGroup = new Map<string, number>(
+    ((totals ?? []) as DongGroupTotalRow[]).map((row) => [row.group_id, row.member_count]),
+  );
+  const netByGroup = new Map<string, number>(
+    ((mine ?? []) as DongMyBalanceRow[]).map((row) => [row.group_id, row.net]),
+  );
+
+  return (groups ?? [])
+    .map((group) => ({
+      id: group.id,
+      title: group.title,
+      currency: groupCurrency(group),
+      memberCount: countByGroup.get(group.id) ?? 0,
+      net: netByGroup.get(group.id) ?? null,
+    }))
+    // Whoever the user owes, or is owed by, first; then the newest group.
+    .sort(
+      (a, b) => Math.abs(b.net ?? 0) - Math.abs(a.net ?? 0) || b.id.localeCompare(a.id),
+    );
 }

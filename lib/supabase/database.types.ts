@@ -369,6 +369,12 @@ export type DongBalanceRow = {
   net: number;
 };
 
+/** One row of dong_my_balances(): the viewer's own net in one group. */
+export type DongMyBalanceRow = {
+  group_id: string;
+  net: number;
+};
+
 /** One row of dong_group_totals(), for the groups list. */
 export type DongGroupTotalRow = {
   group_id: string;
@@ -428,6 +434,10 @@ export type Database = {
       dong_group_totals: {
         Args: Record<never, never>;
         Returns: DongGroupTotalRow[];
+      };
+      dong_my_balances: {
+        Args: Record<never, never>;
+        Returns: DongMyBalanceRow[];
       };
       /** Writes an expense and its shares in one transaction. Returns the id. */
       dong_save_expense: {

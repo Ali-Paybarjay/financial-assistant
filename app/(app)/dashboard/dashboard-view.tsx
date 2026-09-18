@@ -10,6 +10,7 @@ import { CategoryDonut, type CategorySlice } from "@/components/dashboard/catego
 import { MonthBars } from "@/components/dashboard/month-bars";
 import { EmptyDashboard } from "@/components/dashboard/empty-dashboard";
 import { AccountBalances } from "@/components/dashboard/account-balances";
+import { DongSummary } from "@/components/dashboard/dong-summary";
 import { ReconcileBanner } from "@/components/accounts/reconcile-banner";
 import { TransactionRowItem } from "@/components/transactions/transaction-row";
 import { EntryLauncher } from "@/components/entry/entry-sheet";
@@ -18,6 +19,7 @@ import { formatMonthFa, shiftMonth } from "@/lib/date";
 import type { CurrencyCode } from "@/lib/money";
 import type { MonthPoint } from "@/lib/queries/transactions";
 import type { AccountWithBalance } from "@/lib/accounts";
+import type { DongDashboardGroup } from "@/lib/queries/dong";
 import type {
   CategoryRow,
   GoalRow,
@@ -41,6 +43,7 @@ export function DashboardView({
   accounts,
   accountsTotal,
   accountsDue,
+  dongGroups,
   defaultAccountId,
 }: {
   currency: CurrencyCode;
@@ -60,6 +63,8 @@ export function DashboardView({
   accountsTotal: number;
   /** Open accounts not yet checked against the bank this month. */
   accountsDue: AccountWithBalance[];
+  /** Open groups, for the one entry point the feature has on a phone. */
+  dongGroups: DongDashboardGroup[];
   defaultAccountId: string | null;
 }) {
   const router = useRouter();
@@ -169,7 +174,18 @@ export function DashboardView({
 
       <div className="flex flex-col gap-3 p-4 min-[960px]:mt-3 min-[960px]:p-0">
         {isEmpty ? (
-          <EmptyDashboard onStart={() => setEntryOpen(true)} />
+          <>
+            <EmptyDashboard onStart={() => setEntryOpen(true)} />
+            {/* An empty month is exactly when a user goes looking for the
+                pages that are not in the tab bar, so these outlive it. */}
+            <ReconcileBanner due={accountsDue} />
+            <AccountBalances
+              accounts={accounts}
+              total={accountsTotal}
+              currency={currency}
+            />
+            <DongSummary groups={dongGroups} />
+          </>
         ) : (
           <>
             {totals.unconfirmedCount > 0 && (
@@ -245,6 +261,8 @@ export function DashboardView({
                 total={accountsTotal}
                 currency={currency}
               />
+
+              <DongSummary groups={dongGroups} />
 
               <section className="overflow-hidden rounded-card border border-hairline bg-surface">
                 <div className="flex items-center justify-between p-4 pb-2">
