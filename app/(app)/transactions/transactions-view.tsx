@@ -21,6 +21,7 @@ import type { CurrencyCode } from "@/lib/money";
 import type {
   AccountRow,
   CategoryRow,
+  GoalRow,
   TransactionRow,
 } from "@/lib/supabase/database.types";
 import { restoreTransaction } from "./actions";
@@ -41,6 +42,7 @@ export function TransactionsView({
   transactions,
   categories,
   accounts,
+  goals,
   activeFilters,
 }: {
   currency: CurrencyCode;
@@ -49,6 +51,7 @@ export function TransactionsView({
   transactions: TransactionRow[];
   categories: CategoryRow[];
   accounts: AccountRow[];
+  goals: GoalRow[];
   activeFilters: ActiveFilters;
 }) {
   const router = useRouter();
@@ -290,6 +293,7 @@ export function TransactionsView({
         currency={currency}
         categories={categories}
         accounts={accounts}
+        goals={goals}
         onClose={() => setEditing(null)}
         onDeleted={(id, title) => {
           setEditing(null);

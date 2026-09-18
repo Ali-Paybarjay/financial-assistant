@@ -17,6 +17,7 @@ import { formatMoney, type CurrencyCode } from "@/lib/money";
 import type {
   AccountRow,
   CategoryRow,
+  GoalRow,
   TransactionRow,
 } from "@/lib/supabase/database.types";
 import {
@@ -30,6 +31,7 @@ export function EditTransactionSheet({
   currency,
   categories,
   accounts,
+  goals,
   onClose,
   onDeleted,
 }: {
@@ -37,6 +39,8 @@ export function EditTransactionSheet({
   currency: CurrencyCode;
   categories: CategoryRow[];
   accounts: AccountRow[];
+  /** Active goals, so a row can say which one it set aside for or spent. */
+  goals: GoalRow[];
   onClose: () => void;
   onDeleted: (id: string, title: string) => void;
 }) {
@@ -59,6 +63,7 @@ export function EditTransactionSheet({
       categorySlug: "groceries",
       accountId: "",
       toAccountId: "",
+      goalId: "",
       occurredOn: "",
       merchant: "",
       note: "",
@@ -77,6 +82,7 @@ export function EditTransactionSheet({
       categorySlug: slug ?? "misc",
       accountId: transaction.account_id ?? "",
       toAccountId: transaction.to_account_id ?? "",
+      goalId: transaction.goal_id ?? "",
       occurredOn: transaction.occurred_on,
       merchant: transaction.merchant ?? "",
       note: transaction.note ?? "",
@@ -213,6 +219,31 @@ export function EditTransactionSheet({
               error={errors.toAccountId?.message}
               {...register("toAccountId")}
             />
+          )}
+
+          {/* Income is never goal money, so the question is not asked there.
+              On a transfer this says «I set this aside for X»; on an expense,
+              «I spent X's money on it» — which is the day saved money finally
+              becomes a spend. */}
+          {type !== "income" && goals.length > 0 && (
+            <Field
+              label="بابت کدام هدف؟"
+              htmlFor="edit-goal"
+              hint={
+                isTransfer
+                  ? "اگر این انتقال پس‌اندازِ یک هدف است، اینجا بگو تا پای همان هدف نوشته شود."
+                  : "اگر این خرید از پس‌انداز همان هدف بوده، اینجا بگو تا از موجودی هدف کم شود."
+              }
+            >
+              <NativeSelect id="edit-goal" {...register("goalId")}>
+                <option value="">هیچ‌کدام</option>
+                {goals.map((goal) => (
+                  <option key={goal.id} value={goal.id}>
+                    {goal.title}
+                  </option>
+                ))}
+              </NativeSelect>
+            </Field>
           )}
 
           {(becomingTransfer || leavingTransfer) && (

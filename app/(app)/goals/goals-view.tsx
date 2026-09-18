@@ -4,7 +4,15 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CaretDown, CaretUp, Flag, Plus, Trash } from "@phosphor-icons/react/dist/ssr";
+import {
+  ArrowDown,
+  CaretDown,
+  CaretUp,
+  CheckCircle,
+  Flag,
+  Plus,
+  Trash,
+} from "@phosphor-icons/react/dist/ssr";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,11 +26,12 @@ import { formatMoney, type CurrencyCode } from "@/lib/money";
 import { GOAL_TYPE_OPTIONS } from "@/lib/onboarding/config";
 import { goalFormSchema, type GoalForm } from "@/lib/validation/records";
 import type { MonthlySurplus } from "@/lib/cashflow";
-import type { SavingsPlan } from "@/lib/goals";
-import type { GoalRow } from "@/lib/supabase/database.types";
-import { deleteGoal, reorderGoal, saveGoal } from "./actions";
+import type { AccountWithBalance } from "@/lib/accounts";
+import type { GoalPlan, GoalWithProgress, SavingsPlan } from "@/lib/goals";
+import { deleteGoal, reorderGoal, saveGoal, setGoalStatus } from "./actions";
 import { GoalPlanLine } from "./goal-plan-line";
 import { PlanCard } from "./plan-card";
+import { FundGoalSheet } from "./fund-sheet";
 
 function amountText(minor: number, currency: CurrencyCode): string {
   return formatMoney(minor, currency, { omitSymbol: true }).replace(/,/g, "");
@@ -32,14 +41,26 @@ export function GoalsView({
   currency,
   plan,
   surplus,
+  today,
+  fundedThisMonth,
+  accounts,
+  savingsAccounts,
+  defaultFromAccountId,
 }: {
   currency: CurrencyCode;
   plan: SavingsPlan;
   surplus: MonthlySurplus;
+  today: string;
+  /** Goal id -> what has already been moved into savings for it this month. */
+  fundedThisMonth: Record<string, number>;
+  accounts: AccountWithBalance[];
+  savingsAccounts: AccountWithBalance[];
+  defaultFromAccountId: string | null;
 }) {
   const router = useRouter();
-  const [editing, setEditing] = useState<GoalRow | null>(null);
+  const [editing, setEditing] = useState<GoalWithProgress | null>(null);
   const [open, setOpen] = useState(false);
+  const [funding, setFunding] = useState<GoalPlan | null>(null);
   const [formError, setFormError] = useState<string>();
   const [isPending, startTransition] = useTransition();
 
@@ -73,7 +94,7 @@ export function GoalsView({
             title: editing.title,
             type: editing.type as GoalForm["type"],
             targetAmount: amountText(editing.target_amount, currency),
-            savedAmount: amountText(editing.saved_amount, currency),
+            savedAmount: amountText(editing.opening_saved, currency),
             targetDate: editing.target_date ?? "",
           }
         : {
@@ -142,7 +163,7 @@ export function GoalsView({
                         {goal.title}
                       </span>
                       <span className="flex items-baseline gap-1 text-caption text-ink-muted">
-                        <Money minor={goal.saved_amount} currency={currency} />
+                        <Money minor={goal.saved} currency={currency} />
                         /
                         <Money minor={goal.target_amount} currency={currency} />
                       </span>
@@ -171,6 +192,15 @@ export function GoalsView({
                       </span>
                     </div>
 
+                    {/* Money already spent on the goal is not a setback to
+                        hide: it is the goal doing its job, and without saying
+                        so a falling bar looks like a bug. */}
+                    {goal.spent > 0 && (
+                      <span className="text-caption text-ink-muted">
+                        <Money minor={goal.spent} currency={currency} /> از این هدف خرج
+                        شده
+                      </span>
+                    )}
                   </button>
 
                   {/* Beside the plan line rather than above it: the line is
@@ -210,6 +240,39 @@ export function GoalsView({
                       </div>
                     )}
                   </div>
+
+                  {/* A goal that has been reached but not closed keeps
+                      sitting in the list looking unfinished. The one action it
+                      needs belongs on the card, not buried in the edit sheet. */}
+                  {row.standing === "done" && goal.status === "active" ? (
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-caption text-ink-muted">
+                        دیگر کاری با این هدف نداری؟
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={isPending}
+                        onClick={() =>
+                          startTransition(async () => {
+                            await setGoalStatus(goal.id, "achieved");
+                            router.refresh();
+                          })
+                        }
+                      >
+                        <CheckCircle size={14} />
+                        تمامش کن
+                      </Button>
+                    </div>
+                  ) : (
+                    <FundingRow
+                      plan={row}
+                      currency={currency}
+                      alreadyFunded={fundedThisMonth[goal.id] ?? 0}
+                      onFund={() => setFunding(row)}
+                    />
+                  )}
                 </li>
               );
             })}
@@ -230,6 +293,17 @@ export function GoalsView({
         <Plus size={18} />
         هدف تازه
       </Button>
+
+      <FundGoalSheet
+        plan={funding}
+        currency={currency}
+        today={today}
+        accounts={accounts}
+        savingsAccounts={savingsAccounts}
+        defaultFromAccountId={defaultFromAccountId}
+        suggested={suggestedFor(funding, fundedThisMonth)}
+        onClose={() => setFunding(null)}
+      />
 
       <BottomSheet
         open={open}
@@ -261,10 +335,15 @@ export function GoalsView({
             >
               <AmountInput id="goal-target" currency={currency} {...register("targetAmount")} />
             </Field>
-            <Field label="تا حالا کنار گذاشته‌ای" htmlFor="goal-saved">
+            <Field label="از قبل کنار گذاشته بودی" htmlFor="goal-saved">
               <AmountInput id="goal-saved" currency={currency} {...register("savedAmount")} />
             </Field>
           </div>
+
+          <p className="-mt-1 text-caption text-ink-muted">
+            «از قبل» فقط نقطه‌ی شروع است. از این به بعد، هرچه به حساب پس‌اندازت بریزی
+            خودش شمرده می‌شود.
+          </p>
 
           <Field
             label="تا چه تاریخی؟"
@@ -273,6 +352,41 @@ export function GoalsView({
           >
             <Input id="goal-date" type="date" dir="ltr" {...register("targetDate")} />
           </Field>
+
+          {/* Closing is not deleting. Deleting takes away the record of
+              having reached it and unlabels every transfer that funded it;
+              closing only stops it claiming a share of next month. */}
+          {editing && (
+            <div className="flex flex-col gap-2 rounded-control border border-hairline bg-paper p-3">
+              <span className="text-caption font-medium text-ink-muted">وضعیت</span>
+              <div className="flex gap-2">
+                {(
+                  [
+                    { value: "active", label: "در جریان" },
+                    { value: "paused", label: "فعلاً نه" },
+                    { value: "achieved", label: "تمام شد" },
+                  ] as const
+                ).map((option) => (
+                  <Button
+                    key={option.value}
+                    type="button"
+                    size="sm"
+                    variant={editing.status === option.value ? "default" : "outline"}
+                    disabled={isPending || editing.status === option.value}
+                    onClick={() =>
+                      startTransition(async () => {
+                        await setGoalStatus(editing.id, option.value);
+                        setOpen(false);
+                        router.refresh();
+                      })
+                    }
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="mt-2 flex gap-2">
             <Button type="submit" size="lg" className="flex-1" disabled={isPending}>
@@ -299,6 +413,76 @@ export function GoalsView({
           </div>
         </form>
       </BottomSheet>
+    </div>
+  );
+}
+
+/**
+ * What is still to be moved for a goal this month. Already-moved money is
+ * subtracted, so the sheet never opens asking a second time for an amount the
+ * user has already transferred.
+ */
+function suggestedFor(
+  plan: GoalPlan | null,
+  fundedThisMonth: Record<string, number>,
+): number {
+  if (!plan) return 0;
+  const left = plan.allocated - (fundedThisMonth[plan.goal.id] ?? 0);
+  // Nothing left to move, but the user opened the sheet anyway — they mean to
+  // put in extra, so start from what the plan asks for rather than from zero.
+  return left > 0 ? left : plan.allocated;
+}
+
+/**
+ * The ask: move this month's share into savings, and say when it is done.
+ *
+ * A plan that only ever states a number leaves the user to do the moving in
+ * another app and remember they did. This is the one action that makes a goal
+ * true — and once the month's share has moved, the row stops asking and says
+ * so instead.
+ */
+function FundingRow({
+  plan,
+  currency,
+  alreadyFunded,
+  onFund,
+}: {
+  plan: GoalPlan;
+  currency: CurrencyCode;
+  alreadyFunded: number;
+  onFund: () => void;
+}) {
+  if (plan.standing === "done" || plan.standing === "paused") return null;
+
+  const outstanding = plan.allocated - alreadyFunded;
+
+  if (alreadyFunded > 0 && outstanding <= 0) {
+    return (
+      <p className="flex items-center gap-1.5 text-caption font-medium text-positive">
+        <CheckCircle size={14} weight="fill" />
+        این ماه <Money minor={alreadyFunded} currency={currency} /> ریختی کنار.
+      </p>
+    );
+  }
+
+  // Nothing is allocated to it and nothing has been moved: there is no amount
+  // to ask for, and a button that funds zero is worse than no button.
+  if (plan.allocated <= 0) return null;
+
+  return (
+    <div className="flex items-center justify-between gap-2">
+      {alreadyFunded > 0 ? (
+        <span className="text-caption text-ink-muted">
+          این ماه <Money minor={alreadyFunded} currency={currency} /> ریختی؛{" "}
+          <Money minor={outstanding} currency={currency} /> مانده.
+        </span>
+      ) : (
+        <span className="text-caption text-ink-muted">هنوز نریخته‌ای کنار.</span>
+      )}
+      <Button type="button" variant="outline" size="sm" onClick={onFund}>
+        <ArrowDown size={14} />
+        بریز کنار
+      </Button>
     </div>
   );
 }

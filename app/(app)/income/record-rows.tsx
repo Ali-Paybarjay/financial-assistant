@@ -6,7 +6,10 @@ import { Money } from "@/components/money";
 import { faNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { CurrencyCode } from "@/lib/money";
-import { FREQUENCY_OPTIONS } from "@/lib/onboarding/config";
+import {
+  FREQUENCY_OPTIONS,
+  RECURRING_FREQUENCY_LABEL,
+} from "@/lib/onboarding/config";
 import type {
   CategoryRow,
   IncomeSourceRow,
@@ -154,7 +157,10 @@ export function RecurringRowItem({
       icon={<ArrowsClockwise size={18} />}
       title={expense.title}
       meta={[
-        "ماهانه",
+        // Was hardcoded to «ماهانه» back when nothing could be anything else.
+        // A yearly premium listed as monthly is a twelvefold lie about what
+        // the month costs.
+        RECURRING_FREQUENCY_LABEL.get(expense.frequency) ?? "ماهانه",
         `روز ${faNumber(expense.due_day)}`,
         expense.auto_post ? "خودکار" : "دستی",
         category?.name_fa,

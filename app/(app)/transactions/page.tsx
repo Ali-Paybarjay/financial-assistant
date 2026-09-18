@@ -1,6 +1,7 @@
 import { requireViewer } from "@/lib/auth";
 import { listCategories } from "@/lib/queries/categories";
 import { listAccounts } from "@/lib/queries/accounts";
+import { listGoalsWithProgress } from "@/lib/queries/goals";
 import { listTransactions } from "@/lib/queries/transactions";
 import { monthRange, todayInTimeZone } from "@/lib/date";
 import { TransactionsView } from "./transactions-view";
@@ -26,7 +27,11 @@ export default async function TransactionsPage({
       ? params.type
       : undefined;
 
-  const [categories, accounts] = await Promise.all([listCategories(), listAccounts()]);
+  const [categories, accounts, goals] = await Promise.all([
+    listCategories(),
+    listAccounts(),
+    listGoalsWithProgress(),
+  ]);
   const categoryId = params.category
     ? categories.find((entry) => entry.slug === params.category)?.id
     : undefined;
@@ -52,6 +57,7 @@ export default async function TransactionsPage({
       transactions={transactions}
       categories={categories}
       accounts={accounts}
+      goals={goals.filter((goal) => goal.status === "active")}
       activeFilters={{
         category: params.category,
         account: accountId,

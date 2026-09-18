@@ -16,16 +16,12 @@ import { TransactionRowItem } from "@/components/transactions/transaction-row";
 import { EntryLauncher } from "@/components/entry/entry-sheet";
 import { faNumber, faPercent } from "@/lib/format";
 import { formatMonthFa, shiftMonth } from "@/lib/date";
-import { requiredMonthly } from "@/lib/goals";
+import { requiredMonthly, type GoalWithProgress } from "@/lib/goals";
 import type { CurrencyCode } from "@/lib/money";
 import type { MonthPoint } from "@/lib/queries/transactions";
 import type { AccountWithBalance } from "@/lib/accounts";
 import type { DongDashboardGroup } from "@/lib/queries/dong";
-import type {
-  CategoryRow,
-  GoalRow,
-  TransactionRow,
-} from "@/lib/supabase/database.types";
+import type { CategoryRow, TransactionRow } from "@/lib/supabase/database.types";
 
 export function DashboardView({
   currency,
@@ -58,7 +54,7 @@ export function DashboardView({
   byCategory: CategorySlice[];
   series: MonthPoint[];
   recent: TransactionRow[];
-  goals: GoalRow[];
+  goals: GoalWithProgress[];
   categories: CategoryRow[];
   accounts: AccountWithBalance[];
   accountsTotal: number;
@@ -225,7 +221,7 @@ export function DashboardView({
                     {goals.map((goal) => {
                       const progress = Math.min(
                         100,
-                        Math.round((goal.saved_amount / goal.target_amount) * 100),
+                        Math.round((goal.saved / goal.target_amount) * 100),
                       );
                       // What the date costs per month. Whether it fits the
                       // month is the goals page's job — this card has no
@@ -239,7 +235,7 @@ export function DashboardView({
                               {goal.title}
                             </span>
                             <span className="flex shrink-0 items-baseline gap-1 text-caption text-ink-muted">
-                              <Money minor={goal.saved_amount} currency={currency} />/
+                              <Money minor={goal.saved} currency={currency} />/
                               <Money minor={goal.target_amount} currency={currency} />
                             </span>
                           </div>

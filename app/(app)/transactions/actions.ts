@@ -59,6 +59,9 @@ export async function saveTransaction(raw: unknown): Promise<SaveTransactionResu
     merchant: isTransfer ? null : parsed.data.merchant || null,
     note: parsed.data.note || null,
     occurred_on: parsed.data.occurredOn,
+    // Income is never goal money, so changing a row's type to income has to
+    // drop the goal with it rather than leave a tag the database would refuse.
+    goal_id: parsed.data.type === "income" ? null : parsed.data.goalId || null,
     is_confirmed: true,
     needs_review: [],
   };
