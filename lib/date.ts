@@ -89,6 +89,18 @@ export function daysBetween(from: IsoDate, to: IsoDate): number {
   return epochDay(to) - epochDay(from);
 }
 
+/**
+ * Whole calendar months from one date to another, signed. Only the year and
+ * the month are read, so this counts the number of month boundaries crossed —
+ * which is what «how many more times will I be paid before then» means.
+ * `monthsBetween('2026-09-18', '2026-12-01')` -> 3.
+ */
+export function monthsBetween(from: IsoDate, to: IsoDate): number {
+  const [fromYear, fromMonth] = from.split("-").map(Number);
+  const [toYear, toMonth] = to.split("-").map(Number);
+  return (toYear - fromYear) * 12 + (toMonth - fromMonth);
+}
+
 /** Step a calendar date by whole days. `addDays('2026-02-28', 1)` -> '2026-03-01'. */
 export function addDays(date: IsoDate, delta: number): IsoDate {
   const shifted = new Date(asUtcDate(date).getTime() + delta * 86_400_000);

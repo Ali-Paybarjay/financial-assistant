@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Flag, Plus, Trash } from "@phosphor-icons/react/dist/ssr";
+import { CaretDown, CaretUp, Flag, Plus, Trash } from "@phosphor-icons/react/dist/ssr";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,8 +17,12 @@ import { formatDateFa } from "@/lib/date";
 import { formatMoney, type CurrencyCode } from "@/lib/money";
 import { GOAL_TYPE_OPTIONS } from "@/lib/onboarding/config";
 import { goalFormSchema, type GoalForm } from "@/lib/validation/records";
+import type { MonthlySurplus } from "@/lib/cashflow";
+import type { SavingsPlan } from "@/lib/goals";
 import type { GoalRow } from "@/lib/supabase/database.types";
-import { deleteGoal, saveGoal } from "./actions";
+import { deleteGoal, reorderGoal, saveGoal } from "./actions";
+import { GoalPlanLine } from "./goal-plan-line";
+import { PlanCard } from "./plan-card";
 
 function amountText(minor: number, currency: CurrencyCode): string {
   return formatMoney(minor, currency, { omitSymbol: true }).replace(/,/g, "");
@@ -26,16 +30,24 @@ function amountText(minor: number, currency: CurrencyCode): string {
 
 export function GoalsView({
   currency,
-  goals,
+  plan,
+  surplus,
 }: {
   currency: CurrencyCode;
-  goals: GoalRow[];
+  plan: SavingsPlan;
+  surplus: MonthlySurplus;
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState<GoalRow | null>(null);
   const [open, setOpen] = useState(false);
   const [formError, setFormError] = useState<string>();
   const [isPending, startTransition] = useTransition();
+
+  // A goal waiting its turn is waiting for whichever undated goal took the
+  // money left after the deadlines — there is at most one, and naming it beats
+  // «در نوبت». A dated goal ahead of it is not what is holding it up: it took
+  // only what its own date costs, and would have taken that anyway.
+  const takingTheLeftover = plan.goals.find((row) => row.standing === "undated")?.goal;
 
   const {
     register,
@@ -89,71 +101,120 @@ export function GoalsView({
     });
   }
 
+  function move(id: string, direction: -1 | 1) {
+    startTransition(async () => {
+      await reorderGoal(id, direction);
+      router.refresh();
+    });
+  }
+
   return (
     <div className="mx-auto w-full max-w-[560px] px-4 py-4">
       <h1 className="mb-4 text-title font-semibold text-ink">هدف‌ها</h1>
 
-      {goals.length === 0 ? (
+      {plan.goals.length === 0 ? (
         <p className="rounded-card border border-hairline bg-surface p-6 text-center text-body text-ink-muted">
           هنوز هدفی نداری. یک هدف بساز تا بگویم ماهی چقدر باید بگذاری کنار.
         </p>
       ) : (
-        <ul className="flex flex-col gap-3">
-          {goals.map((goal) => {
-            const progress = Math.min(
-              100,
-              Math.round((goal.saved_amount / goal.target_amount) * 100),
-            );
-            const remaining = Math.max(goal.target_amount - goal.saved_amount, 0);
-            return (
-              <li key={goal.id}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditing(goal);
-                    setOpen(true);
-                  }}
-                  className="flex w-full flex-col gap-2 rounded-card border border-hairline bg-surface p-4 text-start hover:border-hairline-strong"
+        <>
+          <PlanCard plan={plan} surplus={surplus} currency={currency} />
+
+          <ul className="flex flex-col gap-3">
+            {plan.goals.map((row, index) => {
+              const goal = row.goal;
+              return (
+                <li
+                  key={goal.id}
+                  className="flex flex-col gap-2 rounded-card border border-hairline bg-surface p-4"
                 >
-                  <div className="flex items-baseline justify-between gap-3">
-                    <span className="flex items-center gap-2 text-[15px] font-medium text-ink">
-                      <Flag size={16} className="text-lapis" />
-                      {goal.title}
-                    </span>
-                    <span className="flex items-baseline gap-1 text-caption text-ink-muted">
-                      <Money minor={goal.saved_amount} currency={currency} />
-                      /
-                      <Money minor={goal.target_amount} currency={currency} />
-                    </span>
-                  </div>
-
-                  <div
-                    role="progressbar"
-                    aria-valuenow={progress}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-label={goal.title}
-                    className="h-2 overflow-hidden rounded-full bg-lapis-tint"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditing(goal);
+                      setOpen(true);
+                    }}
+                    className="flex flex-col gap-2 text-start"
                   >
-                    <div
-                      className="h-full rounded-full bg-lapis"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="flex items-center gap-2 text-[15px] font-medium text-ink">
+                        <Flag size={16} className="text-lapis" />
+                        {goal.title}
+                      </span>
+                      <span className="flex items-baseline gap-1 text-caption text-ink-muted">
+                        <Money minor={goal.saved_amount} currency={currency} />
+                        /
+                        <Money minor={goal.target_amount} currency={currency} />
+                      </span>
+                    </div>
 
-                  <div className="flex items-baseline justify-between text-caption text-ink-muted">
-                    <span>{faPercent(progress)} رسیده‌ای</span>
-                    <span className="flex items-baseline gap-1">
-                      <Money minor={remaining} currency={currency} />
-                      مانده
-                      {goal.target_date && ` تا ${formatDateFa(goal.target_date)}`}
-                    </span>
+                    <div
+                      role="progressbar"
+                      aria-valuenow={row.progress}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-label={goal.title}
+                      className="h-2 overflow-hidden rounded-full bg-lapis-tint"
+                    >
+                      <div
+                        className="h-full rounded-full bg-lapis"
+                        style={{ width: `${row.progress}%` }}
+                      />
+                    </div>
+
+                    <div className="flex items-baseline justify-between text-caption text-ink-muted">
+                      <span>{faPercent(row.progress)} رسیده‌ای</span>
+                      <span className="flex items-baseline gap-1">
+                        <Money minor={row.remaining} currency={currency} />
+                        مانده
+                        {goal.target_date && ` تا ${formatDateFa(goal.target_date)}`}
+                      </span>
+                    </div>
+
+                  </button>
+
+                  {/* Beside the plan line rather than above it: the line is
+                      two or three lines tall, so the controls cost no extra
+                      height here, and the title keeps the full width. */}
+                  <div className="flex items-start gap-2">
+                    <div className="min-w-0 flex-1">
+                      <GoalPlanLine
+                        plan={row}
+                        currency={currency}
+                        aheadOf={
+                          takingTheLeftover && takingTheLeftover.id !== goal.id
+                            ? takingTheLeftover.title
+                            : undefined
+                        }
+                      />
+                    </div>
+
+                    {/* Order decides who the month's spare money reaches
+                        first, so it has to be the user's to set. */}
+                    {plan.goals.length > 1 && (
+                      <div className="flex shrink-0 flex-col gap-1">
+                        <OrderButton
+                          label={`«${goal.title}» را یک پله بالاتر ببر`}
+                          disabled={index === 0 || isPending}
+                          onClick={() => move(goal.id, -1)}
+                        >
+                          <CaretUp size={14} />
+                        </OrderButton>
+                        <OrderButton
+                          label={`«${goal.title}» را یک پله پایین‌تر ببر`}
+                          disabled={index === plan.goals.length - 1 || isPending}
+                          onClick={() => move(goal.id, 1)}
+                        >
+                          <CaretDown size={14} />
+                        </OrderButton>
+                      </div>
+                    )}
                   </div>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+                </li>
+              );
+            })}
+          </ul>
+        </>
       )}
 
       <Button
@@ -205,7 +266,11 @@ export function GoalsView({
             </Field>
           </div>
 
-          <Field label="تا چه تاریخی؟" htmlFor="goal-date">
+          <Field
+            label="تا چه تاریخی؟"
+            htmlFor="goal-date"
+            hint="خالی بگذاری، هدف بی‌تاریخ می‌ماند و هرچه از بقیه ماند به آن می‌رسد."
+          >
             <Input id="goal-date" type="date" dir="ltr" {...register("targetDate")} />
           </Field>
 
@@ -235,5 +300,29 @@ export function GoalsView({
         </form>
       </BottomSheet>
     </div>
+  );
+}
+
+function OrderButton({
+  label,
+  disabled,
+  onClick,
+  children,
+}: {
+  label: string;
+  disabled: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+      className="flex size-7 items-center justify-center rounded-control border border-hairline text-ink-muted hover:border-hairline-strong hover:text-lapis disabled:opacity-35"
+    >
+      {children}
+    </button>
   );
 }

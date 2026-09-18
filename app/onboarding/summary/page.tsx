@@ -2,19 +2,10 @@ import { redirect } from "next/navigation";
 import { requireViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Money } from "@/components/money";
-import { sumMinor } from "@/lib/money";
+import { monthlyFixed, monthlyIncome } from "@/lib/cashflow";
 import { RISK_LABELS } from "@/lib/onboarding/config";
 import { ExitButton } from "@/components/onboarding/exit-button";
 import { FinishButton } from "./finish-button";
-
-/** Monthly equivalent, so a biweekly salary and a yearly bonus are comparable. */
-const PER_MONTH: Record<string, number> = {
-  monthly: 1,
-  biweekly: 26 / 12,
-  weekly: 52 / 12,
-  yearly: 1 / 12,
-  one_time: 0,
-};
 
 export default async function SummaryPage() {
   const viewer = await requireViewer();
@@ -22,20 +13,14 @@ export default async function SummaryPage() {
 
   const supabase = await createClient();
   const [{ data: sources }, { data: recurring }, { data: goals }] = await Promise.all([
-    supabase.from("income_sources").select("amount, frequency").eq("is_active", true),
-    supabase.from("recurring_expenses").select("amount").eq("is_active", true),
+    supabase.from("income_sources").select("*").eq("is_active", true),
+    supabase.from("recurring_expenses").select("*").eq("is_active", true),
     supabase.from("goals").select("title, target_amount").eq("status", "active"),
   ]);
 
-  const monthlyIncome = Math.round(
-    sumMinor(
-      (sources ?? []).map((source) =>
-        Math.round(source.amount * (PER_MONTH[source.frequency] ?? 1)),
-      ),
-    ),
-  );
-  const monthlyFixed = sumMinor((recurring ?? []).map((row) => row.amount));
-  const leftover = monthlyIncome - monthlyFixed;
+  const incomePerMonth = monthlyIncome(sources ?? []);
+  const fixedPerMonth = monthlyFixed(recurring ?? []);
+  const leftover = incomePerMonth - fixedPerMonth;
 
   const riskLabel = viewer.profile.risk_label
     ? RISK_LABELS[viewer.profile.risk_label]
@@ -57,10 +42,10 @@ export default async function SummaryPage() {
 
       <div className="mt-8 flex flex-col gap-3">
         <SummaryRow label="درآمد ماهانه">
-          <Money minor={monthlyIncome} currency={viewer.currency} size="kpi" />
+          <Money minor={incomePerMonth} currency={viewer.currency} size="kpi" />
         </SummaryRow>
         <SummaryRow label="هزینه‌های ثابت ماهانه">
-          <Money minor={monthlyFixed} currency={viewer.currency} size="kpi" />
+          <Money minor={fixedPerMonth} currency={viewer.currency} size="kpi" />
         </SummaryRow>
         <SummaryRow label="بعد از هزینه‌های ثابت برایت می‌ماند">
           <Money
