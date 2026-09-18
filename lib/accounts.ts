@@ -1,4 +1,4 @@
-import { monthRange, todayInTimeZone, type IsoDate } from "@/lib/date";
+import { monthRange, monthsBetween, todayInTimeZone, type IsoDate } from "@/lib/date";
 import type { AccountRow } from "@/lib/supabase/database.types";
 import type { Minor } from "@/lib/money";
 
@@ -100,11 +100,9 @@ export function reconcileState(
   };
 }
 
-/** Calendar months apart, not thirty-day blocks. */
+/** Calendar months apart, not thirty-day blocks. Never negative. */
 function wholeMonthsBetween(from: IsoDate, to: IsoDate): number {
-  const [fromYear, fromMonth] = from.split("-").map(Number);
-  const [toYear, toMonth] = to.split("-").map(Number);
-  return Math.max(0, (toYear - fromYear) * 12 + (toMonth - fromMonth));
+  return Math.max(0, monthsBetween(from, to));
 }
 
 /** The open accounts the user is being asked to go and update. */

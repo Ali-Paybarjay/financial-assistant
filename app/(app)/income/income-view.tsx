@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Money } from "@/components/money";
 import { SegmentedControl } from "@/components/segmented-control";
 import { faNumber } from "@/lib/format";
-import { sumMinor, type CurrencyCode } from "@/lib/money";
+import { monthlyFixed, monthlyIncome } from "@/lib/cashflow";
+import { type CurrencyCode } from "@/lib/money";
 import type {
   AccountRow,
   CategoryRow,
@@ -22,15 +23,6 @@ import { IncomeSourceRowItem, RecurringRowItem } from "./record-rows";
 import { IncomeSourceSheet, RecurringSheet } from "./record-sheets";
 
 type Tab = "income" | "recurring";
-
-/** Monthly equivalent, so a biweekly salary and a yearly bonus are comparable. */
-const PER_MONTH: Record<string, number> = {
-  monthly: 1,
-  biweekly: 26 / 12,
-  weekly: 52 / 12,
-  yearly: 1 / 12,
-  one_time: 0,
-};
 
 export function IncomeView({
   initialTab,
@@ -59,19 +51,13 @@ export function IncomeView({
   const activeSources = sources.filter((source) => source.is_active);
   const activeRecurring = recurring.filter((expense) => expense.is_active);
 
-  const monthlyIncome = Math.round(
-    sumMinor(
-      activeSources.map((source) =>
-        Math.round(source.amount * (PER_MONTH[source.frequency] ?? 1)),
-      ),
-    ),
-  );
-  const monthlyRecurring = sumMinor(activeRecurring.map((expense) => expense.amount));
+  const incomePerMonth = monthlyIncome(sources);
+  const recurringPerMonth = monthlyFixed(recurring);
 
   const isIncome = tab === "income";
   const rows = isIncome ? sources : recurring;
   const activeCount = isIncome ? activeSources.length : activeRecurring.length;
-  const total = isIncome ? monthlyIncome : monthlyRecurring;
+  const total = isIncome ? incomePerMonth : recurringPerMonth;
 
   return (
     <div className="mx-auto w-full max-w-[560px] px-4 py-4">
