@@ -94,9 +94,17 @@ function median(values: readonly number[]): number {
  * recorded.
  *
  * The running month is excluded — on the 3rd it looks like a fortune and on
- * the 28th like a disaster — and so is any month with nothing in it at all: a
- * month the user did not log is not a month they earned nothing, and treating
- * it as one would quietly halve the plan.
+ * the 28th like a disaster — and so is any month the user did not actually
+ * keep books in: a month they did not log is not a month they earned nothing,
+ * and treating it as one would quietly halve the plan.
+ *
+ * «Kept books in» means at least one row they recorded themselves. Rows the
+ * app generated from a fixed bill do not count, and that distinction is
+ * load-bearing rather than fussy: a month holding nothing but a posted rent
+ * reads as income zero against a large expense, which is not a lean month —
+ * it is an unrecorded one. Confirming a long-missed bill creates exactly that
+ * shape, so without this a single answered question could drag the whole plan
+ * negative.
  */
 export function observedSurplus(
   series: readonly MonthPoint[],
@@ -104,7 +112,7 @@ export function observedSurplus(
 ): MonthlySurplus | null {
   const complete = series
     .filter((point) => point.month < currentMonth)
-    .filter((point) => point.income > 0 || point.expense > 0)
+    .filter((point) => point.logged > 0)
     .sort((a, b) => a.month.localeCompare(b.month))
     .slice(-WINDOW_MONTHS);
 

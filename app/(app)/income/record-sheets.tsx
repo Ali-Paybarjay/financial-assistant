@@ -136,6 +136,7 @@ export function IncomeSourceSheet({
               table="income_sources"
               id={source.id}
               onDone={() => onOpenChange(false)}
+              onError={setFormError}
             />
           )}
         </div>
@@ -343,6 +344,7 @@ export function RecurringSheet({
               table="recurring_expenses"
               id={expense.id}
               onDone={() => onOpenChange(false)}
+              onError={setFormError}
             />
           )}
         </div>
@@ -355,10 +357,13 @@ function DeleteButton({
   table,
   id,
   onDone,
+  onError,
 }: {
   table: "income_sources" | "recurring_expenses";
   id: string;
   onDone: () => void;
+  /** Because a delete really can fail, and used to fail without a word. */
+  onError: (message: string) => void;
 }) {
   const [isPending, startTransition] = useTransition();
 
@@ -371,7 +376,14 @@ function DeleteButton({
       disabled={isPending}
       onClick={() =>
         startTransition(async () => {
-          await deleteRecord(table, id);
+          // The result was thrown away here. A fixed bill that had ever been
+          // generated could not be deleted at all, and the sheet closed as
+          // though it had been — the row was simply still there afterwards.
+          const result = await deleteRecord(table, id);
+          if ("error" in result) {
+            onError(result.error);
+            return;
+          }
           onDone();
         })
       }

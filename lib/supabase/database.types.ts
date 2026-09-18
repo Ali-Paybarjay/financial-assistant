@@ -126,6 +126,25 @@ export type AccountBalanceRow = {
   last_activity_on: string | null;
 };
 
+export type RecurringSkippedMonthRow = {
+  id: string;
+  user_id: string;
+  recurring_expense_id: string;
+  month: string;
+  created_at: string;
+};
+
+/**
+ * A fixed bill that should have been generated for a past month and was not,
+ * and that the user has neither confirmed nor waved away.
+ */
+export type MissedRecurringRow = {
+  recurring_expense_id: string;
+  month: string;
+  amount: number;
+  title: string;
+};
+
 /** What goal_progress() returns: a goal's standing, derived from the ledger. */
 export type GoalProgressRow = {
   goal_id: string;
@@ -438,6 +457,7 @@ export type Database = {
         | "balance_applied"
       >;
       statement_lines: Table<StatementLineRow, "needs_review" | "match_status">;
+      recurring_skipped_months: Table<RecurringSkippedMonthRow>;
       dong_groups: Table<DongGroupRow>;
       dong_members: Table<DongMemberRow, "is_me" | "is_fund" | "sort_order">;
       dong_expenses: Table<DongExpenseRow, "split_mode">;
@@ -447,8 +467,13 @@ export type Database = {
     Views: Record<never, never>;
     Functions: {
       post_recurring_for_month: {
-        Args: { p_month: string };
+        /** `p_only` aims it at one bill, for confirming a single missed month. */
+        Args: { p_month: string; p_only?: string | null };
         Returns: number;
+      };
+      missed_recurring_months: {
+        Args: { p_before: string };
+        Returns: MissedRecurringRow[];
       };
       account_balances: {
         Args: Record<never, never>;
