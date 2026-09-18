@@ -27,11 +27,17 @@ import { GOAL_TYPE_OPTIONS } from "@/lib/onboarding/config";
 import { goalFormSchema, type GoalForm } from "@/lib/validation/records";
 import type { MonthlySurplus } from "@/lib/cashflow";
 import type { AccountWithBalance } from "@/lib/accounts";
-import type { GoalPlan, GoalWithProgress, SavingsPlan } from "@/lib/goals";
+import {
+  checkSavings,
+  type GoalPlan,
+  type GoalWithProgress,
+  type SavingsPlan,
+} from "@/lib/goals";
 import { deleteGoal, reorderGoal, saveGoal, setGoalStatus } from "./actions";
 import { GoalPlanLine } from "./goal-plan-line";
 import { PlanCard } from "./plan-card";
 import { FundGoalSheet } from "./fund-sheet";
+import { SavingsCheckNote } from "./savings-check";
 
 function amountText(minor: number, currency: CurrencyCode): string {
   return formatMoney(minor, currency, { omitSymbol: true }).replace(/,/g, "");
@@ -45,6 +51,8 @@ export function GoalsView({
   fundedThisMonth,
   accounts,
   savingsAccounts,
+  savingsTotal,
+  goalsHeld,
   defaultFromAccountId,
 }: {
   currency: CurrencyCode;
@@ -55,6 +63,9 @@ export function GoalsView({
   fundedThisMonth: Record<string, number>;
   accounts: AccountWithBalance[];
   savingsAccounts: AccountWithBalance[];
+  /** What the savings accounts hold, against what the goals claim to hold. */
+  savingsTotal: number;
+  goalsHeld: number;
   defaultFromAccountId: string | null;
 }) {
   const router = useRouter();
@@ -277,6 +288,16 @@ export function GoalsView({
               );
             })}
           </ul>
+
+          {/* After the goals, not before: you read the plan, then the goals,
+              then whether the money behind them is actually there. */}
+          <SavingsCheckNote
+            check={checkSavings(savingsTotal, goalsHeld)}
+            savingsTotal={savingsTotal}
+            goalsHeld={goalsHeld}
+            hasSavingsAccount={savingsAccounts.length > 0}
+            currency={currency}
+          />
         </>
       )}
 

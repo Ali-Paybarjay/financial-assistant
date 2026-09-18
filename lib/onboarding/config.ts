@@ -153,6 +153,15 @@ export const RECURRING_FREQUENCY_LABEL = new Map<string, string>(
   RECURRING_FREQUENCY_OPTIONS.map((option) => [option.value, option.label]),
 );
 
+/** Gregorian month names, for naming the month a non-monthly bill falls in. */
+export const MONTH_OPTIONS = Array.from({ length: 12 }, (_, index) => ({
+  value: index + 1,
+  label: new Intl.DateTimeFormat("fa-IR-u-ca-gregory", {
+    timeZone: "UTC",
+    month: "long",
+  }).format(new Date(Date.UTC(2026, index, 1))),
+}));
+
 /** Tap a chip and it becomes a row with an amount field. */
 export const RECURRING_SUGGESTIONS = [
   { title: "اجاره", slug: "housing", dueDay: 1 },

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { contributionMonths, planSavings, type GoalWithProgress } from "@/lib/goals";
+import {
+  checkSavings,
+  contributionMonths,
+  planSavings,
+  type GoalWithProgress,
+} from "@/lib/goals";
 import { declaredSurplus, monthlySurplus, observedSurplus } from "@/lib/cashflow";
 import type {
   IncomeSourceRow,
@@ -254,6 +259,26 @@ describe("planSavings", () => {
   });
 });
 
+describe("checkSavings", () => {
+  it("names money in savings that no goal claims", () => {
+    expect(checkSavings(500_000, 300_000)).toEqual({
+      unassigned: 200_000,
+      unbacked: 0,
+    });
+  });
+
+  it("names goals claiming more than the savings hold", () => {
+    expect(checkSavings(300_000, 500_000)).toEqual({
+      unassigned: 0,
+      unbacked: 200_000,
+    });
+  });
+
+  it("says nothing when the two agree", () => {
+    expect(checkSavings(300_000, 300_000)).toEqual({ unassigned: 0, unbacked: 0 });
+  });
+});
+
 /* ---------------------------------------------------------- the surplus -- */
 
 function point(month: string, income: number, expense: number) {
@@ -289,6 +314,7 @@ function fixed(over: Partial<RecurringExpenseRow> = {}): RecurringExpenseRow {
     currency: "IRT",
     frequency: "monthly",
     due_day: 1,
+    due_month: null,
     is_active: true,
     auto_post: true,
     created_at: "2026-01-01T00:00:00Z",
