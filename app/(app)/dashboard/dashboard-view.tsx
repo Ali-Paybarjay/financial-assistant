@@ -262,8 +262,6 @@ export function DashboardView({
                 currency={currency}
               />
 
-              <DongSummary groups={dongGroups} />
-
               <section className="overflow-hidden rounded-card border border-hairline bg-surface">
                 <div className="flex items-center justify-between p-4 pb-2">
                   <h2 className="text-[15px] font-semibold text-ink">تراکنش‌های اخیر</h2>
@@ -295,6 +293,10 @@ export function DashboardView({
                 ))}
               </section>
             </div>
+
+            {/* Last on the page, and deliberately: this is a feature beside
+                the month the rest of the dashboard is about, not part of it. */}
+            <DongSummary groups={dongGroups} />
           </>
         )}
       </div>
