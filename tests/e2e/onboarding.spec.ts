@@ -1,4 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
+// A second account that has never finished onboarding. The dashboard suite
+// uses the first one, which has; sharing an account would make each suite
+// depend on the order the other ran in.
+import { BETA_EMAIL as EMAIL, PASSWORD } from "./credentials";
 
 /**
  * Acceptance test 1 from the brief: a new user starts onboarding, abandons it
@@ -8,12 +12,6 @@ import { expect, test, type Page } from "@playwright/test";
  * flow is entered explicitly at step 1 — revisiting a reached step is allowed
  * by design — rather than assuming a pristine account.
  */
-
-// A second account that has never finished onboarding. The dashboard suite
-// uses the first one, which has; sharing an account would make each suite
-// depend on the order the other ran in.
-const EMAIL = process.env.E2E_ONBOARDING_EMAIL ?? "beta@testmail.dev";
-const PASSWORD = process.env.E2E_PASSWORD ?? "test-pass-12345";
 
 async function login(page: Page) {
   await page.goto("/login");

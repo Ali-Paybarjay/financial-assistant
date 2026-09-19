@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { ALPHA_EMAIL as EMAIL, PASSWORD } from "./credentials";
 
 /**
  * Moving money between two of the user's own accounts.
@@ -13,8 +14,6 @@ import { expect, test, type Page } from "@playwright/test";
  * transfer it wrote.
  */
 
-const EMAIL = process.env.E2E_EMAIL ?? "alpha@testmail.dev";
-const PASSWORD = process.env.E2E_PASSWORD ?? "test-pass-12345";
 
 const FROM = "مبدأ تست E2E";
 const TO = "مقصد تست E2E";

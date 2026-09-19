@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { ALPHA_EMAIL as EMAIL, PASSWORD } from "./credentials";
 
 /**
  * دنگ و دونگ, end to end — and the one claim the feature makes that a user
@@ -13,8 +14,6 @@ import { expect, test, type Page } from "@playwright/test";
  * and a group with yesterday's rows in it would not have the ones asserted.
  */
 
-const EMAIL = process.env.E2E_EMAIL ?? "alpha@testmail.dev";
-const PASSWORD = process.env.E2E_PASSWORD ?? "test-pass-12345";
 
 const GROUP = "دوره تست E2E";
 const FRIEND = "سارا تست";

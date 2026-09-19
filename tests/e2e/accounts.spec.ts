@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { ALPHA_EMAIL as EMAIL, PASSWORD } from "./credentials";
 
 /**
  * Accounts, end to end — and the one claim the feature makes that a user
@@ -11,8 +12,6 @@ import { expect, test, type Page } from "@playwright/test";
  * wrote, so the account ends each run holding what it started with.
  */
 
-const EMAIL = process.env.E2E_EMAIL ?? "alpha@testmail.dev";
-const PASSWORD = process.env.E2E_PASSWORD ?? "test-pass-12345";
 
 const ACCOUNT = "حساب تست E2E";
 const MERCHANT = "خرید تست موجودی";

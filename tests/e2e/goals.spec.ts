@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { ALPHA_EMAIL as EMAIL, PASSWORD } from "./credentials";
 
 /**
  * A goal produces a plan, not just a progress bar.
@@ -14,8 +15,6 @@ import { expect, test, type Page } from "@playwright/test";
  * It creates and then deletes, so it leaves the test account as it found it.
  */
 
-const EMAIL = process.env.E2E_EMAIL ?? "alpha@testmail.dev";
-const PASSWORD = process.env.E2E_PASSWORD ?? "test-pass-12345";
 
 const TITLE = "هدف تست E2E";
 
