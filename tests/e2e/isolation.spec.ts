@@ -1,7 +1,6 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { expect, test } from "@playwright/test";
+import { ALPHA_EMAIL, BETA_EMAIL, PASSWORD, readEnv } from "./credentials";
 
 /**
  * Acceptance test 6: the second user sees nothing of the first — not in the
@@ -24,26 +23,9 @@ import { expect, test } from "@playwright/test";
  * see `cannot write to the other user's row` below.
  */
 
-const ALPHA_EMAIL = process.env.E2E_EMAIL ?? "alpha@testmail.dev";
-const BETA_EMAIL = process.env.E2E_ONBOARDING_EMAIL ?? "beta@testmail.dev";
-const PASSWORD = process.env.E2E_PASSWORD ?? "test-pass-12345";
-
-/**
- * The test process is not the dev server, so it does not get .env.local for
- * free. Real environment variables win, which is what CI provides.
- */
+/** `readEnv` from credentials.ts, made to throw instead of returning undefined. */
 function env(key: string): string {
-  const fromProcess = process.env[key];
-  if (fromProcess) return fromProcess;
-
-  // Playwright runs from the project root, so this resolves without knowing
-  // where the spec file itself lives.
-  const file = readFileSync(resolve(process.cwd(), ".env.local"), "utf8");
-  const line = file
-    .split(/\r?\n/)
-    .find((entry) => entry.startsWith(`${key}=`));
-  const value = line?.slice(key.length + 1).trim();
-
+  const value = readEnv(key);
   if (!value) throw new Error(`${key} is not set and not in .env.local`);
   return value;
 }

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { join } from "node:path";
+import { ALPHA_EMAIL as EMAIL, PASSWORD } from "./credentials";
 
 /**
  * Acceptance test 4 from the brief: the user uploads a photo of a receipt and
@@ -11,8 +12,6 @@ import { join } from "node:path";
  * this goes wrong.
  */
 
-const EMAIL = process.env.E2E_EMAIL ?? "alpha@testmail.dev";
-const PASSWORD = process.env.E2E_PASSWORD ?? "test-pass-12345";
 
 // Playwright runs from the project root.
 const RECEIPT = join(process.cwd(), "tests", "e2e", "fixtures", "receipt.png");

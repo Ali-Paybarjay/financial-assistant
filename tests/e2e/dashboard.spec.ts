@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { ALPHA_EMAIL as EMAIL, PASSWORD } from "./credentials";
 
 /**
  * Acceptance test 5 from the brief: the month's expense card must equal the
@@ -6,8 +7,6 @@ import { expect, test, type Page } from "@playwright/test";
  * product is lying about the one number it exists to report.
  */
 
-const EMAIL = process.env.E2E_EMAIL ?? "alpha@testmail.dev";
-const PASSWORD = process.env.E2E_PASSWORD ?? "test-pass-12345";
 
 async function login(page: Page) {
   await page.goto("/login");

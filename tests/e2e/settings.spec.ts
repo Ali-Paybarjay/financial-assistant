@@ -1,7 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
+import { ALPHA_EMAIL as EMAIL, PASSWORD } from "./credentials";
 
-const EMAIL = process.env.E2E_EMAIL ?? "alpha@testmail.dev";
-const PASSWORD = process.env.E2E_PASSWORD ?? "test-pass-12345";
 
 async function login(page: Page) {
   await page.goto("/login");

@@ -1,7 +1,6 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { expect, test } from "@playwright/test";
+import { ALPHA_EMAIL as EMAIL, PASSWORD, readEnv } from "./credentials";
 
 /**
  * Acceptance test 7: running the recurring job twice creates no duplicates.
@@ -19,20 +18,12 @@ import { expect, test } from "@playwright/test";
  * something for the second call's zero to mean what it says.
  */
 
-const EMAIL = process.env.E2E_EMAIL ?? "alpha@testmail.dev";
-const PASSWORD = process.env.E2E_PASSWORD ?? "test-pass-12345";
-
 /** Long before this app existed, so nothing real is disturbed. */
 const PAST_MONTH = "2020-01-01";
 
+/** `readEnv` from credentials.ts, made to throw instead of returning undefined. */
 function env(key: string): string {
-  const fromProcess = process.env[key];
-  if (fromProcess) return fromProcess;
-
-  const file = readFileSync(resolve(process.cwd(), ".env.local"), "utf8");
-  const line = file.split(/\r?\n/).find((entry) => entry.startsWith(`${key}=`));
-  const value = line?.slice(key.length + 1).trim();
-
+  const value = readEnv(key);
   if (!value) throw new Error(`${key} is not set and not in .env.local`);
   return value;
 }

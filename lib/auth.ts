@@ -23,7 +23,8 @@ export type Viewer = {
  * Providers disagree on where the name lives: Google sends `full_name` and
  * `name`, some OIDC servers send only the two halves. An email/password signup
  * puts what the user typed in `full_name`. Anything blank is skipped, and the
- * email is never mangled into a name — "fxpabarja" is not what anyone is called.
+ * email is never mangled into a name — an address's local part is not what
+ * anyone is called.
  */
 function providerFullName(user: User): string | null {
   const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
