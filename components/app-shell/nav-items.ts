@@ -12,6 +12,7 @@ import {
 // The component type lives on the package root; the SSR entry only exports the
 // icons themselves. Type-only, so nothing extra reaches the bundle.
 import type { Icon } from "@phosphor-icons/react";
+import type { WorkspaceId } from "@/lib/workspaces";
 
 export type NavItem = {
   href: string;
@@ -19,19 +20,65 @@ export type NavItem = {
   icon: Icon;
 };
 
-/** The four the design puts in the mobile tab bar. */
-export const PRIMARY_NAV: NavItem[] = [
-  { href: "/dashboard", label: "داشبورد", icon: House },
-  { href: "/transactions", label: "تراکنش‌ها", icon: ListDashes },
-  { href: "/goals", label: "هدف‌ها", icon: Target },
-  { href: "/settings", label: "تنظیمات", icon: Gear },
-];
+/**
+ * One glyph per side of the app, wherever a workspace is named.
+ *
+ * Here rather than beside <WorkspaceSwitch>, which is a client component:
+ * every export of a "use client" module reaches a server component as a
+ * client reference, so a *map* of components read on the server comes back
+ * undefined and React renders "Element type is invalid". The hub is a server
+ * component and needs these, so they live in a module with no directive.
+ */
+export const WORKSPACE_ICON: Record<WorkspaceId, Icon> = {
+  personal: Target,
+  dong: UsersThree,
+};
 
-/** Promoted into the sidebar from 960px; on mobile they live under Settings. */
-export const DESKTOP_ONLY_NAV: NavItem[] = [
-  { href: "/accounts", label: "حساب‌ها", icon: CreditCard },
-  { href: "/income", label: "درآمد", icon: Wallet },
-  { href: "/income?tab=recurring", label: "هزینه‌های ثابت", icon: ArrowsClockwise },
-  { href: "/import", label: "صورت‌حساب بانکی", icon: Bank },
-  { href: "/dong", label: "دنگ و دونگ", icon: UsersThree },
-];
+export type WorkspaceNav = {
+  /** The mobile tab bar, and the top of the sidebar. */
+  primary: NavItem[];
+  /** Promoted into the sidebar from 960px; on mobile they live under Settings. */
+  desktopOnly: NavItem[];
+};
+
+/**
+ * One nav per workspace. Nothing of «دنگ و دونگ» appears while the user is in
+ * their own accounting and nothing of their accounting appears while they are
+ * in a trip — see lib/workspaces.ts for why the app is split in two at all.
+ */
+export const WORKSPACE_NAV: Record<WorkspaceId, WorkspaceNav> = {
+  personal: {
+    primary: [
+      { href: "/dashboard", label: "داشبورد", icon: House },
+      { href: "/transactions", label: "تراکنش‌ها", icon: ListDashes },
+      { href: "/goals", label: "هدف‌ها", icon: Target },
+      { href: "/settings", label: "تنظیمات", icon: Gear },
+    ],
+    desktopOnly: [
+      { href: "/accounts", label: "حساب‌ها", icon: CreditCard },
+      { href: "/income", label: "درآمد", icon: Wallet },
+      { href: "/income?tab=recurring", label: "هزینه‌های ثابت", icon: ArrowsClockwise },
+      { href: "/import", label: "صورت‌حساب بانکی", icon: Bank },
+    ],
+  },
+  /**
+   * One page, so no tab bar: see TabBar, which renders nothing below two
+   * items rather than putting a lone tab across the bottom of the phone. The
+   * way out of here is the switch in the header, which is the only other
+   * place a person in a trip wants to go.
+   */
+  dong: {
+    primary: [{ href: "/dong", label: "دوره‌ها", icon: UsersThree }],
+    desktopOnly: [],
+  },
+};
+
+/**
+ * The sidebar's order: everything above Settings, then the pages the phone
+ * hides, then Settings at the bottom of the list — where it is looked for.
+ */
+export function sidebarItems(workspace: WorkspaceId): NavItem[] {
+  const { primary, desktopOnly } = WORKSPACE_NAV[workspace];
+  const last = primary[primary.length - 1];
+  return [...primary.slice(0, -1), ...desktopOnly, ...(last ? [last] : [])];
+}

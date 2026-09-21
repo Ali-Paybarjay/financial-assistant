@@ -22,5 +22,10 @@ values
   -- Income side: transactions of type 'income' need somewhere to land too.
   (null, 'حقوق',              'salary',        'income',  'wallet',              true, 16),
   (null, 'درآمد آزاد',        'freelance',     'income',  'briefcase',           true, 17),
-  (null, 'سایر درآمد',        'other-income',  'income',  'coins',               true, 18)
+  (null, 'سایر درآمد',        'other-income',  'income',  'coins',               true, 18),
+  -- The two «دنگ و دونگ» writes into the personal ledger, by trigger — see
+  -- migration 0017. Kept out of what the AI is offered (lib/ai/prompts.ts):
+  -- the model cannot know whether a receipt was a shared bill.
+  (null, 'دنگ و دونگ',        'dong',          'expense', 'users-three',         true, 19),
+  (null, 'برگشتی دنگ و دونگ', 'dong-refund',   'income',  'users-three',         true, 20)
 on conflict do nothing;

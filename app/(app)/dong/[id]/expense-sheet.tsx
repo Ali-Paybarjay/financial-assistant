@@ -12,11 +12,12 @@ import { NativeSelect } from "@/components/native-select";
 import { AmountInput } from "@/components/amount-input";
 import { SegmentedControl } from "@/components/segmented-control";
 import { Field, FormError } from "@/components/field";
+import { AccountField } from "@/components/accounts/account-field";
 import { Money } from "@/components/money";
 import { MemberName } from "@/components/dong/rows";
 import { formatMoney, toMinor, type CurrencyCode } from "@/lib/money";
 import { splitByUnits, splitEqually, splitGap, type Share } from "@/lib/dong";
-import type { DongMemberRow } from "@/lib/supabase/database.types";
+import type { AccountRow, DongMemberRow } from "@/lib/supabase/database.types";
 import type { DongExpenseWithShares } from "@/lib/queries/dong";
 import {
   DONG_TAG_OPTIONS,
@@ -46,6 +47,8 @@ export function ExpenseSheet({
   onOpenChange,
   groupId,
   members,
+  accounts,
+  groupAccountId,
   currency,
   today,
   expense,
@@ -54,6 +57,10 @@ export function ExpenseSheet({
   onOpenChange: (open: boolean) => void;
   groupId: string;
   members: DongMemberRow[];
+  /** Already narrowed to the group's currency by the page. */
+  accounts: AccountRow[];
+  /** The group's own account: what a purchase the user paid for starts on. */
+  groupAccountId: string | null;
   currency: CurrencyCode;
   today: string;
   expense: DongExpenseWithShares | null;
@@ -70,12 +77,15 @@ export function ExpenseSheet({
    */
   const people = useMemo(() => members.filter((member) => !member.is_fund), [members]);
 
+  const me = useMemo(() => members.find((member) => member.is_me), [members]);
+
   const defaults = useMemo<DongExpenseForm>(
     () => ({
       groupId,
       title: "",
       amount: "",
-      paidBy: members.find((member) => member.is_me)?.id ?? members[0]?.id ?? "",
+      paidBy: me?.id ?? members[0]?.id ?? "",
+      accountId: groupAccountId ?? "",
       occurredOn: today,
       tag: "",
       note: "",
@@ -89,7 +99,7 @@ export function ExpenseSheet({
         amount: "",
       })),
     }),
-    [groupId, members, people, today],
+    [groupId, me, members, people, groupAccountId, today],
   );
 
   const {
@@ -115,6 +125,7 @@ export function ExpenseSheet({
             title: expense.title,
             amount: amountText(expense.amount, currency),
             paidBy: expense.paid_by_member_id,
+            accountId: expense.account_id ?? "",
             occurredOn: expense.occurred_on,
             tag: expense.tag ?? "",
             note: expense.note ?? "",
@@ -136,6 +147,7 @@ export function ExpenseSheet({
 
   const watched = useWatch({ control });
   const splitMode = watched.splitMode ?? "equal";
+  const paidByMe = Boolean(me && watched.paidBy === me.id);
   const totalMinor = tryMinor(watched.amount ?? "", currency);
 
   /**
@@ -232,6 +244,20 @@ export function ExpenseSheet({
             <Input id="expense-date" type="date" dir="ltr" {...register("occurredOn")} />
           </Field>
         </div>
+
+        {/* Only when the payer is the viewer. Somebody else's card is not
+            this ledger's business, however much of the bill is owed on it —
+            so the question simply is not asked. */}
+        {paidByMe && (
+          <AccountField
+            id="expense-account"
+            label="از کدام حسابت رفت"
+            accounts={accounts}
+            selectedId={expense?.account_id}
+            hint="با انتخاب حساب، کل این مبلغ همین امروز از موجودی آن کم می‌شود و در حسابداری شخصی‌ات می‌نشیند. سهم بقیه هر وقت پس دادند، برمی‌گردد."
+            {...register("accountId")}
+          />
+        )}
 
         <Field label="برچسب" htmlFor="expense-tag">
           <Input

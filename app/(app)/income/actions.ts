@@ -19,6 +19,8 @@ function refresh() {
   revalidatePath("/income");
   revalidatePath("/dashboard");
   revalidatePath("/accounts");
+  // The hub carries the same month and the same balances.
+  revalidatePath("/");
 }
 
 export async function saveIncomeSource(raw: unknown): Promise<RecordResult> {

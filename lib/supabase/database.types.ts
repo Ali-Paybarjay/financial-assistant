@@ -34,7 +34,9 @@ export type TransactionSource =
   | "voice"
   | "receipt"
   | "recurring"
-  | "statement";
+  | "statement"
+  /** Mirrored from «دنگ و دونگ» by trigger. The dong row is the original. */
+  | "dong";
 /** "transfer" is money moving between two of the user's own accounts. */
 export type TransactionType = "expense" | "income" | "transfer";
 export type CategoryKind = "expense" | "income";
@@ -233,6 +235,15 @@ export type TransactionRow = {
    * on an expense it is that money being spent. Never on income.
    */
   goal_id: string | null;
+  /**
+   * Set together, and only on a row «دنگ و دونگ» wrote: the group is what the
+   * personal list links back to, and one of the other two is what it mirrors.
+   * Kept in step by trigger — see migration 0017 — so nothing here is edited
+   * from the personal side.
+   */
+  dong_group_id: string | null;
+  dong_expense_id: string | null;
+  dong_payment_id: string | null;
   ai_confidence: number | null;
   ai_raw: unknown | null;
   is_confirmed: boolean;
@@ -341,6 +352,11 @@ export type DongGroupRow = {
   currency: string;
   note: string | null;
   started_on: string;
+  /**
+   * The account this group is run out of. Only a default for the rows below;
+   * what a purchase actually cost the user is on the purchase.
+   */
+  account_id: string | null;
   /** Set when the user declares the group finished. */
   settled_at: string | null;
   created_at: string;
@@ -371,6 +387,12 @@ export type DongExpenseRow = {
   title: string;
   amount: number;
   paid_by_member_id: string;
+  /**
+   * Which of the viewer's own accounts this left. Only ever set when the
+   * payer is the viewer, and it is what makes the purchase appear in the
+   * personal ledger.
+   */
+  account_id: string | null;
   occurred_on: string;
   tag: string | null;
   note: string | null;
@@ -399,6 +421,8 @@ export type DongPaymentRow = {
   to_member_id: string;
   amount: number;
   kind: DongPaymentKind;
+  /** The viewer's own side of it, when one of the two ends is them. */
+  account_id: string | null;
   occurred_on: string;
   note: string | null;
   created_at: string;
@@ -426,6 +450,7 @@ export type DongGroupTotalRow = {
   group_id: string;
   member_count: number;
   expense_count: number;
+  payment_count: number;
   total_spent: number;
   last_activity_on: string | null;
 };
@@ -495,6 +520,15 @@ export type Database = {
         Args: Record<never, never>;
         Returns: DongMyBalanceRow[];
       };
+      /**
+       * Guests whose last sign-in is older than `max_age`. Reporting only — the
+       * deleting is done by the app, because an upload can only be removed
+       * through the Storage API. Service role only.
+       */
+      stale_guest_ids: {
+        Args: { max_age?: string };
+        Returns: string[];
+      };
       /** Writes an expense and its shares in one transaction. Returns the id. */
       dong_save_expense: {
         Args: {
@@ -508,6 +542,8 @@ export type Database = {
           p_tag?: string | null;
           p_note?: string | null;
           p_id?: string | null;
+          /** The viewer's account, when the viewer is the one who paid. */
+          p_account_id?: string | null;
         };
         Returns: string;
       };

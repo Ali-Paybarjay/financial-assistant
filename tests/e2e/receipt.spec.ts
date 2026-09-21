@@ -21,7 +21,8 @@ async function login(page: Page) {
   await page.getByLabel("ایمیل").fill(EMAIL);
   await page.getByLabel("رمز").fill(PASSWORD);
   await page.getByRole("button", { name: "ورود", exact: true }).click();
-  await page.waitForURL(/\/(dashboard|onboarding)/);
+  // The hub is the landing page now; onboarding still intercepts a new account.
+  await page.waitForURL(/\/($|onboarding)/);
 }
 
 test("a receipt photo yields its total, not its subtotal or its change", async ({

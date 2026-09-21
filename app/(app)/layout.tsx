@@ -1,25 +1,29 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { Sidebar } from "@/components/app-shell/sidebar";
-import { TabBar } from "@/components/app-shell/tab-bar";
+import { getSessionUser } from "@/lib/auth";
+import { AppShell } from "@/components/app-shell/shell";
+import { GuestProvider } from "@/components/guest/guest-provider";
+import { GuestWelcome } from "@/components/guest/guest-welcome";
 import { RISK_LABELS } from "@/lib/onboarding/config";
 import { COUNTRIES } from "@/lib/onboarding/config";
 
 /**
  * The protected shell. Middleware has already guaranteed a session; this layer
  * adds the onboarding gate, which needs the profile row.
+ *
+ * Which of the two workspaces the chrome belongs to is decided inside
+ * <AppShell>, from the url — a server layout is not told the path.
  */
 export default async function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
 
   if (!user) redirect("/login");
+
+  const supabase = await createClient();
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -44,11 +48,11 @@ export default async function AppLayout({
     .join(" · ");
 
   return (
-    <div className="flex min-h-dvh bg-paper">
-      <Sidebar name={profile.full_name ?? "حساب من"} subtitle={subtitle} />
-      {/* pb-20 clears the fixed tab bar; it disappears with the bar at 960px. */}
-      <main className="min-w-0 flex-1 pb-20 min-[960px]:pb-0">{children}</main>
-      <TabBar />
-    </div>
+    <GuestProvider isGuest={user.is_anonymous === true}>
+      <AppShell name={profile.full_name ?? "حساب من"} subtitle={subtitle}>
+        {children}
+      </AppShell>
+      <GuestWelcome />
+    </GuestProvider>
   );
 }

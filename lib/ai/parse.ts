@@ -2,15 +2,26 @@ import "server-only";
 
 import { complete, MODEL, ModelError, type ChatContent } from "./openrouter";
 import { PARSE_JSON_SCHEMA, parseResultSchema, type ParsedTransaction } from "./schemas";
-import { logUsage, remainingCalls, type UsageRecord } from "./usage";
+import { logUsage, remainingCalls, type Allowance, type UsageRecord } from "./usage";
+import { faNumber } from "@/lib/format";
 import type { CategoryRow } from "@/lib/supabase/database.types";
 
 export type ParseFailure = { ok: false; error: string };
 export type ParseSuccess = { ok: true; transactions: ParsedTransaction[] };
 export type ParseOutcome = ParseSuccess | ParseFailure;
 
-export const LIMIT_REACHED_MESSAGE =
-  "امروز به سقف ۵۰ پردازش هوشمند رسیدی. تا فردا با فرم ثبت کن.";
+/**
+ * The number has to come from the allowance rather than sit in the string: a
+ * guest and a signed-up user hit different ceilings, and a message naming the
+ * wrong one reads as a bug in the counter. A guest is also told the way out,
+ * because for them it is not "wait until tomorrow" — an account raises it now.
+ */
+export function limitReachedMessage({ limit, isGuest }: Allowance): string {
+  const ceiling = `امروز به سقف ${faNumber(limit)} پردازش هوشمند رسیدی.`;
+  return isGuest
+    ? `${ceiling} مهمان‌ها سهم کمتری دارند؛ حساب بساز تا بیشتر شود، یا فعلاً با فرم ثبت کن.`
+    : `${ceiling} تا فردا با فرم ثبت کن.`;
+}
 
 const FAILURE_MESSAGES: Record<ModelError["kind"], string> = {
   timeout: "طول کشید و جواب نداد. دوباره بزن، یا با فرم ثبت کن.",
@@ -45,9 +56,10 @@ export async function runParse({
   /** Shown when the model read the input but found nothing to record. */
   emptyMessage: string;
 }): Promise<ParseOutcome> {
-  if ((await remainingCalls(timeZone)) <= 0) {
+  const allowance = await remainingCalls(timeZone);
+  if (allowance.remaining <= 0) {
     await logUsage({ userId, feature, model: MODEL, status: "rejected" });
-    return { ok: false, error: LIMIT_REACHED_MESSAGE };
+    return { ok: false, error: limitReachedMessage(allowance) };
   }
 
   const allowedSlugs = new Set(categories.map((category) => category.slug));

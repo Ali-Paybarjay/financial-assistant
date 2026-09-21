@@ -27,6 +27,8 @@ function refresh() {
   revalidatePath("/income");
   // The month's fixed costs feed the surplus the whole plan is built on.
   revalidatePath("/goals");
+  // The hub carries the same month and the same balances.
+  revalidatePath("/");
 }
 
 /** «It was paid» — generate the row that month should have had. */

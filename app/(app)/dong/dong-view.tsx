@@ -8,15 +8,20 @@ import { Money } from "@/components/money";
 import { faNumber } from "@/lib/format";
 import { formatDateFa } from "@/lib/date";
 import type { CurrencyCode } from "@/lib/money";
+import type { AccountRow } from "@/lib/supabase/database.types";
 import type { DongGroupWithTotals } from "@/lib/queries/dong";
 import { GroupSheet } from "./group-sheet";
 
 export function DongView({
   groups,
+  accounts,
+  defaultAccountId,
   defaultCurrency,
   today,
 }: {
   groups: DongGroupWithTotals[];
+  accounts: AccountRow[];
+  defaultAccountId: string | null;
   defaultCurrency: CurrencyCode;
   today: string;
 }) {
@@ -93,7 +98,9 @@ export function DongView({
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         group={null}
+        accounts={accounts}
         defaultCurrency={defaultCurrency}
+        defaultAccountId={defaultAccountId}
         today={today}
       />
     </div>

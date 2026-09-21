@@ -9,7 +9,7 @@ import { FinishButton } from "./finish-button";
 
 export default async function SummaryPage() {
   const viewer = await requireViewer();
-  if (viewer.profile.onboarding_completed_at) redirect("/dashboard");
+  if (viewer.profile.onboarding_completed_at) redirect("/");
 
   const supabase = await createClient();
   const [{ data: sources }, { data: recurring }, { data: baselines }, { data: goals }] =

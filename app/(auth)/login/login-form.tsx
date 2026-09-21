@@ -8,12 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FormError } from "@/components/field";
 import { loginSchema, type LoginInput } from "@/lib/validation/auth";
-import { login, signInWithGoogle } from "../actions";
+import { continueAsGuest, login, signInWithGoogle } from "../actions";
 
 export function LoginForm() {
   const [formError, setFormError] = useState<string>();
   const [isPending, startTransition] = useTransition();
   const [isGooglePending, startGoogleTransition] = useTransition();
+  const [isGuestPending, startGuestTransition] = useTransition();
 
   const {
     register,
@@ -86,6 +87,33 @@ export function LoginForm() {
         <Button type="submit" variant="outline" size="lg" className="w-full" disabled={isGooglePending}>
           {isGooglePending ? "دارم می‌برمت به گوگل…" : "ورود با گوگل"}
         </Button>
+      </form>
+
+      {/* Below Google, not beside it: this is the door for someone who has not
+          decided yet, and it should not compete with the two doors for people
+          who have. The line under it is the whole bargain, said before the tap
+          rather than after — nobody should discover the terms from inside. */}
+      <form
+        action={() => {
+          startGuestTransition(async () => {
+            const result = await continueAsGuest();
+            if (result && "error" in result) setFormError(result.error);
+          });
+        }}
+        className="flex flex-col gap-1.5"
+      >
+        <Button
+          type="submit"
+          variant="outline"
+          size="lg"
+          className="w-full"
+          disabled={isGuestPending}
+        >
+          {isGuestPending ? "دارم واردت می‌کنم…" : "ورود به‌عنوان مهمان"}
+        </Button>
+        <p className="text-center text-caption text-ink-muted">
+          بدون ایمیل و بدون ثبت‌نام؛ اطلاعاتت ذخیره نمی‌ماند.
+        </p>
       </form>
 
       <div className="flex flex-col gap-2 text-caption text-ink-muted">

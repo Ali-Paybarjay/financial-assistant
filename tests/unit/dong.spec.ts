@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   byTag,
   isSquare,
+  personalMovement,
   outstandingTotal,
   settlementPlan,
   splitEqually,
@@ -183,5 +184,63 @@ describe("byTag", () => {
         { tag: "", amount: 50 },
       ]),
     ).toEqual([{ tag: null, amount: 150 }]);
+  });
+});
+
+/**
+ * The rule that decides whether a shared purchase touches the user's own
+ * ledger. It is stated twice on purpose — here, and as SQL in migration
+ * 0017 — so this is the copy that can be interrogated cheaply, and the one
+ * that has to keep agreeing with the trigger.
+ */
+describe("personalMovement", () => {
+  const ME = "me";
+  const THEM = "them";
+
+  it("counts a bill the viewer paid, in full and not by their share", () => {
+    expect(
+      personalMovement(
+        ME,
+        [{ paidByMemberId: ME, accountId: "acct", amount: 6000 }],
+        [],
+      ),
+    ).toEqual({ out: 6000, in: 0 });
+  });
+
+  it("ignores a bill somebody else paid, however much of it is owed", () => {
+    expect(
+      personalMovement(
+        ME,
+        [{ paidByMemberId: THEM, accountId: "acct", amount: 6000 }],
+        [],
+      ),
+    ).toEqual({ out: 0, in: 0 });
+  });
+
+  it("ignores a bill with no account behind it", () => {
+    expect(
+      personalMovement(ME, [{ paidByMemberId: ME, accountId: null, amount: 6000 }], []),
+    ).toEqual({ out: 0, in: 0 });
+  });
+
+  it("reads a payment by its direction", () => {
+    const payments = [
+      { fromMemberId: ME, toMemberId: THEM, accountId: "acct", amount: 500 },
+      { fromMemberId: THEM, toMemberId: ME, accountId: "acct", amount: 3000 },
+      // Two other people settling between themselves. Not this user's money.
+      { fromMemberId: THEM, toMemberId: "third", accountId: "acct", amount: 900 },
+    ];
+
+    expect(personalMovement(ME, [], payments)).toEqual({ out: 500, in: 3000 });
+  });
+
+  it("finds nothing when no member of the group is the viewer", () => {
+    expect(
+      personalMovement(
+        null,
+        [{ paidByMemberId: ME, accountId: "acct", amount: 6000 }],
+        [{ fromMemberId: THEM, toMemberId: ME, accountId: "acct", amount: 3000 }],
+      ),
+    ).toEqual({ out: 0, in: 0 });
   });
 });

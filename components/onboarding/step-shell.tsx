@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { CaretRight, CheckCircle } from "@phosphor-icons/react/dist/ssr";
+import { CaretRight, CheckCircle, Warning } from "@phosphor-icons/react/dist/ssr";
 import { TOTAL_STEPS } from "@/lib/onboarding/config";
 import { ExitButton } from "@/components/onboarding/exit-button";
+import { useIsGuest } from "@/components/guest/guest-provider";
 import { faNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -80,8 +81,21 @@ export function StepShell({
 }
 
 /** Stated on every step, because "I lost my progress" is the fear that makes
- *  people abandon a multi-step form. */
+ *  people abandon a multi-step form. A guest gets the honest version of it:
+ *  their answers survive the next step, not the session, and promising them
+ *  otherwise here would be the app's own copy lying to them. */
 export function SaveReassurance() {
+  const isGuest = useIsGuest();
+
+  if (isGuest) {
+    return (
+      <p className="flex items-center justify-center gap-1.5 text-caption text-guess-text">
+        <Warning size={16} className="text-guess" />
+        جواب‌هایت فقط تا پایان همین جلسه می‌مانند.
+      </p>
+    );
+  }
+
   return (
     <p className="flex items-center justify-center gap-1.5 text-caption text-ink-muted">
       <CheckCircle size={16} className="text-positive" />

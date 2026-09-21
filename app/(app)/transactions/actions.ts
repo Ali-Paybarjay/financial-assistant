@@ -17,11 +17,35 @@ export type SaveTransactionResult =
 
 const GENERIC_ERROR = "ذخیره نشد. دوباره بزن؛ اگر باز هم نشد، صفحه را تازه کن.";
 
+/**
+ * A row «دنگ و دونگ» wrote is a reflection of one, and it is kept in step by
+ * the database — see migration 0017. Editing it here would be overwritten the
+ * next time the purchase behind it is touched, and deleting it would leave an
+ * account short by a bill that was really paid. So both are refused, and the
+ * message says where the row can actually be changed.
+ */
+const DONG_LOCKED =
+  "این ردیف از «دنگ و دونگ» آمده و بازتاب یک خرید مشترک است. برای تغییر یا حذفش، به همان دوره برو.";
+
+/** Whether this row belongs to «دنگ و دونگ» rather than to the ledger. */
+async function isDongMirror(id: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("transactions")
+    .select("dong_group_id")
+    .eq("id", id)
+    .maybeSingle();
+
+  return Boolean(data?.dong_group_id);
+}
+
 function refresh() {
   revalidatePath("/dashboard");
   revalidatePath("/transactions");
   // Every balance on that page is derived from these rows.
   revalidatePath("/accounts");
+  // The hub carries the same month and the same balances.
+  revalidatePath("/");
 }
 
 export async function saveTransaction(raw: unknown): Promise<SaveTransactionResult> {
@@ -39,6 +63,10 @@ export async function saveTransaction(raw: unknown): Promise<SaveTransactionResu
     return { error: "مبلغ عدد نیست. فقط رقم بنویس، مثل ۴۵٫۵۰." };
   }
   if (amount <= 0) return { error: "مبلغ باید بزرگ‌تر از صفر باشد." };
+
+  if (parsed.data.id && (await isDongMirror(parsed.data.id))) {
+    return { error: DONG_LOCKED };
+  }
 
   const isTransfer = parsed.data.type === "transfer";
 
@@ -97,6 +125,8 @@ export async function softDeleteTransaction(
 ): Promise<{ error: string } | { ok: true }> {
   await requireViewer();
   const supabase = await createClient();
+
+  if (await isDongMirror(id)) return { error: DONG_LOCKED };
 
   const { error } = await supabase
     .from("transactions")

@@ -13,7 +13,8 @@ async function login(page: Page) {
   await page.getByLabel("ایمیل").fill(EMAIL);
   await page.getByLabel("رمز").fill(PASSWORD);
   await page.getByRole("button", { name: "ورود", exact: true }).click();
-  await page.waitForURL(/\/(dashboard|onboarding)/);
+  // The hub is the landing page now; onboarding still intercepts a new account.
+  await page.waitForURL(/\/($|onboarding)/);
 }
 
 /** "−$4,111.30" / "+$4,250.00" -> minor units, sign preserved. */

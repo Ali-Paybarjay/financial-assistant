@@ -10,7 +10,6 @@ import { CategoryDonut, type CategorySlice } from "@/components/dashboard/catego
 import { MonthBars } from "@/components/dashboard/month-bars";
 import { EmptyDashboard } from "@/components/dashboard/empty-dashboard";
 import { AccountBalances } from "@/components/dashboard/account-balances";
-import { DongSummary } from "@/components/dashboard/dong-summary";
 import { ReconcileBanner } from "@/components/accounts/reconcile-banner";
 import { TransactionRowItem } from "@/components/transactions/transaction-row";
 import { EntryLauncher } from "@/components/entry/entry-sheet";
@@ -21,7 +20,6 @@ import { requiredMonthly, type GoalWithProgress } from "@/lib/goals";
 import type { CurrencyCode } from "@/lib/money";
 import type { MonthPoint } from "@/lib/queries/transactions";
 import type { AccountWithBalance } from "@/lib/accounts";
-import type { DongDashboardGroup } from "@/lib/queries/dong";
 import type {
   CategoryRow,
   MissedRecurringRow,
@@ -49,7 +47,6 @@ export function DashboardView({
   accounts,
   accountsTotal,
   accountsDue,
-  dongGroups,
   defaultAccountId,
 }: {
   currency: CurrencyCode;
@@ -72,7 +69,6 @@ export function DashboardView({
   /** Open accounts not yet checked against the bank this month. */
   accountsDue: AccountWithBalance[];
   /** Open groups, for the one entry point the feature has on a phone. */
-  dongGroups: DongDashboardGroup[];
   defaultAccountId: string | null;
 }) {
   const router = useRouter();
@@ -202,7 +198,6 @@ export function DashboardView({
               total={accountsTotal}
               currency={currency}
             />
-            <DongSummary groups={dongGroups} />
           </>
         ) : (
           <>
@@ -336,7 +331,6 @@ export function DashboardView({
 
             {/* Last on the page, and deliberately: this is a feature beside
                 the month the rest of the dashboard is about, not part of it. */}
-            <DongSummary groups={dongGroups} />
           </>
         )}
       </div>

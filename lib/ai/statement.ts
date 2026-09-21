@@ -9,7 +9,7 @@ import {
   type StatementLine,
 } from "./schemas";
 import { statementParsePrompt } from "./prompts";
-import { logUsage, remainingCalls } from "./usage";
+import { logUsage, remainingCalls, type Allowance } from "./usage";
 import {
   normalise,
   latestBalance,
@@ -18,6 +18,7 @@ import {
   type NormalisedClosingBalance,
   type NormalisedLine,
 } from "@/lib/import/normalise";
+import { faNumber } from "@/lib/format";
 import type { IsoDate } from "@/lib/date";
 import type { CurrencyCode } from "@/lib/money";
 import type { CategoryRow } from "@/lib/supabase/database.types";
@@ -68,8 +69,13 @@ const FAILURE_MESSAGES: Record<ModelError["kind"], string> = {
   malformed: "این فایل را نتوانستم بخوانم. PDF یا CSV خودِ بانک بهتر جواب می‌دهد.",
 };
 
-export const IMPORT_LIMIT_REACHED =
-  "امروز به سقف ۵۰ پردازش هوشمند رسیدی. فردا دوباره امتحان کن.";
+/** Same reasoning as limitReachedMessage in parse.ts. */
+export function importLimitReached({ limit, isGuest }: Allowance): string {
+  const ceiling = `امروز به سقف ${faNumber(limit)} پردازش هوشمند رسیدی.`;
+  return isGuest
+    ? `${ceiling} مهمان‌ها سهم کمتری دارند؛ حساب بساز تا بیشتر شود.`
+    : `${ceiling} فردا دوباره امتحان کن.`;
+}
 
 const UNREADABLE =
   "در این فایل هیچ تراکنشی پیدا نکردم. مطمئن شو صفحه‌ی گردش حساب است، نه صفحه‌ی اول.";
@@ -126,12 +132,13 @@ export async function readStatementFile({
   let truncated = chunks.length > MAX_CALLS_PER_FILE;
 
   for (const chunk of chunks.slice(0, MAX_CALLS_PER_FILE)) {
-    if ((await remainingCalls(timeZone)) <= 0) {
+    const allowance = await remainingCalls(timeZone);
+    if (allowance.remaining <= 0) {
       await logUsage({ userId, feature: "parse_statement", model: MODEL, status: "rejected" });
       // Whatever was read before the ceiling is still worth offering.
       return lines.length > 0
         ? { ok: true, lines, truncated: true, closingBalance: latestBalance(balances) }
-        : { ok: false, error: IMPORT_LIMIT_REACHED };
+        : { ok: false, error: importLimitReached(allowance) };
     }
 
     const outcome = await readOnce({

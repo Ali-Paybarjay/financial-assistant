@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireViewer } from "@/lib/auth";
 import { getDongGroup } from "@/lib/queries/dong";
+import { listAccounts } from "@/lib/queries/accounts";
 import { todayInTimeZone } from "@/lib/date";
 import { GroupView } from "./group-view";
 
@@ -17,7 +18,13 @@ export default async function DongGroupPage({
   if (!UUID.test(id)) notFound();
 
   const viewer = await requireViewer();
-  const detail = await getDongGroup(id);
+  const [detail, accounts] = await Promise.all([getDongGroup(id), listAccounts()]);
 
-  return <GroupView detail={detail} today={todayInTimeZone(viewer.timeZone)} />;
+  return (
+    <GroupView
+      detail={detail}
+      accounts={accounts}
+      today={todayInTimeZone(viewer.timeZone)}
+    />
+  );
 }
