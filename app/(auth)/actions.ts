@@ -7,6 +7,7 @@ import { purgeGuest } from "@/lib/guests";
 import {
   forgotPasswordSchema,
   loginSchema,
+  PASSWORD_MIN_LENGTH_FA,
   resetPasswordSchema,
   signupSchema,
 } from "@/lib/validation/auth";
@@ -31,8 +32,16 @@ function translateAuthError(message: string): string {
   if (normalized.includes("rate limit") || normalized.includes("too many")) {
     return "دفعات زیادی تلاش شد. چند دقیقه صبر کن و دوباره بزن.";
   }
+  // Supabase reports a password found in a breach corpus through the same
+  // "weak password" code as one that is merely short, so the two are told
+  // apart by the reason it gives. The advice has to differ: a leaked password
+  // can be long and complex, and telling someone to "add a digit" when the
+  // real problem is that it is already on a list reads as the app being broken.
+  if (normalized.includes("pwned") || normalized.includes("leaked") || normalized.includes("compromised")) {
+    return "این رمز در نشتِ اطلاعاتِ سایت‌های دیگر دیده شده. رمزی بگذار که جای دیگری استفاده نکرده‌ای.";
+  }
   if (normalized.includes("weak password")) {
-    return "رمز ساده است. ترکیبی از حرف و عدد با دست‌کم ۸ نویسه بگذار.";
+    return `رمز ساده است. دست‌کم ${PASSWORD_MIN_LENGTH_FA} نویسه، ترکیبی از حرف و عدد بگذار.`;
   }
   if (normalized.includes("anonymous")) {
     // Guest sign-in is a project-level switch in Supabase. If it is off, the
@@ -109,7 +118,9 @@ export async function requestPasswordReset(raw: unknown): Promise<ActionResult> 
 
 export async function resetPassword(raw: unknown): Promise<ActionResult> {
   const parsed = resetPasswordSchema.safeParse(raw);
-  if (!parsed.success) return { error: "رمز باید دست‌کم ۸ نویسه باشد." };
+  if (!parsed.success) {
+    return { error: `رمز باید دست‌کم ${PASSWORD_MIN_LENGTH_FA} نویسه باشد.` };
+  }
 
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ password: parsed.data.password });

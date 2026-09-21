@@ -8,7 +8,7 @@ import { EnvelopeSimple } from "@phosphor-icons/react/dist/ssr";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FormError } from "@/components/field";
-import { signupSchema, type SignupInput } from "@/lib/validation/auth";
+import { PASSWORD_MIN_LENGTH_FA, type SignupInput, signupSchema } from "@/lib/validation/auth";
 import { signup } from "../actions";
 
 export function SignupForm() {
@@ -91,7 +91,7 @@ export function SignupForm() {
         <Field
           label="رمز"
           htmlFor="password"
-          hint="دست‌کم ۸ نویسه"
+          hint={`دست‌کم ${PASSWORD_MIN_LENGTH_FA} نویسه`}
           error={errors.password?.message}
         >
           <Input

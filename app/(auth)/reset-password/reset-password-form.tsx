@@ -6,10 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FormError } from "@/components/field";
-import {
-  resetPasswordSchema,
-  type ResetPasswordInput,
-} from "@/lib/validation/auth";
+import { PASSWORD_MIN_LENGTH_FA, type ResetPasswordInput, resetPasswordSchema } from "@/lib/validation/auth";
 import { resetPassword } from "../actions";
 
 export function ResetPasswordForm() {
@@ -48,7 +45,7 @@ export function ResetPasswordForm() {
         <Field
           label="رمز تازه"
           htmlFor="password"
-          hint="دست‌کم ۸ نویسه"
+          hint={`دست‌کم ${PASSWORD_MIN_LENGTH_FA} نویسه`}
           error={errors.password?.message}
         >
           <Input
