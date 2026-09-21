@@ -23,8 +23,12 @@ import { ExpenseRowItem, MemberName, PaymentRowItem } from "@/components/dong/ro
 import { DongReport } from "@/components/dong/report";
 import { faNumber } from "@/lib/format";
 import { formatDateFa } from "@/lib/date";
-import { standing, type Transfer } from "@/lib/dong";
-import type { DongMemberRow, DongPaymentRow } from "@/lib/supabase/database.types";
+import { personalMovement, standing, type Transfer } from "@/lib/dong";
+import type {
+  AccountRow,
+  DongMemberRow,
+  DongPaymentRow,
+} from "@/lib/supabase/database.types";
 import type { DongExpenseWithShares, DongGroupDetail } from "@/lib/queries/dong";
 import { GroupSheet } from "../group-sheet";
 import { ExpenseSheet } from "./expense-sheet";
@@ -43,9 +47,12 @@ const TABS: { value: Tab; label: string; icon: React.ReactNode }[] = [
 
 export function GroupView({
   detail,
+  accounts,
   today,
 }: {
   detail: DongGroupDetail;
+  /** Every account the viewer has; narrowed to this group's currency below. */
+  accounts: AccountRow[];
   today: string;
 }) {
   const { group, members, balances, expenses, payments } = detail;
@@ -76,6 +83,32 @@ export function GroupView({
   const me = members.find((member) => member.is_me);
   const myBalance = me ? balanceById.get(me.id) : undefined;
   const hasFund = members.some((member) => member.is_fund);
+
+  // This app converts nothing, so an account in another currency cannot be
+  // the one this group is run out of. See migration 0017.
+  const usableAccounts = useMemo(
+    () => accounts.filter((account) => account.currency === group.currency),
+    [accounts, group.currency],
+  );
+
+  const moved = useMemo(
+    () =>
+      personalMovement(
+        me?.id,
+        expenses.map((expense) => ({
+          paidByMemberId: expense.paid_by_member_id,
+          accountId: expense.account_id,
+          amount: expense.amount,
+        })),
+        payments.map((payment) => ({
+          fromMemberId: payment.from_member_id,
+          toMemberId: payment.to_member_id,
+          accountId: payment.account_id,
+          amount: payment.amount,
+        })),
+      ),
+    [me?.id, expenses, payments],
+  );
 
   function openExpense(expense: DongExpenseWithShares | null) {
     setEditingExpense(expense);
@@ -162,6 +195,38 @@ export function GroupView({
             tone={myBalance.net === 0 ? "none" : "auto"}
           />
         </div>
+      )}
+
+      {/* What this trip has actually done to the user's own money. Separate
+          from the balance above, and deliberately: that number is about the
+          group, this one is about their bank account, and the two are almost
+          never the same. */}
+      {(moved.out > 0 || moved.in > 0) && (
+        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-card border border-hairline bg-surface px-4 py-3">
+          <span className="text-caption text-ink-muted">از حساب‌های خودت</span>
+          <span className="flex items-baseline gap-4 text-caption text-ink-muted">
+            <span>
+              رفته <Money minor={moved.out} currency={group.currency} size="row" />
+            </span>
+            <span>
+              برگشته <Money minor={moved.in} currency={group.currency} size="row" />
+            </span>
+          </span>
+        </div>
+      )}
+
+      {/* Offered once, where the answer is cheap: the alternative is a trip
+          that is entirely correct about who owes whom and has never touched
+          the account the money actually left. */}
+      {me && !group.account_id && usableAccounts.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setGroupSheet(true)}
+          className="mb-3 w-full rounded-card border border-dashed border-hairline-strong bg-paper px-4 py-3 text-start text-caption text-ink-muted hover:border-lapis hover:text-lapis"
+        >
+          برای این دوره حسابی انتخاب نکرده‌ای. اگر انتخاب کنی، هر خریدی که خودت
+          پولش را بدهی در حسابداری شخصی‌ات هم ثبت می‌شود.
+        </button>
       )}
 
       <SegmentedControl
@@ -362,7 +427,9 @@ export function GroupView({
         open={groupSheet}
         onOpenChange={setGroupSheet}
         group={group}
+        accounts={accounts}
         defaultCurrency={group.currency}
+        defaultAccountId={group.account_id}
         today={today}
       />
       <ExpenseSheet
@@ -370,6 +437,8 @@ export function GroupView({
         onOpenChange={setExpenseSheet}
         groupId={group.id}
         members={members}
+        accounts={usableAccounts}
+        groupAccountId={group.account_id}
         currency={group.currency}
         today={today}
         expense={editingExpense}
@@ -379,6 +448,8 @@ export function GroupView({
         onOpenChange={setPaymentSheet}
         groupId={group.id}
         members={members}
+        accounts={usableAccounts}
+        groupAccountId={group.account_id}
         currency={group.currency}
         today={today}
         payment={editingPayment}

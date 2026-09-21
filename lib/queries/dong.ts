@@ -26,6 +26,8 @@ export type DongGroupWithTotals = DongGroupRow & {
   /** People, not counting the kitty — it is a member but not a person. */
   memberCount: number;
   expenseCount: number;
+  /** Payments too, because the currency lock asks «is anything recorded yet». */
+  paymentCount: number;
   totalSpent: Minor;
   lastActivityOn: string | null;
 };
@@ -79,6 +81,7 @@ export async function listDongGroups(): Promise<DongGroupWithTotals[]> {
         currency: groupCurrency(group),
         memberCount: derived?.member_count ?? 0,
         expenseCount: derived?.expense_count ?? 0,
+        paymentCount: derived?.payment_count ?? 0,
         totalSpent: derived?.total_spent ?? 0,
         lastActivityOn: derived?.last_activity_on ?? null,
       };
@@ -163,6 +166,7 @@ export async function getDongGroup(groupId: string): Promise<DongGroupDetail> {
       currency: groupCurrency(group),
       memberCount: (members ?? []).filter((member) => !member.is_fund).length,
       expenseCount: totals.length,
+      paymentCount: (payments ?? []).length,
       totalSpent: totals.reduce((sum, expense) => sum + expense.amount, 0),
       lastActivityOn: totals[0]?.occurred_on ?? null,
     },

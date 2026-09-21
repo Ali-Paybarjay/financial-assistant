@@ -8,6 +8,11 @@ const PUBLIC_PATHS = [
   "/forgot-password",
   "/reset-password",
   "/callback",
+  // Not public in any useful sense — it carries no session cookie because
+  // Vercel's scheduler is not a browser, so the gate below would bounce it to
+  // /login and the nightly sweep would quietly never run. It authenticates
+  // itself against CRON_SECRET and refuses outright when that is unset.
+  "/api/cron",
 ];
 
 function isPublic(pathname: string): boolean {
@@ -62,7 +67,7 @@ export async function updateSession(request: NextRequest) {
 
   if (user && (pathname === "/login" || pathname === "/signup")) {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = "/";
     url.search = "";
     return NextResponse.redirect(url);
   }

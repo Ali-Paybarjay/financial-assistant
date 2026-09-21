@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { purgeGuest } from "@/lib/guests";
 import {
   forgotPasswordSchema,
   loginSchema,
@@ -33,6 +34,11 @@ function translateAuthError(message: string): string {
   if (normalized.includes("weak password")) {
     return "رمز ساده است. ترکیبی از حرف و عدد با دست‌کم ۸ نویسه بگذار.";
   }
+  if (normalized.includes("anonymous")) {
+    // Guest sign-in is a project-level switch in Supabase. If it is off, the
+    // button is there and does nothing, so say which door is still open.
+    return "ورود مهمان فعلاً در دسترس نیست. با ایمیل وارد شو یا حساب بساز.";
+  }
   return "کار پیش نرفت. دوباره بزن؛ اگر باز هم نشد، چند دقیقه بعد امتحان کن.";
 }
 
@@ -58,7 +64,7 @@ export async function login(raw: unknown): Promise<ActionResult> {
   if (error) return { error: translateAuthError(error.message) };
 
   revalidatePath("/", "layout");
-  redirect("/dashboard");
+  redirect("/");
 }
 
 export async function signup(raw: unknown): Promise<ActionResult> {
@@ -111,7 +117,7 @@ export async function resetPassword(raw: unknown): Promise<ActionResult> {
   if (error) return { error: translateAuthError(error.message) };
 
   revalidatePath("/", "layout");
-  redirect("/dashboard");
+  redirect("/");
 }
 
 export async function signInWithGoogle(): Promise<ActionResult> {
@@ -126,8 +132,98 @@ export async function signInWithGoogle(): Promise<ActionResult> {
   return { error: "ورود با گوگل در دسترس نیست. با ایمیل و رمز وارد شو." };
 }
 
+/**
+ * Guest entry. No email, no password, no confirmation link — Supabase mints an
+ * anonymous user, which is a real row in auth.users with is_anonymous = true,
+ * so every RLS policy in the schema (all of them `to authenticated`) applies
+ * unchanged and the guest's data is isolated exactly like anyone else's.
+ *
+ * Onboarding still runs: the dashboard cannot say anything useful until it
+ * knows a currency, and a guest who skips it lands on empty charts and
+ * concludes the app is broken rather than that they skipped a step.
+ */
+export async function continueAsGuest(): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInAnonymously();
+
+  if (error) return { error: translateAuthError(error.message) };
+
+  revalidatePath("/", "layout");
+  redirect("/onboarding/1");
+}
+
+/**
+ * Turns the guest into a real account without touching their data. This is an
+ * update to the existing user, not a new signup: the user id does not change,
+ * so every transaction, account, goal and dong row they created while trying
+ * the app stays exactly where it is and simply gains a way to sign back in.
+ *
+ * Email and password go in one call, and that is not a tidiness choice: GoTrue
+ * refuses "Updating password of an anonymous user without an email or phone",
+ * and a pending email change does not satisfy it either. Setting them
+ * separately fails in both orders — measured, not assumed. Supplying the
+ * address in the same request is the only shape that is accepted.
+ *
+ * Afterwards the user is still anonymous, with the address parked in new_email
+ * until they click the link. The password is already live, so the account is
+ * recoverable the moment they confirm.
+ */
+export async function upgradeGuestAccount(raw: unknown): Promise<ActionResult> {
+  const parsed = signupSchema.safeParse(raw);
+  if (!parsed.success) return { error: "فرم را کامل پر کن." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+  if (!user.is_anonymous) {
+    return { error: "حسابت از قبل ساخته شده. از تنظیمات اطلاعاتت را ویرایش کن." };
+  }
+
+  const { error } = await supabase.auth.updateUser(
+    {
+      email: parsed.data.email,
+      password: parsed.data.password,
+      data: { full_name: parsed.data.fullName },
+    },
+    // Same reason as signup: no query string, or Supabase compares the whole
+    // URL against the allow list and silently sends them to the Site URL.
+    { emailRedirectTo: appUrl("/callback") },
+  );
+  if (error) return { error: translateAuthError(error.message) };
+
+  // The profile row is what the app reads names from; user_metadata is only
+  // ever a fallback for what a provider told us.
+  await supabase.from("profiles").update({ full_name: parsed.data.fullName }).eq("id", user.id);
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 export async function logout(): Promise<never> {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Every sign-out path in the app funnels through here — settings, the
+  // onboarding exit button, the guest banner — so the promise made to guests
+  // is kept by all of them without each one having to remember it.
+  //
+  // A failed purge must not block the sign-out. Leaving someone signed in to an
+  // account they just asked to destroy is the worse of the two failures, and
+  // the row is not stranded either way: purge_stale_guests() sweeps up whatever
+  // this missed.
+  if (user?.is_anonymous) {
+    try {
+      await purgeGuest(user.id);
+    } catch {
+      // Deliberately silent. Nothing the user could do with this.
+    }
+  }
+
   await supabase.auth.signOut();
   revalidatePath("/", "layout");
   redirect("/login");

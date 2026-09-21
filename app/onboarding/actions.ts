@@ -280,5 +280,5 @@ export async function finishOnboarding(): Promise<never> {
     .eq("id", viewer.userId);
 
   revalidatePath("/", "layout");
-  redirect("/dashboard");
+  redirect("/");
 }

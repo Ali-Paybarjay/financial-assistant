@@ -216,3 +216,64 @@ export function byMemberShare(
     .map((balance) => ({ memberId: balance.memberId, amount: balance.share }))
     .sort((a, b) => b.amount - a.amount);
 }
+
+/* ------------------------------------------------- your own money in it -- */
+
+/** The fields of an expense that decide whether the viewer's account moved. */
+export type MirroredExpense = {
+  paidByMemberId: string;
+  accountId: string | null;
+  amount: Minor;
+};
+
+/** The same, for a payment. */
+export type MirroredPayment = {
+  fromMemberId: string;
+  toMemberId: string;
+  accountId: string | null;
+  amount: Minor;
+};
+
+export type PersonalMovement = {
+  /** Left one of the viewer's accounts for this group. */
+  out: Minor;
+  /** Arrived in one. */
+  in: Minor;
+};
+
+/**
+ * What this group has moved through the viewer's own accounts.
+ *
+ * The rule is migration 0017's, restated: a purchase counts when the viewer
+ * paid it from a named account, and a payment counts when one end of it is
+ * the viewer and it names an account. Nothing else does — someone else's
+ * card is not the user's ledger, however much of the bill they owe.
+ *
+ * Restated rather than queried because the group page already holds every row
+ * it needs, and because a number the user is shown beside a balance should be
+ * arrived at the same way in both places and be pinned by a test in one.
+ */
+export function personalMovement(
+  meMemberId: string | null | undefined,
+  expenses: readonly MirroredExpense[],
+  payments: readonly MirroredPayment[],
+): PersonalMovement {
+  if (!meMemberId) return { out: 0, in: 0 };
+
+  let out = 0;
+  let received = 0;
+
+  for (const expense of expenses) {
+    if (expense.accountId && expense.paidByMemberId === meMemberId) {
+      out += expense.amount;
+    }
+  }
+
+  for (const payment of payments) {
+    if (!payment.accountId) continue;
+    if (payment.fromMemberId === meMemberId) out += payment.amount;
+    else if (payment.toMemberId === meMemberId) received += payment.amount;
+  }
+
+  return { out, in: received };
+}

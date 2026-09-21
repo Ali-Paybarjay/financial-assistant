@@ -34,6 +34,8 @@ function refresh() {
   revalidatePath("/dashboard");
   revalidatePath("/transactions");
   revalidatePath("/accounts");
+  // The hub carries the same month and the same balances.
+  revalidatePath("/");
 }
 
 /**

@@ -9,6 +9,7 @@ import {
   Microphone,
   Receipt,
   TextT,
+  UsersThree,
 } from "@phosphor-icons/react/dist/ssr";
 import type { Icon } from "@phosphor-icons/react";
 import { Money } from "@/components/money";
@@ -26,6 +27,7 @@ const SOURCE_ICON: Record<string, Icon> = {
   receipt: Receipt,
   recurring: ArrowsClockwise,
   statement: Bank,
+  dong: UsersThree,
 };
 
 const SOURCE_LABEL: Record<string, string> = {
@@ -35,6 +37,7 @@ const SOURCE_LABEL: Record<string, string> = {
   receipt: "از عکس فاکتور",
   recurring: "هزینه‌ی ثابت",
   statement: "از صورت‌حساب",
+  dong: "از دنگ و دونگ",
 };
 
 export function TransactionRowItem({

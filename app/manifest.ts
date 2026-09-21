@@ -11,7 +11,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "دستیار مالی",
     short_name: "دستیار مالی",
     description: "ثبت سریع هزینه و دیدن مانده‌ی این ماه",
-    start_url: "/dashboard",
+    start_url: "/",
     display: "standalone",
     orientation: "portrait",
     background_color: "#f1f3f6",

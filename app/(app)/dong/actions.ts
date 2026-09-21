@@ -21,6 +21,13 @@ const AMOUNT_ERROR = "مبلغ عدد نیست. فقط رقم بنویس، مث�
 function refresh(groupId?: string) {
   revalidatePath("/dong");
   if (groupId) revalidatePath(`/dong/${groupId}`);
+  // A purchase the user paid for from their own account is a row in the
+  // personal ledger too, and it moves that account's balance. The two halves
+  // of the app are separate to look at, not separate about money.
+  revalidatePath("/");
+  revalidatePath("/dashboard");
+  revalidatePath("/transactions");
+  revalidatePath("/accounts");
 }
 
 /**
@@ -43,7 +50,88 @@ async function groupCurrency(
   return { currency: data.currency as CurrencyCode };
 }
 
+/**
+ * The account a row is allowed to name, checked before anything is written.
+ *
+ * Three ways this can be wrong, and the user hears about all three here
+ * rather than meeting the trigger's message from migration 0017:
+ *
+ *   * The money was not the user's. Somebody else paid, or the payment is
+ *     between two other people — there is nothing of theirs to attach.
+ *   * The account is not theirs. RLS turns that into "no row", so a
+ *     hand-crafted id reads back as nothing rather than as somebody else's.
+ *   * The account is in another currency. This app converts nothing, and a
+ *     group in euros run out of an account in tomans would have to.
+ */
+async function resolveAccount(
+  accountId: string | undefined,
+  currency: CurrencyCode,
+  /** False when no money of the viewer's moved: there is nothing to attach. */
+  applies: boolean,
+): Promise<{ accountId: string | null } | { error: string }> {
+  if (!applies || !accountId) return { accountId: null };
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("accounts")
+    .select("id, currency")
+    .eq("id", accountId)
+    .maybeSingle();
+
+  if (!data) return { error: "این حساب پیدا نشد." };
+
+  if (data.currency !== currency) {
+    return {
+      error:
+        "ارز این حساب با ارز دوره یکی نیست. این اپ نرخ تبدیل ندارد، پس نمی‌شود این را به حساب شخصی وصل کرد.",
+    };
+  }
+
+  return { accountId: data.id };
+}
+
 /* --------------------------------------------------------------- groups -- */
+
+/**
+ * Changing a group's currency once it has rows in it would leave every stored
+ * amount meaning something else — and any of them already mirrored into the
+ * ledger would now disagree with the account it sits in. The form locks the
+ * control; this is the same rule where it cannot be clicked around.
+ *
+ * Returns an error to hand back, or undefined when the change is fine.
+ */
+async function currencyChangeIsSafe(
+  groupId: string,
+  currency: string,
+): Promise<{ error: string } | undefined> {
+  const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("dong_groups")
+    .select("currency")
+    .eq("id", groupId)
+    .maybeSingle();
+
+  if (!existing || existing.currency === currency) return undefined;
+
+  const [{ count: expenses }, { count: payments }] = await Promise.all([
+    supabase
+      .from("dong_expenses")
+      .select("id", { count: "exact", head: true })
+      .eq("group_id", groupId),
+    supabase
+      .from("dong_payments")
+      .select("id", { count: "exact", head: true })
+      .eq("group_id", groupId),
+  ]);
+
+  if ((expenses ?? 0) + (payments ?? 0) === 0) return undefined;
+
+  return {
+    error:
+      "این دوره خرید یا پرداخت دارد و واحد پولش عوض نمی‌شود: مبلغ‌های ثبت‌شده بی‌آنکه دست بخورند، معنای دیگری پیدا می‌کردند.",
+  };
+}
 
 export async function saveDongGroup(raw: unknown): Promise<DongResult> {
   const parsed = dongGroupFormSchema.safeParse(raw);
@@ -52,15 +140,28 @@ export async function saveDongGroup(raw: unknown): Promise<DongResult> {
   const viewer = await requireViewer();
   const supabase = await createClient();
 
+  // The group's own account is only a default for its rows, but it is still
+  // an account this user owns and in this group's currency.
+  const account = await resolveAccount(
+    parsed.data.accountId,
+    parsed.data.currency,
+    true,
+  );
+  if ("error" in account) return account;
+
   const payload = {
     user_id: viewer.userId,
     title: parsed.data.title,
     currency: parsed.data.currency,
+    account_id: account.accountId,
     started_on: parsed.data.startedOn,
     note: parsed.data.note || null,
   };
 
   if (parsed.data.id) {
+    const changed = await currencyChangeIsSafe(parsed.data.id, parsed.data.currency);
+    if (changed) return changed;
+
     const { error } = await supabase
       .from("dong_groups")
       .update(payload)
@@ -322,6 +423,25 @@ export async function saveDongExpense(raw: unknown): Promise<DongResult> {
   );
   if ("error" in resolved) return resolved;
 
+  // Who paid decides whether this is a movement in the user's own ledger at
+  // all — and the same read catches a payer from some other group, which the
+  // foreign key alone would happily accept.
+  const { data: payer } = await supabase
+    .from("dong_members")
+    .select("is_me")
+    .eq("id", parsed.data.paidBy)
+    .eq("group_id", parsed.data.groupId)
+    .maybeSingle();
+
+  if (!payer) return { error: "کسی که گفتی پرداخت کرده، در این دوره نیست." };
+
+  const account = await resolveAccount(
+    parsed.data.accountId,
+    group.currency,
+    payer.is_me,
+  );
+  if ("error" in account) return account;
+
   // One call, one transaction: the expense and its shares are checked against
   // each other at commit, so they cannot be written in two round trips.
   const { error } = await supabase.rpc("dong_save_expense", {
@@ -339,6 +459,9 @@ export async function saveDongExpense(raw: unknown): Promise<DongResult> {
     p_tag: parsed.data.tag || null,
     p_note: parsed.data.note || null,
     p_id: parsed.data.id ?? null,
+    // What makes it appear in «حسابداری شخصی» too, by the trigger on the
+    // table rather than by a second write from here.
+    p_account_id: account.accountId,
   });
 
   if (error) return { error: GENERIC_ERROR };
@@ -383,6 +506,26 @@ export async function saveDongPayment(raw: unknown): Promise<DongResult> {
   }
   if (amount <= 0) return { error: "مبلغ پرداخت باید بیشتر از صفر باشد." };
 
+  // Both ends, in one read: whether the viewer is one of them decides if an
+  // account belongs on the row, and two people from another group would
+  // otherwise slip past the foreign keys.
+  const { data: ends } = await supabase
+    .from("dong_members")
+    .select("id, is_me")
+    .eq("group_id", parsed.data.groupId)
+    .in("id", [parsed.data.fromMemberId, parsed.data.toMemberId]);
+
+  if (!ends || ends.length !== 2) {
+    return { error: "یکی از دو طرف این پرداخت در این دوره نیست." };
+  }
+
+  const account = await resolveAccount(
+    parsed.data.accountId,
+    group.currency,
+    ends.some((member) => member.is_me),
+  );
+  if ("error" in account) return account;
+
   const payload = {
     group_id: parsed.data.groupId,
     user_id: viewer.userId,
@@ -390,6 +533,7 @@ export async function saveDongPayment(raw: unknown): Promise<DongResult> {
     to_member_id: parsed.data.toMemberId,
     amount,
     kind: parsed.data.kind,
+    account_id: account.accountId,
     occurred_on: parsed.data.occurredOn,
     note: parsed.data.note || null,
   };

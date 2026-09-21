@@ -5,6 +5,15 @@ import { CURRENCIES } from "@/lib/money";
 const amountText = z.string().trim().min(1, "مبلغ را بنویس");
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "تاریخ را انتخاب کن");
 
+/**
+ * Which of the user's own accounts this movement touched.
+ *
+ * "" is a real answer everywhere it appears here, and the common one: the
+ * money was somebody else's, or it was cash from a pocket nobody is tracking.
+ * Only when it names an account does the row reach the personal ledger.
+ */
+const optionalAccountId = z.union([z.string().uuid(), z.literal("")]).optional();
+
 /* ------------------------------------------------------------- the group -- */
 
 export const dongGroupFormSchema = z.object({
@@ -15,6 +24,13 @@ export const dongGroupFormSchema = z.object({
    * open one of these is a trip, and a trip is usually in another currency.
    */
   currency: z.enum(CURRENCIES),
+  /**
+   * The account this trip is run out of. Asked once, at the start, because
+   * that is when the user knows the answer — «این سفر را با کارت ملت حساب
+   * می‌کنم» — and because answering it once is what keeps every purchase
+   * afterwards to a single tap.
+   */
+  accountId: optionalAccountId,
   startedOn: isoDate,
   note: z.string().trim().max(500).optional(),
 });
@@ -84,6 +100,8 @@ export const dongExpenseFormSchema = z
     title: z.string().trim().min(1, "عنوان خرید را بنویس").max(80),
     amount: amountText,
     paidBy: z.string().uuid("بگو چه کسی پرداخت کرده"),
+    /** Ignored unless the payer is the viewer: only their own money moves. */
+    accountId: optionalAccountId,
     occurredOn: isoDate,
     tag: z.string().trim().max(40).optional(),
     note: z.string().trim().max(500).optional(),
@@ -133,6 +151,8 @@ export const dongPaymentFormSchema = z
     toMemberId: z.string().uuid("بگو به چه کسی"),
     amount: amountText,
     kind: z.enum(PAYMENT_KIND_OPTIONS.map((option) => option.value)),
+    /** Ignored unless one end of the payment is the viewer. */
+    accountId: optionalAccountId,
     occurredOn: isoDate,
     note: z.string().trim().max(500).optional(),
   })

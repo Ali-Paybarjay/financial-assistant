@@ -34,7 +34,8 @@ async function login(page: Page) {
   await page.getByLabel("ایمیل").fill(EMAIL);
   await page.getByLabel("رمز").fill(PASSWORD);
   await page.getByRole("button", { name: "ورود", exact: true }).click();
-  await page.waitForURL(/\/(dashboard|onboarding)/);
+  // The hub is the landing page now; onboarding still intercepts a new account.
+  await page.waitForURL(/\/($|onboarding)/);
 }
 
 /** The uploader is on screen. Its file input is sr-only, so key off the button. */

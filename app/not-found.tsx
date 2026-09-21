@@ -7,13 +7,13 @@ export default function NotFound() {
         این صفحه وجود ندارد
       </h1>
       <p className="text-body text-ink-muted">
-        شاید لینک قدیمی باشد. از داشبورد شروع کن.
+        شاید لینک قدیمی باشد. از صفحه‌ی اول شروع کن.
       </p>
       <Link
-        href="/dashboard"
+        href="/"
         className="flex h-[52px] items-center rounded-control bg-lapis px-5 text-[15px] font-semibold text-white hover:bg-lapis/90"
       >
-        برو به داشبورد
+        برو به صفحه‌ی اول
       </Link>
     </div>
   );

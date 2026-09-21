@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Trash } from "@phosphor-icons/react/dist/ssr";
+import { CaretLeft, Trash, UsersThree } from "@phosphor-icons/react/dist/ssr";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -90,6 +91,14 @@ export function EditTransactionSheet({
     setFormError(undefined);
   }, [transaction, currency, categories, reset]);
 
+  /**
+   * A row «دنگ و دونگ» wrote is shown, not edited: the database keeps it in
+   * step with the purchase behind it, so anything typed here would be undone
+   * the next time that purchase is touched. The way to change it is to change
+   * what it reflects, and the sheet says so and offers the door.
+   */
+  const fromDong = transaction?.dong_group_id ?? null;
+
   const type = watch("type");
   const toAccountId = watch("toAccountId");
   const isTransfer = type === "transfer";
@@ -140,7 +149,47 @@ export function EditTransactionSheet({
       onOpenChange={(open) => !open && onClose()}
       title="ویرایش تراکنش"
     >
-      {transaction && (
+      {transaction && fromDong && (
+        <div className="flex flex-col gap-4">
+          <div className="flex items-start gap-3 rounded-control border border-hairline bg-paper p-3">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-lapis-tint text-lapis">
+              <UsersThree size={18} />
+            </span>
+            <p className="text-caption text-ink-muted">
+              این ردیف را «دنگ و دونگ» نوشته است — بازتاب یک خرید یا پرداخت مشترک
+              که از حساب تو رفته یا به آن آمده. مبلغ و تاریخش همان‌جا عوض می‌شود،
+              و اینجا خودش به‌روز می‌شود.
+            </p>
+          </div>
+
+          <Field label="شرح" htmlFor="dong-note">
+            <Input id="dong-note" readOnly value={transaction.note ?? ""} />
+          </Field>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="مبلغ" htmlFor="dong-amount">
+              <Input
+                id="dong-amount"
+                readOnly
+                dir="ltr"
+                value={formatMoney(transaction.amount, currency)}
+              />
+            </Field>
+            <Field label="تاریخ" htmlFor="dong-date">
+              <Input id="dong-date" readOnly dir="ltr" value={transaction.occurred_on} />
+            </Field>
+          </div>
+
+          <Button asChild size="lg">
+            <Link href={`/dong/${fromDong}`}>
+              رفتن به آن دوره
+              <CaretLeft size={16} />
+            </Link>
+          </Button>
+        </div>
+      )}
+
+      {transaction && !fromDong && (
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
           <FormError>{formError}</FormError>
 

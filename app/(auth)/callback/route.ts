@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/dashboard";
+  const next = searchParams.get("next") ?? "/";
 
   if (!code) {
     return NextResponse.redirect(`${origin}/login?error=missing_code`);
@@ -20,6 +20,6 @@ export async function GET(request: NextRequest) {
 
   // Only same-origin relative paths, so a crafted link cannot bounce the user
   // off-site with a fresh session in hand.
-  const destination = next.startsWith("/") ? next : "/dashboard";
+  const destination = next.startsWith("/") ? next : "/";
   return NextResponse.redirect(`${origin}${destination}`);
 }

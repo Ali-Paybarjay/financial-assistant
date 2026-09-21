@@ -8,8 +8,17 @@ export type PromptContext = {
   categories: CategoryRow[];
 };
 
+/**
+ * The two categories «دنگ و دونگ» writes for itself, by trigger — see
+ * migration 0017. They are left out of every prompt: the model cannot know
+ * whether a receipt was a shared bill, and a row filed there with no group
+ * behind it is a wedge on the dashboard's donut that points at nothing.
+ */
+const APP_OWNED_SLUGS = new Set(["dong", "dong-refund"]);
+
 function categoryList(categories: CategoryRow[]): string {
   return categories
+    .filter((category) => !APP_OWNED_SLUGS.has(category.slug))
     .map((category) => `${category.slug} = ${category.name_fa} (${category.kind})`)
     .join("\n");
 }

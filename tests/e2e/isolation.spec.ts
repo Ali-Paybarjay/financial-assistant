@@ -174,7 +174,8 @@ test.describe("a second user is sealed off from the first", () => {
     await page.getByLabel("ایمیل").fill(BETA_EMAIL);
     await page.getByLabel("رمز").fill(PASSWORD);
     await page.getByRole("button", { name: "ورود", exact: true }).click();
-    await page.waitForURL(/\/(dashboard|onboarding)/);
+    // The hub is the landing page now; onboarding still intercepts a new account.
+    await page.waitForURL(/\/($|onboarding)/);
 
     // The second account has not finished onboarding, so these mostly
     // redirect — which is itself the point: there is no route that hands it

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Trash } from "@phosphor-icons/react/dist/ssr";
 import { BottomSheet } from "@/components/bottom-sheet";
@@ -10,7 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/native-select";
 import { Field, FormError } from "@/components/field";
+import { AccountField } from "@/components/accounts/account-field";
 import { CURRENCIES, currencySymbol, type CurrencyCode } from "@/lib/money";
+import type { AccountRow } from "@/lib/supabase/database.types";
 import type { DongGroupWithTotals } from "@/lib/queries/dong";
 import { dongGroupFormSchema, type DongGroupForm } from "@/lib/validation/dong";
 import { deleteDongGroup, saveDongGroup } from "./actions";
@@ -19,13 +21,19 @@ export function GroupSheet({
   open,
   onOpenChange,
   group,
+  accounts,
   defaultCurrency,
+  defaultAccountId,
   today,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   group: DongGroupWithTotals | null;
+  /** The viewer's own accounts, for the one this trip is run out of. */
+  accounts: AccountRow[];
   defaultCurrency: CurrencyCode;
+  /** Their usual account, so the common answer is already filled in. */
+  defaultAccountId: string | null;
   today: string;
 }) {
   const router = useRouter();
@@ -35,18 +43,42 @@ export function GroupSheet({
 
   const {
     register,
+    control,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<DongGroupForm>({
     resolver: zodResolver(dongGroupFormSchema),
     defaultValues: {
       title: "",
       currency: defaultCurrency,
+      accountId: defaultAccountId ?? "",
       startedOn: today,
       note: "",
     },
   });
+
+  // Watched, not read once: the account list below is the accounts in the
+  // group's currency, and the currency is a control on this same form.
+  const currency = (useWatch({ control, name: "currency" }) ??
+    defaultCurrency) as CurrencyCode;
+  const usable = accounts.filter((account) => account.currency === currency);
+  const locked = Boolean(group && (group.expenseCount > 0 || group.paymentCount > 0));
+
+  const accountId = useWatch({ control, name: "accountId" });
+
+  /**
+   * Switching the currency takes the account with it. Without this the field
+   * simply disappears — there are no accounts in the new currency to list —
+   * while still holding the old answer, and the save fails on a rule about a
+   * control the user cannot see.
+   */
+  useEffect(() => {
+    if (accountId && !usable.some((account) => account.id === accountId)) {
+      setValue("accountId", "");
+    }
+  }, [accountId, usable, setValue]);
 
   useEffect(() => {
     if (!open) return;
@@ -55,14 +87,21 @@ export function GroupSheet({
         ? {
             title: group.title,
             currency: group.currency,
+            accountId: group.account_id ?? "",
             startedOn: group.started_on,
             note: group.note ?? "",
           }
-        : { title: "", currency: defaultCurrency, startedOn: today, note: "" },
+        : {
+            title: "",
+            currency: defaultCurrency,
+            accountId: defaultAccountId ?? "",
+            startedOn: today,
+            note: "",
+          },
     );
     setFormError(undefined);
     setConfirmingDelete(false);
-  }, [open, group, defaultCurrency, today, reset]);
+  }, [open, group, defaultCurrency, defaultAccountId, today, reset]);
 
   function onSubmit(values: DongGroupForm) {
     setFormError(undefined);
@@ -110,11 +149,7 @@ export function GroupSheet({
             htmlFor="group-currency"
             hint={group ? undefined : "بعداً هم عوض می‌شود."}
           >
-            <NativeSelect
-              id="group-currency"
-              disabled={Boolean(group && group.expenseCount > 0)}
-              {...register("currency")}
-            >
+            <NativeSelect id="group-currency" disabled={locked} {...register("currency")}>
               {CURRENCIES.map((code) => (
                 <option key={code} value={code}>
                   {code} · {currencySymbol(code)}
@@ -132,10 +167,29 @@ export function GroupSheet({
           </Field>
         </div>
 
-        {group && group.expenseCount > 0 && (
+        {locked && (
           <p className="rounded-control border border-dashed border-hairline-strong bg-paper px-3 py-2.5 text-caption text-ink-muted">
-            واحد پول بعد از ثبت اولین خرید قفل می‌شود: عوض‌کردنش مبلغ‌های ثبت‌شده را
+            واحد پول بعد از اولین ثبت قفل می‌شود: عوض‌کردنش مبلغ‌های ثبت‌شده را
             بی‌آنکه دست بخورند، معنای دیگری می‌داد.
+          </p>
+        )}
+
+        {/* The question the whole «از کدام حسابت» flow hangs on, asked once
+            and here — at the start of the trip, when the user knows the
+            answer — so that every purchase afterwards is one tap. */}
+        <AccountField
+          id="group-account"
+          label="از کدام حسابت"
+          accounts={usable}
+          selectedId={group?.account_id}
+          hint="هر خریدی که خودت پولش را بدهی، از همین حساب کم می‌شود و در حسابداری شخصی‌ات ثبت می‌شود. بعداً روی هر خرید هم می‌شود عوضش کرد."
+          {...register("accountId")}
+        />
+
+        {usable.length === 0 && accounts.length > 0 && (
+          <p className="rounded-control border border-dashed border-hairline-strong bg-paper px-3 py-2.5 text-caption text-ink-muted">
+            هیچ حسابی به {currency} نداری، پس این دوره به حسابداری
+            شخصی وصل نمی‌شود. این اپ نرخ تبدیل ندارد و نمی‌خواهد از خودش درآورد.
           </p>
         )}
 

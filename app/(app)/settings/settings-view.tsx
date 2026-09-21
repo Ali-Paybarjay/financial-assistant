@@ -19,10 +19,11 @@ import {
   Target,
   Trash,
   UserCircle,
-  UsersThree,
+  Warning,
   WarningCircle,
 } from "@phosphor-icons/react/dist/ssr";
 import { BottomSheet } from "@/components/bottom-sheet";
+import { useIsGuest } from "@/components/guest/guest-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/native-select";
@@ -34,6 +35,7 @@ import {
   EMPLOYMENT_OPTIONS,
   RISK_LABELS,
 } from "@/lib/onboarding/config";
+import { cn } from "@/lib/utils";
 import type { CategoryRow, ProfileRow } from "@/lib/supabase/database.types";
 import { logout } from "@/app/(auth)/actions";
 import {
@@ -59,6 +61,7 @@ export function SettingsView({
   categories: CategoryRow[];
 }) {
   const [sheet, setSheet] = useState<Sheet>(null);
+  const isGuest = useIsGuest();
   const country = COUNTRIES.find((entry) => entry.code === profile.country_code);
 
   const subtitle = [
@@ -72,6 +75,8 @@ export function SettingsView({
   return (
     <div className="mx-auto w-full max-w-[560px] px-4 py-4">
       <h1 className="mb-4 text-title font-semibold text-ink">تنظیمات</h1>
+
+      <GuestCard />
 
       <button
         type="button"
@@ -100,7 +105,6 @@ export function SettingsView({
         />
         <Row href="/goals" icon={<Target size={20} />} label="هدف‌ها" />
         <Row href="/import" icon={<Bank size={20} />} label="صورت‌حساب بانکی" />
-        <Row href="/dong" icon={<UsersThree size={20} />} label="دنگ و دونگ" />
         <Row
           onClick={() => setSheet("categories")}
           icon={<SquaresFour size={20} />}
@@ -129,23 +133,29 @@ export function SettingsView({
           <UserCircle size={20} className="text-lapis" />
           <span className="flex-1 text-[14px] text-ink">ایمیل</span>
           <span dir="ltr" className="truncate text-caption text-ink-muted">
-            {email}
+            {isGuest ? "—" : email}
           </span>
         </div>
         <SignOutRow />
-        <button
-          type="button"
-          onClick={() => setSheet("delete")}
-          className="flex h-14 w-full items-center gap-3 px-4 text-start hover:bg-paper"
-        >
-          <Trash size={20} className="text-negative" />
-          <span className="flex-1 text-[14px] text-negative">حذف حساب</span>
-        </button>
+        {/* A guest has no separate "delete account": signing out already does
+            it, and offering both would suggest one of them keeps the data. */}
+        {!isGuest && (
+          <button
+            type="button"
+            onClick={() => setSheet("delete")}
+            className="flex h-14 w-full items-center gap-3 px-4 text-start hover:bg-paper"
+          >
+            <Trash size={20} className="text-negative" />
+            <span className="flex-1 text-[14px] text-negative">حذف حساب</span>
+          </button>
+        )}
       </Group>
 
-      <p className="mt-2 px-1 text-caption text-ink-muted">
-        حذف حساب برگشت‌پذیر نیست و همه‌ی تراکنش‌ها، درآمدها و هدف‌هایت را پاک می‌کند.
-      </p>
+      {!isGuest && (
+        <p className="mt-2 px-1 text-caption text-ink-muted">
+          حذف حساب برگشت‌پذیر نیست و همه‌ی تراکنش‌ها، درآمدها و هدف‌هایت را پاک می‌کند.
+        </p>
+      )}
 
       <ProfileSheet
         open={sheet === "profile"}
@@ -237,29 +247,104 @@ function RiskRow({ label }: { label: string }) {
   );
 }
 
+/**
+ * The standing offer, at the top of settings, for as long as the account is a
+ * guest one. Between the notice on the way in and the warning on the way out,
+ * this is the only place the user can come looking for it on their own — so it
+ * leads with what they get, not with what they lose.
+ */
+function GuestCard() {
+  const isGuest = useIsGuest();
+  if (!isGuest) return null;
+
+  return (
+    <div className="mb-4 rounded-card border border-guess-border bg-guess-tint p-4">
+      <div className="flex items-center gap-2">
+        <Warning size={18} weight="fill" className="shrink-0 text-guess" />
+        <h2 className="text-[15px] font-semibold text-ink">حساب مهمان</h2>
+      </div>
+      <p className="mt-1.5 text-caption text-guess-text">
+        این حساب ایمیل ندارد، پس با خروج پاک می‌شود و راهی برای
+        برگشتن نداری. یک ایمیل و رمز بگذار تا همه‌چیز بماند — چیزی از نو
+        شروع نمی‌شود.
+      </p>
+      <Button asChild size="default" className="mt-3 w-full">
+        <Link href="/save-account">ذخیره‌ی اطلاعات و ساخت حساب</Link>
+      </Button>
+    </div>
+  );
+}
+
 function SignOutRow() {
+  const isGuest = useIsGuest();
+  const [confirming, setConfirming] = useState(false);
   const queryClient = useQueryClient();
   const [isPending, startTransition] = useTransition();
 
+  // Clear the client cache before the session goes, so the next account on this
+  // device never sees the previous one's numbers.
+  const signOut = () =>
+    startTransition(() => {
+      queryClient.clear();
+      return logout();
+    });
+
   return (
-    <button
-      type="button"
-      disabled={isPending}
-      onClick={() =>
-        startTransition(() => {
-          // Clear the client cache before the session goes, so the next account
-          // on this device never sees the previous one's numbers.
-          queryClient.clear();
-          return logout();
-        })
-      }
-      className="flex h-14 w-full items-center gap-3 px-4 text-start hover:bg-paper disabled:opacity-50"
-    >
-      <SignOut size={20} className="text-ink-muted" />
-      <span className="flex-1 text-[14px] text-ink">
-        {isPending ? "دارم خارجت می‌کنم…" : "خروج از حساب"}
-      </span>
-    </button>
+    <>
+      <button
+        type="button"
+        disabled={isPending}
+        onClick={() => (isGuest ? setConfirming(true) : signOut())}
+        className="flex h-14 w-full items-center gap-3 px-4 text-start hover:bg-paper disabled:opacity-50"
+      >
+        <SignOut size={20} className={isGuest ? "text-negative" : "text-ink-muted"} />
+        <span className={cn("flex-1 text-[14px]", isGuest ? "text-negative" : "text-ink")}>
+          {isPending
+            ? "دارم خارجت می‌کنم…"
+            : isGuest
+              ? "خروج و حذف اطلاعات"
+              : "خروج از حساب"}
+        </span>
+      </button>
+
+      {/* Signing out of a real account is undoable by signing back in; signing
+          out of a guest one is not, so it gets a confirmation the same way
+          deleting an account does. */}
+      <BottomSheet
+        open={confirming}
+        onOpenChange={(next) => !next && setConfirming(false)}
+        title="با خروج، همه‌چیز پاک می‌شود"
+        description="تراکنش‌ها، حساب‌ها، هدف‌ها و دنگ‌هایت حذف می‌شوند و برگشتی در کار نیست."
+      >
+        <div className="flex flex-col gap-2">
+          <Button asChild size="lg" className="w-full">
+            <Link href="/save-account">اول حساب بسازم</Link>
+          </Button>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              size="lg"
+              variant="outline"
+              className="flex-1"
+              disabled={isPending}
+              onClick={() => setConfirming(false)}
+            >
+              بیخیال
+            </Button>
+            <Button
+              type="button"
+              size="lg"
+              variant="destructive"
+              className="flex-1"
+              disabled={isPending}
+              onClick={signOut}
+            >
+              {isPending ? "دارم پاک می‌کنم…" : "خروج و حذف"}
+            </Button>
+          </div>
+        </div>
+      </BottomSheet>
+    </>
   );
 }
 

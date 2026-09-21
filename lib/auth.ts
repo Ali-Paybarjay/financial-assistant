@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
@@ -12,6 +13,12 @@ export type Viewer = {
   profile: ProfileRow;
   currency: CurrencyCode;
   timeZone: string;
+  /**
+   * True while the person is signed in anonymously. Their rows are ordinary
+   * rows under an ordinary user id — what is missing is any way back in, which
+   * is why the app keeps saying so until they add an email.
+   */
+  isGuest: boolean;
   /**
    * What the sign-in provider said about the person. Only ever used to prefill
    * a field the user has not answered yet — the profile row stays the truth.
@@ -40,17 +47,29 @@ function providerFullName(user: User): string | null {
 }
 
 /**
+ * getUser round-trips to the auth server to revalidate the token, so the two
+ * layouts and the action underneath them must not each ask separately. React's
+ * cache collapses them into one call per request.
+ */
+export const getSessionUser = cache(async (): Promise<User | null> => {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user;
+});
+
+/**
  * The single way a server component or action gets the current user. Throws the
  * user back to /login rather than returning null, so callers never have to
  * handle a signed-out branch they cannot recover from anyway.
  */
 export async function requireViewer(): Promise<Viewer> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
 
   if (!user) redirect("/login");
+
+  const supabase = await createClient();
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -62,10 +81,14 @@ export async function requireViewer(): Promise<Viewer> {
 
   return {
     userId: user.id,
-    email: user.email ?? null,
+    // An anonymous user comes back with "" rather than null, and an empty
+    // string is not an address — anything downstream asking "has an email?"
+    // would get the wrong answer from it.
+    email: user.email || null,
     profile,
     currency: isCurrencyCode(profile.base_currency) ? profile.base_currency : "CAD",
     timeZone: profile.timezone || "UTC",
+    isGuest: user.is_anonymous === true,
     identity: { fullName: providerFullName(user) },
   };
 }

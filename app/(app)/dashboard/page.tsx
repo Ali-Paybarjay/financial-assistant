@@ -2,7 +2,6 @@ import { requireViewer } from "@/lib/auth";
 import { listCategories } from "@/lib/queries/categories";
 import { listAccountsWithBalances } from "@/lib/queries/accounts";
 import { listGoalsWithProgress } from "@/lib/queries/goals";
-import { listOpenDongGroups } from "@/lib/queries/dong";
 import { accountsDue, preferredAccountId, totalBalance } from "@/lib/accounts";
 import {
   listTransactions,
@@ -39,7 +38,6 @@ export default async function DashboardPage({
   const [
     categories,
     accounts,
-    dongGroups,
     totals,
     previousTotals,
     series,
@@ -49,7 +47,6 @@ export default async function DashboardPage({
     await Promise.all([
       listCategories(),
       listAccountsWithBalances(),
-      listOpenDongGroups(),
       monthTotals(range.from, range.to),
       monthTotals(previous.from, previous.to),
       monthlySeries(seriesStart, range.to),
@@ -111,7 +108,6 @@ export default async function DashboardPage({
       accounts={accounts}
       accountsTotal={totalBalance(accounts)}
       accountsDue={accountsDue(accounts, today, viewer.timeZone)}
-      dongGroups={dongGroups}
       defaultAccountId={preferredAccountId(accounts)}
     />
   );

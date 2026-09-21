@@ -23,7 +23,7 @@ export default async function OnboardingStepPage({
   if (!meta) notFound();
 
   const viewer = await requireViewer();
-  if (viewer.profile.onboarding_completed_at) redirect("/dashboard");
+  if (viewer.profile.onboarding_completed_at) redirect("/");
 
   // A user can revisit any step they have reached, but not skip ahead of it.
   const furthest = Math.min(viewer.profile.onboarding_step + 1, TOTAL_STEPS);

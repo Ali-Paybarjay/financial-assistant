@@ -2,11 +2,14 @@ import { expect, test, type Page } from "@playwright/test";
 import { ALPHA_EMAIL as EMAIL, PASSWORD } from "./credentials";
 
 /**
- * دنگ و دونگ, end to end — and the one claim the feature makes that a user
- * cannot check for themselves without doing the arithmetic by hand: a bill one
- * person paid for two people leaves the payer owed exactly half, the
- * settlement table asks for exactly that one payment, and recording it puts
- * everybody back at zero.
+ * دنگ و دونگ, end to end — and the two claims the feature makes that a user
+ * cannot check for themselves without doing the arithmetic by hand:
+ *
+ *   * a bill one person paid for two people leaves the payer owed exactly
+ *     half, the settlement table asks for exactly that one payment, and
+ *     recording it puts everybody back at zero;
+ *   * and when the payer is the user, the whole bill also leaves the account
+ *     they named — so the trip is in their own books, not only in the group's.
  *
  * The group is created at the start of the run and deleted at the end, so the
  * test account is left exactly as it was found. A leftover group from a failed
@@ -28,11 +31,18 @@ async function login(page: Page) {
   await page.getByLabel("ایمیل").fill(EMAIL);
   await page.getByLabel("رمز").fill(PASSWORD);
   await page.getByRole("button", { name: "ورود", exact: true }).click();
-  await page.waitForURL(/\/(dashboard|onboarding)/);
+  // The hub is the landing page now; onboarding still intercepts a new account.
+  await page.waitForURL(/\/($|onboarding)/);
 }
 
-/** Opens the group's page, whichever of the two "add" buttons the list offers. */
-async function createGroup(page: Page) {
+/**
+ * Opens the group's page, whichever of the two "add" buttons the list offers,
+ * and points the group at one of the account's own accounts when there is one
+ * in its currency. Returns whether it managed to — the ledger half of this
+ * suite is skipped on a fixture with no accounts rather than failed, because
+ * that is a fact about the fixture and not about the feature.
+ */
+async function createGroup(page: Page): Promise<boolean> {
   await page.goto("/dong");
 
   const first = page.getByRole("button", { name: "اولین دوره را بساز" });
@@ -41,11 +51,25 @@ async function createGroup(page: Page) {
   await ((await first.isVisible()) ? first : more).click();
 
   await page.getByLabel("اسم دوره").fill(GROUP);
+
+  const account = page.getByLabel("از کدام حسابت");
+  const linked = await account.isVisible().catch(() => false);
+  // Index 0 is a real account: "بدون حساب (نقدی)" is deliberately last.
+  if (linked) await account.selectOption({ index: 0 });
+
   await page.getByRole("button", { name: "بساز", exact: true }).click();
 
   const row = page.getByRole("link", { name: new RegExp(GROUP) });
   await expect(row).toBeVisible({ timeout: 15_000 });
   await row.click();
+  await page.waitForURL(/\/dong\/[0-9a-f-]{36}/);
+
+  return linked;
+}
+
+async function openGroup(page: Page) {
+  await page.goto("/dong");
+  await page.getByRole("link", { name: new RegExp(GROUP) }).first().click();
   await page.waitForURL(/\/dong\/[0-9a-f-]{36}/);
 }
 
@@ -69,11 +93,11 @@ async function removeLeftovers(page: Page) {
 }
 
 test("splits a bill, and settles it", async ({ page }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(150_000);
 
   await login(page);
   await removeLeftovers(page);
-  await createGroup(page);
+  const linked = await createGroup(page);
 
   // ------------------------------------------------------- a second person --
   await page.getByRole("tab", { name: "افراد" }).click();
@@ -88,7 +112,8 @@ test("splits a bill, and settles it", async ({ page }) => {
   await page.getByLabel("چه چیزی").fill(EXPENSE);
   await page.getByLabel("مبلغ", { exact: true }).fill(AMOUNT);
   // Everyone is ticked by default and the default mode is «مساوی», which is
-  // the case under test: two people, so half each.
+  // the case under test: two people, so half each. The payer defaults to the
+  // viewer, and with it the account the group was given.
   await page.getByRole("button", { name: "ثبت خرید" }).click();
   await expect(page.getByText(EXPENSE)).toBeVisible({ timeout: 15_000 });
 
@@ -120,41 +145,70 @@ test("splits a bill, and settles it", async ({ page }) => {
 
   await expect(page.getByText("حسابت با بقیه صاف است")).toBeVisible();
 
+  // ------------------------------------------- and it is in the user's books --
+  if (linked) {
+    // The whole bill left the account, not the viewer's half of it: that is
+    // what the bank will say, and the half they are owed comes back as its
+    // own row when it is paid.
+    await expect(page.getByText("از حساب‌های خودت")).toBeVisible();
+
+    await page.goto("/transactions");
+    const mirrored = page.getByText(new RegExp(`${EXPENSE} · ${GROUP}`)).first();
+    await expect(mirrored).toBeVisible({ timeout: 30_000 });
+
+    // And it is not editable from this side: the purchase is the original.
+    await mirrored.click();
+    await expect(page.getByRole("link", { name: /رفتن به آن دوره/ })).toBeVisible();
+
+    await openGroup(page);
+  }
+
   // ------------------------------------------------------------- put it back --
   await deleteOpenGroup(page);
   await expect(page.getByRole("link", { name: new RegExp(GROUP) })).toHaveCount(0);
 });
 
 /**
- * The bug this guards against was not in the feature, it was in how you reach
- * it: the tab bar holds four items by design and the sidebar that carries the
- * rest starts at 960px, so on the phone this suite runs at, «دنگ و دونگ» and
- * the accounts page were reachable only from inside Settings.
+ * The split itself: after signing in you are asked which half of the app you
+ * are here for, and each half shows only its own.
  *
- * The month is deliberately one with nothing in it. That is the state a new
- * user is in, and it used to replace the whole dashboard — entry points and
- * all — with an invitation to log a first expense.
+ * The bug this replaces was the opposite one — «دنگ و دونگ» was reachable on
+ * a phone only from inside Settings, so the dashboard had to carry a card for
+ * it. Now the way in is the first screen, and the dashboard is free to be
+ * about one person's month again. Both halves of that are asserted here,
+ * because a hub that leads everywhere while the dashboard still carries the
+ * old card is not a separation, it is a duplicate.
  */
-test("an empty month still shows the way into the pages the tab bar omits", async ({
+test("the hub leads to both halves, and neither carries the other", async ({
   page,
 }) => {
   await login(page);
+  await page.goto("/");
+
+  const toPersonal = page.locator('main a[href="/dashboard"]').first();
+  const toDong = page.locator('main a[href="/dong"]').first();
+  await expect(toPersonal).toBeVisible({ timeout: 30_000 });
+  await expect(toDong).toBeVisible();
+
+  await toDong.click();
+  await page.waitForURL(/\/dong$/);
+  // Nothing of the ledger inside the trip: not in the page, not in the nav.
+  await expect(page.locator('a[href="/dashboard"]')).toHaveCount(0);
+  await expect(page.locator('a[href="/transactions"]')).toHaveCount(0);
+
+  // Back out through the header switch, which is the only door.
+  await page.locator('a[href="/"]').first().click();
+  await page.waitForURL(/\/$/);
+
+  await toPersonal.click();
+  await page.waitForURL(/\/dashboard/);
+  // …and nothing of the trip inside the ledger.
+  await expect(page.locator('a[href="/dong"]')).toHaveCount(0);
+
+  // An empty month still shows the way to the pages the tab bar omits. That
+  // used to be replaced wholesale by an invitation to log a first expense.
   await page.goto("/dashboard?month=2025-01-01");
-
-  // By destination, not by label: the card says «دنگ و دونگ» once there are
-  // groups and «ساختن اولین دوره» before that, and what is being asserted is
-  // that the dashboard leads there at all — not what the link happens to read.
-  // Scoped to <main>, because the sidebar carries its own link to the same
-  // place and is merely hidden below 960px rather than absent — matching it
-  // would pass while the phone still had no way in, which is the whole bug.
-  const dong = page.locator('main a[href="/dong"]').first();
-  await expect(dong).toBeVisible({ timeout: 30_000 });
-
-  // Same for accounts, which has the same two states.
   await expect(page.locator('main a[href="/accounts"]').first()).toBeVisible({
     timeout: 30_000,
   });
-
-  await dong.click();
-  await page.waitForURL(/\/dong$/);
 });

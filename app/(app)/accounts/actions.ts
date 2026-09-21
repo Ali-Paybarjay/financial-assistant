@@ -20,6 +20,8 @@ function refresh() {
   revalidatePath("/dashboard");
   revalidatePath("/transactions");
   revalidatePath("/import");
+  // The hub carries the same month and the same balances.
+  revalidatePath("/");
 }
 
 export async function saveAccount(raw: unknown): Promise<AccountResult> {

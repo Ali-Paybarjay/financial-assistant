@@ -11,8 +11,13 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/native-select";
 import { AmountInput } from "@/components/amount-input";
 import { Field, FormError } from "@/components/field";
+import { AccountField } from "@/components/accounts/account-field";
 import { formatMoney, type CurrencyCode } from "@/lib/money";
-import type { DongMemberRow, DongPaymentRow } from "@/lib/supabase/database.types";
+import type {
+  AccountRow,
+  DongMemberRow,
+  DongPaymentRow,
+} from "@/lib/supabase/database.types";
 import {
   dongPaymentFormSchema,
   PAYMENT_KIND_HINT,
@@ -34,6 +39,8 @@ export function PaymentSheet({
   onOpenChange,
   groupId,
   members,
+  accounts,
+  groupAccountId,
   currency,
   today,
   payment,
@@ -43,6 +50,9 @@ export function PaymentSheet({
   onOpenChange: (open: boolean) => void;
   groupId: string;
   members: DongMemberRow[];
+  /** Already narrowed to the group's currency by the page. */
+  accounts: AccountRow[];
+  groupAccountId: string | null;
   currency: CurrencyCode;
   today: string;
   payment: DongPaymentRow | null;
@@ -66,6 +76,7 @@ export function PaymentSheet({
       toMemberId: members[1]?.id ?? "",
       amount: "",
       kind: "settle",
+      accountId: groupAccountId ?? "",
       occurredOn: today,
       note: "",
     },
@@ -81,6 +92,7 @@ export function PaymentSheet({
         toMemberId: payment.to_member_id,
         amount: formatMoney(payment.amount, currency, { omitSymbol: true }).replace(/,/g, ""),
         kind: payment.kind,
+        accountId: payment.account_id ?? "",
         occurredOn: payment.occurred_on,
         note: payment.note ?? "",
       });
@@ -93,6 +105,7 @@ export function PaymentSheet({
         toMemberId: draft.toMemberId,
         amount: formatMoney(draft.amount, currency, { omitSymbol: true }).replace(/,/g, ""),
         kind: "settle",
+        accountId: groupAccountId ?? "",
         occurredOn: today,
         note: "",
       });
@@ -103,15 +116,25 @@ export function PaymentSheet({
         toMemberId: members[1]?.id ?? "",
         amount: "",
         kind: "settle",
+        accountId: groupAccountId ?? "",
         occurredOn: today,
         note: "",
       });
     }
 
     setFormError(undefined);
-  }, [open, payment, draft, groupId, members, currency, today, reset]);
+  }, [open, payment, draft, groupId, members, groupAccountId, currency, today, reset]);
 
   const kind = (watch("kind") ?? "settle") as PaymentKindValue;
+
+  /**
+   * Which way the money went, from the viewer's side. A settlement between
+   * two other people is theirs; it moves nothing of the user's, so it is not
+   * asked about — and «قرض» and «بیعانه» are the same question in reverse.
+   */
+  const me = members.find((member) => member.is_me);
+  const fromMe = Boolean(me && watch("fromMemberId") === me.id);
+  const toMe = Boolean(me && watch("toMemberId") === me.id);
 
   function onSubmit(values: DongPaymentForm) {
     setFormError(undefined);
@@ -194,6 +217,21 @@ export function PaymentSheet({
             <Input id="payment-date" type="date" dir="ltr" {...register("occurredOn")} />
           </Field>
         </div>
+
+        {(fromMe || toMe) && !(fromMe && toMe) && (
+          <AccountField
+            id="payment-account"
+            label={fromMe ? "از کدام حسابت رفت" : "به کدام حسابت آمد"}
+            accounts={accounts}
+            selectedId={payment?.account_id}
+            hint={
+              fromMe
+                ? "این مبلغ از موجودی همان حساب کم می‌شود و در حسابداری شخصی‌ات ثبت می‌شود."
+                : "این مبلغ به موجودی همان حساب اضافه می‌شود و در حسابداری شخصی‌ات ثبت می‌شود."
+            }
+            {...register("accountId")}
+          />
+        )}
 
         <Field label="توضیح" htmlFor="payment-note">
           <Input id="payment-note" placeholder="اختیاری" {...register("note")} />
