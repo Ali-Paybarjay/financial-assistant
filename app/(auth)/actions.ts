@@ -40,6 +40,13 @@ function translateAuthError(message: string): string {
   if (normalized.includes("pwned") || normalized.includes("leaked") || normalized.includes("compromised")) {
     return "این رمز در نشتِ اطلاعاتِ سایت‌های دیگر دیده شده. رمزی بگذار که جای دیگری استفاده نکرده‌ای.";
   }
+  // GoTrue's own length rejection, which arrives as plain prose rather than
+  // through the weak-password code. The app's zod floor normally catches this
+  // first, so this branch only fires if the two drift apart — which is exactly
+  // when the user most needs a real sentence instead of the generic fallback.
+  if (normalized.includes("should be at least")) {
+    return `رمز باید دست‌کم ${PASSWORD_MIN_LENGTH_FA} نویسه باشد.`;
+  }
   if (normalized.includes("weak password")) {
     return `رمز ساده است. دست‌کم ${PASSWORD_MIN_LENGTH_FA} نویسه، ترکیبی از حرف و عدد بگذار.`;
   }
