@@ -50,9 +50,27 @@ vercel --prod   # production
 vercel logs <url>
 ```
 
-متغیرهای محیطی در خود Vercel ست می‌شوند (`vercel env ls`)، نه در فایل. `NEXT_PUBLIC_APP_URL` عمداً ست نشده: اگر نباشد، آدرس از `VERCEL_PROJECT_PRODUCTION_URL` خوانده می‌شود تا با تغییر دامنه از کار نیفتد.
+متغیرهای محیطی در خود Vercel ست می‌شوند (`vercel env ls`)، نه در فایل.
 
-> **یک قدم دستی بعد از اولین deploy:** در Supabase → Authentication → URL Configuration، آدرس production را به‌عنوان **Site URL** و `https://<domain>/callback` را به **Redirect URLs** اضافه کن. بدون این، ثبت‌نام کار می‌کند ولی لینک تأیید ایمیل به localhost برمی‌گردد.
+### آدرسی که در ایمیل‌ها می‌نشیند
+
+`appUrl()` در `app/(auth)/actions.ts` سه پله دارد:
+
+```
+NEXT_PUBLIC_APP_URL  ←  VERCEL_PROJECT_PRODUCTION_URL  ←  http://localhost:3000
+```
+
+**`NEXT_PUBLIC_APP_URL` روی Production ست شده است.** این‌جا قبلاً نوشته بود عمداً ست نشده تا پله‌ی دوم کار کند؛ `vercel env ls` خلافش را نشان می‌دهد.
+
+حذفش وسوسه‌برانگیز است تا پله‌ی دوم خودکار عمل کند و با تغییر دامنه از کار نیفتد — ولی **این کار را نکن مگر اینکه اول تأیید کنی `VERCEL_PROJECT_PRODUCTION_URL` در زمانِ اجرا موجود است.** اگر نباشد، پله‌ی سوم فعال می‌شود و هر لینک تأیید و بازیابی رمزِ production به `localhost:3000` اشاره می‌کند — بی‌سروصدا، چون هیچ تستی محتوای ایمیل را نمی‌خواند.
+
+> **وقتی دامنه‌ی اختصاصی وصل کردی، این سه باید با هم عوض شوند.** یکی‌شان را جا بگذاری، ثبت‌نام کار می‌کند ولی لینک تأیید ایمیل به جای اشتباه می‌رود:
+>
+> 1. `NEXT_PUBLIC_APP_URL` در Vercel (Production)
+> 2. **Site URL** در Supabase → Authentication → URL Configuration
+> 3. **Redirect URLs** در همان صفحه — دست‌کم `https://<domain>/callback`
+>
+> برای خواندنِ دو تای آخر بدون داشبورد، به `/auth/v1/verify` با `redirect_to`ی دلخواه درخواست بزن: GoTrue اگر آدرس در لیست باشد به خودش redirect می‌کند، وگرنه به Site URL. فقط خواندنی است و ایمیلی نمی‌فرستد.
 
 ## دستورها
 
