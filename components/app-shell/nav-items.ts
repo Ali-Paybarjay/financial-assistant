@@ -20,6 +20,20 @@ export type NavItem = {
   icon: Icon;
 };
 
+/**
+ * One glyph per side of the app, wherever a workspace is named.
+ *
+ * Here rather than beside <WorkspaceSwitch>, which is a client component:
+ * every export of a "use client" module reaches a server component as a
+ * client reference, so a *map* of components read on the server comes back
+ * undefined and React renders "Element type is invalid". The hub is a server
+ * component and needs these, so they live in a module with no directive.
+ */
+export const WORKSPACE_ICON: Record<WorkspaceId, Icon> = {
+  personal: Target,
+  dong: UsersThree,
+};
+
 export type WorkspaceNav = {
   /** The mobile tab bar, and the top of the sidebar. */
   primary: NavItem[];

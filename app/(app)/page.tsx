@@ -8,7 +8,7 @@ import { totalBalance } from "@/lib/accounts";
 import { standing } from "@/lib/dong";
 import { monthRange, todayInTimeZone } from "@/lib/date";
 import { faNumber } from "@/lib/format";
-import { WORKSPACE_ICON } from "@/components/app-shell/workspace-switch";
+import { WORKSPACE_ICON } from "@/components/app-shell/nav-items";
 import { Money } from "@/components/money";
 import { WORKSPACES } from "@/lib/workspaces";
 

@@ -196,8 +196,15 @@ test("the hub leads to both halves, and neither carries the other", async ({
   await expect(page.locator('a[href="/dashboard"]')).toHaveCount(0);
   await expect(page.locator('a[href="/transactions"]')).toHaveCount(0);
 
-  // Back out through the header switch, which is the only door.
-  await page.locator('a[href="/"]').first().click();
+  // Back out through the header switch, which is the only door. Filtered to
+  // the visible one: the switch is rendered twice — in the sidebar and in the
+  // phone's header strip — and on a 375px viewport the sidebar copy is in the
+  // DOM but hidden, and it is the one that comes first.
+  await page
+    .locator('a[href="/"]')
+    .filter({ visible: true })
+    .first()
+    .click();
   await page.waitForURL(/\/$/);
 
   await toPersonal.click();

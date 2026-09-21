@@ -1,16 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowsLeftRight, Target, UsersThree } from "@phosphor-icons/react/dist/ssr";
-import type { Icon } from "@phosphor-icons/react";
+import { ArrowsLeftRight } from "@phosphor-icons/react/dist/ssr";
+import { WORKSPACE_ICON } from "./nav-items";
 import { HUB_PATH, WORKSPACES, type WorkspaceId } from "@/lib/workspaces";
 import { cn } from "@/lib/utils";
-
-/** One glyph per side of the app, used wherever the workspace is named. */
-export const WORKSPACE_ICON: Record<WorkspaceId, Icon> = {
-  personal: Target,
-  dong: UsersThree,
-};
 
 /**
  * Where you are, and the way to the other side.
