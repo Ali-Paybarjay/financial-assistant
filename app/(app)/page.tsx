@@ -10,6 +10,7 @@ import { monthRange, todayInTimeZone } from "@/lib/date";
 import { faNumber } from "@/lib/format";
 import { WORKSPACE_ICON } from "@/components/app-shell/nav-items";
 import { Money } from "@/components/money";
+import { HubSignOutButton } from "@/components/sign-out";
 import { WORKSPACES } from "@/lib/workspaces";
 
 /**
@@ -45,14 +46,19 @@ export default async function HubPage() {
 
   return (
     <div className="mx-auto w-full max-w-[720px] px-4 py-6">
-      <header className="mb-5">
-        <h1 className="text-title font-semibold text-ink">
-          {firstName ? `سلام ${firstName}` : "سلام"}
-        </h1>
-        <p className="mt-1 text-caption text-ink-muted">
-          دو بخش جدا: حساب‌وکتاب خودت، و حساب‌وکتاب چندنفره. هر وقت خواستی از بالای
-          صفحه بینشان جابه‌جا شو.
-        </p>
+      <header className="mb-5 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-title font-semibold text-ink">
+            {firstName ? `سلام ${firstName}` : "سلام"}
+          </h1>
+          <p className="mt-1 text-caption text-ink-muted">
+            دو بخش جدا: حساب‌وکتاب خودت، و حساب‌وکتاب چندنفره. هر وقت خواستی از بالای
+            صفحه بینشان جابه‌جا شو.
+          </p>
+        </div>
+        {/* The shell hangs no nav on this page, so without this the only way
+            off the account is through a workspace you did not come here for. */}
+        <HubSignOutButton />
       </header>
 
       <div className="grid gap-3 min-[720px]:grid-cols-2">

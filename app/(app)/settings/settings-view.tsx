@@ -3,7 +3,6 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -24,6 +23,7 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { useIsGuest } from "@/components/guest/guest-provider";
+import { GuestSignOutSheet, useSignOut } from "@/components/sign-out";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/native-select";
@@ -37,7 +37,6 @@ import {
 } from "@/lib/onboarding/config";
 import { cn } from "@/lib/utils";
 import type { CategoryRow, ProfileRow } from "@/lib/supabase/database.types";
-import { logout } from "@/app/(auth)/actions";
 import {
   deleteAccount,
   deleteCategory,
@@ -278,16 +277,7 @@ function GuestCard() {
 function SignOutRow() {
   const isGuest = useIsGuest();
   const [confirming, setConfirming] = useState(false);
-  const queryClient = useQueryClient();
-  const [isPending, startTransition] = useTransition();
-
-  // Clear the client cache before the session goes, so the next account on this
-  // device never sees the previous one's numbers.
-  const signOut = () =>
-    startTransition(() => {
-      queryClient.clear();
-      return logout();
-    });
+  const { signOut, isPending } = useSignOut();
 
   return (
     <>
@@ -310,40 +300,12 @@ function SignOutRow() {
       {/* Signing out of a real account is undoable by signing back in; signing
           out of a guest one is not, so it gets a confirmation the same way
           deleting an account does. */}
-      <BottomSheet
+      <GuestSignOutSheet
         open={confirming}
         onOpenChange={(next) => !next && setConfirming(false)}
-        title="با خروج، همه‌چیز پاک می‌شود"
-        description="تراکنش‌ها، حساب‌ها، هدف‌ها و دنگ‌هایت حذف می‌شوند و برگشتی در کار نیست."
-      >
-        <div className="flex flex-col gap-2">
-          <Button asChild size="lg" className="w-full">
-            <Link href="/save-account">اول حساب بسازم</Link>
-          </Button>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              size="lg"
-              variant="outline"
-              className="flex-1"
-              disabled={isPending}
-              onClick={() => setConfirming(false)}
-            >
-              بیخیال
-            </Button>
-            <Button
-              type="button"
-              size="lg"
-              variant="destructive"
-              className="flex-1"
-              disabled={isPending}
-              onClick={signOut}
-            >
-              {isPending ? "دارم پاک می‌کنم…" : "خروج و حذف"}
-            </Button>
-          </div>
-        </div>
-      </BottomSheet>
+        isPending={isPending}
+        onConfirm={signOut}
+      />
     </>
   );
 }
