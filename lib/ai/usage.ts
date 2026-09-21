@@ -18,11 +18,18 @@ export const DAILY_CALL_LIMIT = 50;
  * mode: enough to photograph a receipt, watch the app read it, and decide the
  * thing is worth an account.
  *
- * This narrows the hole rather than closing it. Closing it means a captcha on
- * anonymous sign-ins, which is a Supabase project setting and not something
- * this file can do.
+ * Three rather than five, and the reasoning is arithmetic rather than taste.
+ * Supabase caps anonymous sign-ins at 10 an hour project-wide, so this number
+ * is the second half of the farm's ceiling: 10 guests x 3 calls is at most 30
+ * parses an hour, which is pennies at the provider. It was 30 x 5, or 150.
+ *
+ * The other way to close this is a captcha on anonymous sign-ins. That is a
+ * Supabase project setting, it applies to every auth endpoint rather than just
+ * this one, and turning it on would stop the whole e2e suite from being able
+ * to sign in — which is a worse trade than a few cents an hour. See
+ * DECISIONS.md.
  */
-export const GUEST_DAILY_CALL_LIMIT = 5;
+export const GUEST_DAILY_CALL_LIMIT = 3;
 
 export type Allowance = {
   remaining: number;
