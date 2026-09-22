@@ -30,14 +30,6 @@ function Delta({ value, higherIsBetter }: { value: number | null; higherIsBetter
   );
 }
 
-/**
- * The month's three figures, in a row on the sheet.
- *
- * Not three cards. A card is a claim that the thing inside it is a separate
- * object, and these are three readings of one month — the border around each
- * was saying otherwise, and three identical borders said it three times. They
- * are siblings in a row, so a rule between them is enough to keep them apart.
- */
 export function KpiCards({
   totals,
   previous,
@@ -53,26 +45,30 @@ export function KpiCards({
   const previousRate = savingsRate(previous.income, previous.expense);
 
   return (
-    <div className="grid grid-cols-3">
-      <Figure label="درآمد" testId="kpi-income">
+    <div className="grid grid-cols-3 gap-2">
+      <Card label="درآمد" testId="kpi-income">
         <Money minor={totals.income} currency={currency} size="kpi" />
         <Delta value={percentChange(totals.income, previous.income)} higherIsBetter />
-      </Figure>
+      </Card>
 
-      <Figure label="هزینه" testId="kpi-expense">
-        {/* The rule grammar at total scale: this sum contains rows nobody has
-            confirmed yet, so the figure itself is still provisional. */}
-        <span className={cn("w-fit", hasUnconfirmed && "rule-guess")}>
+      <Card label="هزینه" testId="kpi-expense">
+        <span
+          className={cn(
+            // The confidence rule at dashboard scale: the total contains rows
+            // the user has not confirmed yet.
+            hasUnconfirmed && "border-b-2 border-dashed border-guess pb-[2px]",
+          )}
+        >
           <Money minor={totals.expense} currency={currency} size="kpi" />
         </span>
         <Delta
           value={percentChange(totals.expense, previous.expense)}
           higherIsBetter={false}
         />
-      </Figure>
+      </Card>
 
-      <Figure label="نرخ پس‌انداز" testId="kpi-savings-rate">
-        <span className="text-figure-md font-semibold text-ink">
+      <Card label="نرخ پس‌انداز" testId="kpi-savings-rate">
+        <span className="text-[16px] font-semibold text-ink">
           {rate === null ? "—" : faPercent(rate)}
         </span>
         {rate !== null && previousRate !== null && rate !== previousRate && (
@@ -86,12 +82,12 @@ export function KpiCards({
             {faNumber(Math.abs(Math.round((rate - previousRate) * 10) / 10))}
           </span>
         )}
-      </Figure>
+      </Card>
     </div>
   );
 }
 
-function Figure({
+function Card({
   label,
   testId,
   children,
@@ -103,11 +99,9 @@ function Figure({
   return (
     <div
       data-testid={testId}
-      /* border-s on every one and none on the first: a divider belongs between
-         siblings, not around them. */
-      className="flex flex-col gap-1 border-s border-hairline px-3 first:border-s-0 first:ps-0"
+      className="flex flex-col gap-0.5 rounded-card border border-hairline bg-surface px-2.5 py-3"
     >
-      <span className="text-caption text-ink-muted">{label}</span>
+      <span className="text-micro text-ink-muted">{label}</span>
       {children}
     </div>
   );

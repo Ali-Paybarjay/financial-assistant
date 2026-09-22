@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { CaretLeft, Plus, UsersThree } from "@phosphor-icons/react/dist/ssr";
-import { PageSheet } from "@/components/page";
 import { Button } from "@/components/ui/button";
 import { Money } from "@/components/money";
 import { faNumber } from "@/lib/format";
@@ -32,7 +31,7 @@ export function DongView({
   const done = groups.filter((group) => group.settled_at);
 
   return (
-    <PageSheet className="px-4 py-4 min-[960px]:px-7 min-[960px]:py-6">
+    <div className="mx-auto w-full max-w-[560px] px-4 py-4">
       <header className="mb-4">
         <h1 className="text-title font-semibold text-ink">دنگ و دونگ</h1>
         <p className="mt-1 text-caption text-ink-muted">
@@ -42,8 +41,8 @@ export function DongView({
       </header>
 
       {groups.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-well border border-dashed border-hairline-strong/45 bg-surface px-4 py-8 text-center">
-          <span className="flex size-12 items-center justify-center rounded-full bg-paper text-ink-faint">
+        <div className="flex flex-col items-center gap-3 rounded-card border border-dashed border-hairline-strong bg-surface px-4 py-8 text-center">
+          <span className="flex size-12 items-center justify-center rounded-full bg-lapis-tint text-lapis">
             <UsersThree size={24} />
           </span>
           <p className="text-body text-ink">هنوز دوره‌ای نساخته‌ای.</p>
@@ -58,7 +57,7 @@ export function DongView({
         </div>
       ) : (
         <>
-          <div className="overflow-hidden">
+          <div className="overflow-hidden rounded-card border border-hairline bg-surface">
             {open.map((group) => (
               <GroupRow key={group.id} group={group} />
             ))}
@@ -74,7 +73,7 @@ export function DongView({
               <h2 className="mt-5 mb-2 text-label font-medium text-ink-muted">
                 دوره‌های بسته‌شده
               </h2>
-              <div className="overflow-hidden">
+              <div className="overflow-hidden rounded-card border border-hairline bg-surface">
                 {done.map((group) => (
                   <GroupRow key={group.id} group={group} />
                 ))}
@@ -104,7 +103,7 @@ export function DongView({
         defaultAccountId={defaultAccountId}
         today={today}
       />
-    </PageSheet>
+    </div>
   );
 }
 

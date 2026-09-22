@@ -148,7 +148,7 @@ export function Step7({
                 min={0}
                 max={100}
                 step={5}
-                className="h-11 flex-1 accent-action"
+                className="h-11 flex-1 accent-lapis"
                 {...register("savingsRateEstimate", { valueAsNumber: true })}
               />
               <span className="min-w-14 text-center text-[16px] font-semibold text-ink">

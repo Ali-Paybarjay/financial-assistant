@@ -80,12 +80,7 @@ function TabsContent({
   return (
     <TabsPrimitive.Content
       data-slot="tabs-content"
-      className={cn(
-        // A panel takes focus when you tab out of the tab list, so it needs a
-        // ring of its own now that the base one is overridable.
-        "flex-1 text-sm outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action",
-        className,
-      )}
+      className={cn("flex-1 text-sm outline-none", className)}
       {...props}
     />
   )

@@ -7,7 +7,6 @@ import {
   Plus,
   Wallet,
 } from "@phosphor-icons/react/dist/ssr";
-import { PageSheet } from "@/components/page";
 import { Button } from "@/components/ui/button";
 import { Money } from "@/components/money";
 import { SegmentedControl } from "@/components/segmented-control";
@@ -61,7 +60,7 @@ export function IncomeView({
   const total = isIncome ? incomePerMonth : recurringPerMonth;
 
   return (
-    <PageSheet className="px-4 py-4 min-[960px]:px-7 min-[960px]:py-6">
+    <div className="mx-auto w-full max-w-[560px] px-4 py-4">
       <h1 className="mb-4 text-title font-semibold text-ink">درآمد و هزینه‌ی ثابت</h1>
 
       <SegmentedControl<Tab>
@@ -88,7 +87,7 @@ export function IncomeView({
         </span>
       </div>
 
-      <div className="mt-3 overflow-hidden">
+      <div className="mt-3 overflow-hidden rounded-card border border-hairline bg-surface">
         {rows.length === 0 ? (
           <p className="p-6 text-center text-body text-ink-muted">
             {isIncome
@@ -124,7 +123,7 @@ export function IncomeView({
       </div>
 
       {!isIncome && (
-        <p className="mt-3 flex items-start gap-2 rounded-well border border-dashed border-hairline-strong/45 bg-paper px-3 py-2.5 text-caption text-ink-muted">
+        <p className="mt-3 flex items-start gap-2 rounded-control border border-dashed border-hairline-strong bg-paper px-3 py-2.5 text-caption text-ink-muted">
           <CheckCircle size={16} className="mt-0.5 shrink-0 text-positive" />
           ردیف‌های «خودکار» اول هر ماه یک‌بار ثبت می‌شوند — دو بار اجرا شدن، تراکنش
           تکراری نمی‌سازد.
@@ -161,6 +160,6 @@ export function IncomeView({
         defaultAccountId={defaultAccountId}
         expense={editingRecurring}
       />
-    </PageSheet>
+    </div>
   );
 }

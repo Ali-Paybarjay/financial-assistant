@@ -13,14 +13,9 @@ type MoneyProps = FormatOptions & {
 };
 
 const SIZE_CLASS: Record<MoneySize, string> = {
-  /**
-   * One of the two places Estedad is allowed on a screen: the single figure
-   * that answers the page's question. Clamped rather than fixed, because a
-   * five-figure balance overflows 375px otherwise, and tracked in slightly —
-   * at this size Vazirmatn's default figure spacing reads loose.
-   */
-  hero: "font-display font-extrabold text-[clamp(2rem,12vw,2.75rem)] leading-[1.05] tracking-[-0.02em]",
-  kpi: "text-figure-md font-semibold",
+  // Clamped, not fixed at 40px: a five-figure balance overflows 375px otherwise.
+  hero: "font-display font-extrabold text-[clamp(1.75rem,11vw,2.5rem)] leading-[1.1]",
+  kpi: "text-[16px] font-semibold",
   row: "text-[14px] font-semibold",
   inherit: "",
 };

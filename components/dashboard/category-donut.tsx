@@ -2,14 +2,13 @@
 
 import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 import { Money } from "@/components/money";
-import { Section } from "@/components/page";
 import { faPercent } from "@/lib/format";
 import type { CurrencyCode } from "@/lib/money";
 
 /** Single hue, ordered by share. Separation is by lightness, so the order
  *  survives greyscale and colour-blindness. */
-const RAMP = ["#302c73", "#474391", "#6461ab", "#8886c5", "#b3b1dd"];
-const OTHER = "#c9c8d3";
+const RAMP = ["#23459b", "#3e5cb2", "#6280c8", "#93a8dc", "#c2cdeb"];
+const OTHER = "#c9cdd4";
 
 export type CategorySlice = { id: string | null; name: string; amount: number };
 
@@ -36,7 +35,9 @@ export function CategoryDonut({
   const largestShare = total > 0 ? Math.round((largest.amount / total) * 100) : 0;
 
   return (
-    <Section title="هزینه به تفکیک دسته">
+    <section className="rounded-card border border-hairline bg-surface p-4">
+      <h2 className="mb-3 text-[15px] font-semibold text-ink">هزینه به تفکیک دسته</h2>
+
       <div className="flex items-center gap-4">
         <div className="relative size-[118px] shrink-0">
           <ResponsiveContainer width="100%" height="100%">
@@ -62,9 +63,7 @@ export function CategoryDonut({
             <span className="max-w-[60px] truncate text-caption font-semibold text-ink">
               {largest.name}
             </span>
-            {/* Ink, not the action colour: this is a finding, not something
-                the reader can press. */}
-            <span className="text-caption font-bold text-ink">
+            <span className="text-caption font-bold text-lapis">
               {faPercent(largestShare)}
             </span>
           </div>
@@ -81,11 +80,7 @@ export function CategoryDonut({
               <span className="min-w-0 flex-1 truncate text-caption text-ink">
                 {slice.name}
               </span>
-              <Money
-                minor={slice.amount}
-                currency={currency}
-                className="text-caption font-medium"
-              />
+              <Money minor={slice.amount} currency={currency} className="text-caption font-medium" />
             </li>
           ))}
         </ul>
@@ -106,6 +101,6 @@ export function CategoryDonut({
           ))}
         </tbody>
       </table>
-    </Section>
+    </section>
   );
 }

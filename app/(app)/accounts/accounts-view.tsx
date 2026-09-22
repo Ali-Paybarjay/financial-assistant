@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Bank, Plus, Wallet } from "@phosphor-icons/react/dist/ssr";
-import { PageSheet } from "@/components/page";
 import { Button } from "@/components/ui/button";
 import { Money } from "@/components/money";
 import { AccountRowItem } from "@/components/accounts/account-row";
@@ -38,7 +37,7 @@ export function AccountsView({
   }
 
   return (
-    <PageSheet className="px-4 py-4 min-[960px]:px-7 min-[960px]:py-6">
+    <div className="mx-auto w-full max-w-[560px] px-4 py-4">
       <header className="mb-4">
         <h1 className="text-title font-semibold text-ink">حساب‌ها</h1>
         <p className="mt-1 text-caption text-ink-muted">
@@ -48,8 +47,8 @@ export function AccountsView({
       </header>
 
       {accounts.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-well border border-dashed border-hairline-strong/45 bg-surface px-4 py-8 text-center">
-          <span className="flex size-12 items-center justify-center rounded-full bg-paper text-ink-faint">
+        <div className="flex flex-col items-center gap-3 rounded-card border border-dashed border-hairline-strong bg-surface px-4 py-8 text-center">
+          <span className="flex size-12 items-center justify-center rounded-full bg-lapis-tint text-lapis">
             <Bank size={24} />
           </span>
           <p className="text-body text-ink">هنوز حسابی تعریف نکرده‌ای.</p>
@@ -70,7 +69,7 @@ export function AccountsView({
             </div>
           )}
 
-          <div className="flex items-baseline justify-between rounded-well bg-paper px-4 py-3">
+          <div className="flex items-baseline justify-between rounded-card border border-hairline bg-surface px-4 py-3">
             <span className="flex items-center gap-2 text-caption text-ink-muted">
               <Wallet size={16} />
               مجموع {faNumber(active.length)} حساب باز
@@ -78,7 +77,7 @@ export function AccountsView({
             <Money minor={total} currency={currency} size="kpi" tone="auto" />
           </div>
 
-          <div className="mt-3 overflow-hidden">
+          <div className="mt-3 overflow-hidden rounded-card border border-hairline bg-surface">
             {active.map((account) => (
               <AccountRowItem
                 key={account.id}
@@ -96,7 +95,7 @@ export function AccountsView({
               <h2 className="mt-5 mb-2 text-label font-medium text-ink-muted">
                 حساب‌های بسته
               </h2>
-              <div className="overflow-hidden">
+              <div className="overflow-hidden rounded-card border border-hairline bg-surface">
                 {closed.map((account) => (
                   <AccountRowItem
                     key={account.id}
@@ -124,10 +123,10 @@ export function AccountsView({
         </>
       )}
 
-      <p className="mt-4 rounded-well border border-dashed border-hairline-strong/45 bg-paper px-3 py-2.5 text-caption text-ink-muted">
+      <p className="mt-4 rounded-control border border-dashed border-hairline-strong bg-paper px-3 py-2.5 text-caption text-ink-muted">
         موجودی هیچ‌وقت جایی ذخیره نمی‌شود: همان عددی که نوشتی، به‌علاوه‌ی هرچه از آن
         تاریخ به بعد در{" "}
-        <Link href="/transactions" className="font-medium text-action hover:underline">
+        <Link href="/transactions" className="font-medium text-lapis hover:underline">
           تراکنش‌ها
         </Link>{" "}
         به این حساب خورده. پس اگر تراکنشی را پاک یا اصلاح کنی، موجودی همان لحظه درست
@@ -142,6 +141,6 @@ export function AccountsView({
         account={editing}
         isFirst={accounts.length === 0}
       />
-    </PageSheet>
+    </div>
   );
 }

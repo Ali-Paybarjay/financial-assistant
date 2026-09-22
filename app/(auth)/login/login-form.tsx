@@ -36,7 +36,7 @@ export function LoginForm() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-display text-question font-bold text-ink">خوش آمدی</h1>
+        <h1 className="font-display text-display-l font-bold text-ink">خوش آمدی</h1>
         <p className="mt-1 text-body text-ink-muted">وارد شو تا ادامه بدهیم.</p>
       </div>
 
@@ -117,12 +117,12 @@ export function LoginForm() {
       </form>
 
       <div className="flex flex-col gap-2 text-caption text-ink-muted">
-        <Link href="/forgot-password" className="text-action hover:underline">
+        <Link href="/forgot-password" className="text-lapis hover:underline">
           رمزت را فراموش کرده‌ای؟
         </Link>
         <p>
           حساب نداری؟{" "}
-          <Link href="/signup" className="font-medium text-action hover:underline">
+          <Link href="/signup" className="font-medium text-lapis hover:underline">
             بساز
           </Link>
         </p>

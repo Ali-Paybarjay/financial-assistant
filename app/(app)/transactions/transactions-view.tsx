@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/native-select";
 import { BottomSheet } from "@/components/bottom-sheet";
-import { PageHeader, PageSheet, Rows, Well } from "@/components/page";
 import { TransactionRowItem } from "@/components/transactions/transaction-row";
 import { EditTransactionSheet } from "./edit-sheet";
 import { faNumber } from "@/lib/format";
@@ -142,8 +141,9 @@ export function TransactionsView({
   ].filter(Boolean) as { key: string; label: string }[];
 
   return (
-    <PageSheet className="px-4 py-4 min-[960px]:px-7 min-[960px]:py-6">
-      <PageHeader title="تراکنش‌ها">
+    <div className="mx-auto w-full max-w-[560px] px-4 py-4">
+      <header className="flex items-center justify-between">
+        <h1 className="text-title font-semibold text-ink">تراکنش‌ها</h1>
         <div className="flex gap-1">
           <Button
             variant="ghost"
@@ -162,7 +162,7 @@ export function TransactionsView({
             <Funnel size={20} />
           </Button>
         </div>
-      </PageHeader>
+      </header>
 
       <div className="mt-3 flex items-center gap-1.5">
         <Button
@@ -192,7 +192,7 @@ export function TransactionsView({
               key={chip.key}
               type="button"
               onClick={() => setParam(chip.key, undefined)}
-              className="inline-flex h-8 items-center gap-1.5 rounded-full bg-action-tint px-3 text-caption font-medium text-action transition-colors hover:bg-action hover:text-white"
+              className="inline-flex h-8 items-center gap-1.5 rounded-full bg-lapis px-3 text-caption font-medium text-white"
             >
               {chip.label}
               <X size={12} />
@@ -218,19 +218,19 @@ export function TransactionsView({
       </div>
 
       {groups.length === 0 ? (
-        <Well className="mt-6 px-5 py-6 text-center text-body text-ink-muted">
+        <p className="mt-6 rounded-card border border-hairline bg-surface p-6 text-center text-body text-ink-muted">
           {chips.length > 0
             ? "در این بازه چیزی ثبت نشده. بازه را عوض کن یا فیلتر را بردار."
             : "این ماه هنوز چیزی ثبت نکرده‌ای."}
-        </Well>
+        </p>
       ) : (
         <div className="mt-4 flex flex-col gap-4">
           {groups.map(([day, rows]) => (
             <section key={day}>
-              <h2 className="mb-1 text-caption font-semibold text-ink-muted">
+              <h2 className="mb-1.5 text-caption font-semibold text-ink-muted">
                 {day === today ? "امروز" : formatDayMonthFa(day)}
               </h2>
-              <Rows>
+              <div className="overflow-hidden rounded-card border border-hairline bg-surface">
                 {rows.map((row) => (
                   <TransactionRowItem
                     key={row.id}
@@ -267,14 +267,14 @@ export function TransactionsView({
                     }}
                   />
                 )}
-              </Rows>
+              </div>
             </section>
           ))}
         </div>
       )}
 
       {pendingDelete && !groups.some(([, rows]) => rows.some((r) => r.id === pendingDelete.id)) && (
-        <div className="mt-3">
+        <div className="mt-3 overflow-hidden rounded-card border border-hairline bg-surface">
           <UndoRow
             title={pendingDelete.title}
             onUndo={() => {
@@ -380,7 +380,7 @@ export function TransactionsView({
           </Button>
         </form>
       </BottomSheet>
-    </PageSheet>
+    </div>
   );
 }
 
@@ -388,12 +388,12 @@ export function TransactionsView({
  *  cannot reach in five seconds. */
 function UndoRow({ title, onUndo }: { title: string; onUndo: () => void }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-well bg-paper px-3.5 py-3">
+    <div className="flex items-center justify-between gap-3 bg-paper p-3">
       <span className="truncate text-caption text-ink-muted">«{title}» حذف شد.</span>
       <button
         type="button"
         onClick={onUndo}
-        className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-surface px-3 text-caption font-medium text-action"
+        className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-hairline-strong bg-surface px-3 text-caption font-medium text-lapis"
       >
         <ArrowCounterClockwise size={14} />
         برگردان

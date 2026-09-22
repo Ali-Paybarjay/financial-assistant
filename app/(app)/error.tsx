@@ -23,7 +23,7 @@ export default function AppError({
         <WarningCircle size={24} className="text-negative" />
       </span>
 
-      <h1 className="font-display text-question font-bold text-ink">
+      <h1 className="font-display text-display-l font-bold text-ink">
         این صفحه بالا نیامد
       </h1>
       <p className="text-body text-ink-muted">

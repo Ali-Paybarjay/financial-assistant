@@ -23,7 +23,7 @@ export function OptionCard({
       className={cn(
         "flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border p-3.5 transition-colors",
         checked
-          ? "border-[1.5px] border-action bg-action-tint font-medium text-ink"
+          ? "border-[1.5px] border-lapis bg-lapis-tint font-medium text-ink"
           : "border-hairline bg-surface text-ink hover:border-hairline-strong",
       )}
     >
@@ -39,10 +39,10 @@ export function OptionCard({
         aria-hidden
         className={cn(
           "flex size-5 shrink-0 items-center justify-center rounded-full border-2",
-          checked ? "border-action" : "border-hairline-strong",
+          checked ? "border-lapis" : "border-hairline-strong",
         )}
       >
-        {checked && <span className="size-2.5 rounded-full bg-action" />}
+        {checked && <span className="size-2.5 rounded-full bg-lapis" />}
       </span>
       <span className="text-body">{children}</span>
     </label>

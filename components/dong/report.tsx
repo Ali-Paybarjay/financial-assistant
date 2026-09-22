@@ -49,7 +49,7 @@ export function DongReport({
 
   if (expenses.length === 0) {
     return (
-      <p className="rounded-well border border-dashed border-hairline-strong/45 bg-surface px-4 py-8 text-center text-caption text-ink-muted">
+      <p className="rounded-card border border-dashed border-hairline-strong bg-surface px-4 py-8 text-center text-caption text-ink-muted">
         تا خریدی ثبت نشود، چیزی برای حساب‌کردن نیست.
       </p>
     );
@@ -57,7 +57,7 @@ export function DongReport({
 
   return (
     <div className="flex flex-col gap-3">
-      <section className="rounded-well bg-paper p-4">
+      <section className="rounded-card border border-hairline bg-surface p-4">
         <div className="flex items-baseline justify-between">
           <span className="text-caption text-ink-muted">جمع خرج دوره</span>
           <Money minor={totalSpent} currency={currency} size="kpi" />
@@ -78,7 +78,7 @@ export function DongReport({
       </section>
 
       {/* ------------------------------------------------ who stands where -- */}
-      <section className="overflow-hidden">
+      <section className="overflow-hidden rounded-card border border-hairline bg-surface">
         <h2 className="border-b border-hairline px-4 py-2.5 text-label font-medium text-ink-muted">
           تراز افراد
         </h2>
@@ -120,7 +120,7 @@ export function DongReport({
 
       {/* ------------------------------------------------------ settlement -- */}
       {plan.length > 0 && (
-        <section className="overflow-hidden">
+        <section className="overflow-hidden rounded-card border border-hairline bg-surface">
           <div className="border-b border-hairline px-4 py-2.5">
             <h2 className="text-label font-medium text-ink-muted">جدول تسویه</h2>
             <p className="mt-0.5 text-caption text-ink-muted">
@@ -195,7 +195,7 @@ function TagBreakdown({
   const total = data.reduce((sum, slice) => sum + slice.amount, 0);
 
   return (
-    <section className="rounded-well bg-paper p-4">
+    <section className="rounded-card border border-hairline bg-surface p-4">
       <h2 className="mb-3 text-[15px] font-semibold text-ink">خرج به تفکیک برچسب</h2>
 
       <div className="flex items-center gap-4">

@@ -82,10 +82,10 @@ export function MissedReview({
             {faNumber(missed.length)} مورد مانده
           </p>
 
-          <div className="rounded-well bg-paper p-4">
+          <div className="rounded-card border border-hairline bg-paper p-4">
             <div className="flex items-baseline justify-between gap-3">
               <span className="flex items-center gap-2 text-[15px] font-medium text-ink">
-                <ArrowsClockwise size={16} className="text-ink-faint" />
+                <ArrowsClockwise size={16} className="text-lapis" />
                 {current.title}
               </span>
               <Money minor={current.amount} currency={currency} size="row" />
@@ -181,7 +181,7 @@ export function MissedBanner({
     <button
       type="button"
       onClick={onOpen}
-      className="flex w-full items-center gap-3 rounded-well bg-guess-tint px-4 py-3 text-start hover:border-guess"
+      className="flex w-full items-center gap-3 rounded-card border border-guess-border bg-guess-tint px-4 py-3 text-start hover:border-guess"
     >
       <Warning size={18} weight="fill" className="shrink-0 text-guess" />
       <span className="flex-1 text-caption text-guess-text">

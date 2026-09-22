@@ -40,8 +40,8 @@ export const AmountInput = React.forwardRef<HTMLInputElement, AmountInputProps>(
     return (
       <div
         className={cn(
-          "flex items-center gap-1.5 rounded-control border bg-surface px-3 transition-colors focus-within:border-action focus-within:ring-[3px] focus-within:ring-action/30",
-          size === "hero" ? "h-[52px] border-action" : "h-12 border-hairline-strong",
+          "flex items-center gap-1.5 rounded-control border bg-surface px-3 transition-colors focus-within:border-lapis focus-within:ring-2 focus-within:ring-lapis/20",
+          size === "hero" ? "h-[52px] border-lapis" : "h-12 border-hairline-strong",
         )}
       >
         {symbolTrails(currency) ? symbol : null}

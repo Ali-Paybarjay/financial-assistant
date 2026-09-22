@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   ArrowsClockwise,
   ArrowsLeftRight,
@@ -48,7 +47,6 @@ export function TransactionRowItem({
   toAccountTitle,
   goalTitle,
   currency,
-  href,
   onSelect,
 }: {
   transaction: TransactionRow;
@@ -60,10 +58,7 @@ export function TransactionRowItem({
   /** The goal this row funded or spent, when it names one. */
   goalTitle?: string;
   currency: CurrencyCode;
-  /** Where the row goes. Given, the row is a link and Cmd-click works. */
-  href?: string;
-  /** Acted on in place instead — opening the edit sheet, not navigating. */
-  onSelect?: () => void;
+  onSelect: () => void;
 }) {
   const isTransfer = transaction.type === "transfer";
   // A transfer's icon names what happened, not how it was entered: "I moved
@@ -76,25 +71,27 @@ export function TransactionRowItem({
     ? "انتقال بین حساب‌ها"
     : transaction.merchant || transaction.note || category?.name_fa || "بدون عنوان";
 
-  const content = (
-    <>
-      {/* A plain glyph, not a filled chip. Every row used to carry a square in
-          the action colour, which washed a whole list blue and said nothing —
-          that colour means «you can press this», on a list where every row is
-          equally pressable. Muted here, ochre only where the row is still a
-          guess, so the rows that want checking are the ones that stand out. */}
-      <SourceIcon
-        size={20}
-        weight="regular"
-        className={cn("shrink-0", unconfirmed ? "text-guess" : "text-ink-faint")}
-      />
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className="flex w-full items-center gap-3 border-b border-hairline p-3 text-start last:border-b-0 hover:bg-paper"
+    >
+      <span
+        className={cn(
+          "flex size-[34px] shrink-0 items-center justify-center rounded-control",
+          unconfirmed ? "bg-guess-tint text-guess" : "bg-lapis-tint text-lapis",
+        )}
+      >
+        <SourceIcon size={18} />
+      </span>
 
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span
           className={cn(
             "w-fit max-w-full truncate text-[14px] font-medium text-ink",
-            // The rule grammar, at row scale.
-            unconfirmed && "rule-guess",
+            // The signature element, at row scale.
+            unconfirmed && "border-b-2 border-dashed border-guess pb-[2px]",
           )}
         >
           {title}
@@ -168,34 +165,12 @@ export function TransactionRowItem({
           }
         />
         {unconfirmed && (
-          <span className="flex items-center gap-0.5 text-caption font-medium text-action">
+          <span className="flex items-center gap-0.5 text-caption font-medium text-lapis">
             بررسی
             <CaretLeft size={11} />
           </span>
         )}
       </span>
-    </>
-  );
-
-  // No border of its own: rows sit inside <Rows>, which draws the rule between
-  // siblings. A row that also drew its own would double the line at every seam
-  // and put one under the last row, where nothing follows it.
-  const rowClass =
-    "flex w-full items-center gap-3 py-3 text-start transition-colors hover:bg-paper/60";
-
-  // A row that goes somewhere is a link, so Cmd-click and middle-click do what
-  // they do everywhere else. A row that opens the edit sheet in place is not.
-  if (href) {
-    return (
-      <Link href={href} className={rowClass}>
-        {content}
-      </Link>
-    );
-  }
-
-  return (
-    <button type="button" onClick={onSelect} className={rowClass}>
-      {content}
     </button>
   );
 }

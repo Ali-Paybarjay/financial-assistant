@@ -13,7 +13,6 @@ import {
   Plus,
   Trash,
 } from "@phosphor-icons/react/dist/ssr";
-import { PageSheet, Well } from "@/components/page";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -142,24 +141,24 @@ export function GoalsView({
   }
 
   return (
-    <PageSheet className="px-4 py-4 min-[960px]:px-7 min-[960px]:py-6">
+    <div className="mx-auto w-full max-w-[560px] px-4 py-4">
       <h1 className="mb-4 text-title font-semibold text-ink">هدف‌ها</h1>
 
       {plan.goals.length === 0 ? (
-        <Well className="px-5 py-6 text-center text-body text-ink-muted">
+        <p className="rounded-card border border-hairline bg-surface p-6 text-center text-body text-ink-muted">
           هنوز هدفی نداری. یک هدف بساز تا بگویم ماهی چقدر باید بگذاری کنار.
-        </Well>
+        </p>
       ) : (
         <>
           <PlanCard plan={plan} surplus={surplus} currency={currency} />
 
-          <ul className="flex flex-col [&>li+li]:border-t [&>li+li]:border-hairline">
+          <ul className="flex flex-col gap-3">
             {plan.goals.map((row, index) => {
               const goal = row.goal;
               return (
                 <li
                   key={goal.id}
-                  className="flex flex-col gap-2 py-4"
+                  className="flex flex-col gap-2 rounded-card border border-hairline bg-surface p-4"
                 >
                   <button
                     type="button"
@@ -171,7 +170,7 @@ export function GoalsView({
                   >
                     <div className="flex items-baseline justify-between gap-3">
                       <span className="flex items-center gap-2 text-[15px] font-medium text-ink">
-                        <Flag size={16} className="text-ink-faint" />
+                        <Flag size={16} className="text-lapis" />
                         {goal.title}
                       </span>
                       <span className="flex items-baseline gap-1 text-caption text-ink-muted">
@@ -187,10 +186,12 @@ export function GoalsView({
                       aria-valuemin={0}
                       aria-valuemax={100}
                       aria-label={goal.title}
-                      className="runway"
+                      className="h-2 overflow-hidden rounded-full bg-lapis-tint"
                     >
-                      <span className="runway-gone" style={{ width: `${row.progress}%` }} />
-                      {row.progress < 100 && <span className="runway-left" />}
+                      <div
+                        className="h-full rounded-full bg-lapis"
+                        style={{ width: `${row.progress}%` }}
+                      />
                     </div>
 
                     <div className="flex items-baseline justify-between text-caption text-ink-muted">
@@ -433,7 +434,7 @@ export function GoalsView({
           </div>
         </form>
       </BottomSheet>
-    </PageSheet>
+    </div>
   );
 }
 
@@ -524,7 +525,7 @@ function OrderButton({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="flex size-7 items-center justify-center rounded-control border border-hairline text-ink-muted hover:border-hairline-strong hover:text-action disabled:opacity-35"
+      className="flex size-7 items-center justify-center rounded-control border border-hairline text-ink-muted hover:border-hairline-strong hover:text-lapis disabled:opacity-35"
     >
       {children}
     </button>

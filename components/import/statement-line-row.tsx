@@ -83,7 +83,7 @@ export function StatementLineRowItem({
           checked={draft.selected}
           onChange={(event) => onChange({ ...draft, selected: event.target.checked })}
           aria-label={`ثبت ${line.description ?? "این ردیف"}`}
-          className="mt-1 size-[18px] shrink-0 accent-[var(--color-action)]"
+          className="mt-1 size-[18px] shrink-0 accent-[var(--color-lapis)]"
         />
 
         <div className="min-w-0 flex-1">
