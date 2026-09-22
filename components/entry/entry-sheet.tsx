@@ -57,7 +57,7 @@ export function EntryLauncher({
           reset();
           onOpenChange(true);
         }}
-        className="fixed bottom-[76px] end-4 z-30 flex h-14 items-center gap-2 rounded-full bg-action px-5 text-[15px] font-semibold text-white shadow-fab transition-colors hover:bg-action/90 active:bg-action-pressed min-[960px]:hidden"
+        className="fixed bottom-[76px] end-4 z-30 flex h-14 items-center gap-2 rounded-full bg-linear-to-b from-action to-action-pressed px-5 text-[15px] font-semibold text-white shadow-fab transition-transform duration-150 active:scale-[0.97] min-[960px]:hidden"
       >
         <Plus size={20} weight="bold" />
         ثبت هزینه

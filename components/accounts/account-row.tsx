@@ -73,7 +73,7 @@ export function AccountRowItem({
         onClick={onEdit}
         className="flex min-w-0 flex-1 items-center gap-3 text-start"
       >
-      <span className="flex size-[34px] shrink-0 items-center justify-center text-ink-faint">
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-paper text-ink-muted">
         <KindIcon size={18} />
       </span>
 

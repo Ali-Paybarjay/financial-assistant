@@ -146,7 +146,7 @@ export function DashboardView({
             <button
               type="button"
               onClick={() => setEntryOpen(true)}
-              className="hidden h-11 items-center gap-2 rounded-control bg-action px-4 text-[14px] font-semibold text-white transition-colors hover:bg-action/90 active:bg-action-pressed min-[960px]:flex"
+              className="hidden h-11 items-center gap-2 rounded-button px-4 text-[14px] font-semibold bg-linear-to-b from-action to-action-pressed text-white shadow-button transition-[transform,box-shadow] duration-150 hover:shadow-button-hover active:scale-[0.98] min-[960px]:flex"
             >
               <Plus size={18} weight="bold" />
               ثبت هزینه

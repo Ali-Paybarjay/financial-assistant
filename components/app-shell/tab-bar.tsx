@@ -34,7 +34,16 @@ export function TabBar({ workspace }: { workspace: WorkspaceId }) {
                   active ? "text-action" : "text-ink-muted",
                 )}
               >
-                <Icon size={22} weight={active ? "fill" : "regular"} />
+                {/* The pill is the active state's shape; colour alone was a
+                    thin signal on five identical glyphs. */}
+                <span
+                  className={cn(
+                    "flex h-7 w-12 items-center justify-center rounded-full transition-colors",
+                    active && "bg-action-tint",
+                  )}
+                >
+                  <Icon size={22} weight={active ? "fill" : "regular"} />
+                </span>
                 <span className="text-micro font-medium">{item.label}</span>
               </Link>
             </li>

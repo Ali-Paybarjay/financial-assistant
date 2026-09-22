@@ -11,7 +11,7 @@ export default function NotFound() {
       </p>
       <Link
         href="/"
-        className="flex h-[52px] items-center rounded-control bg-action px-5 text-[15px] font-semibold text-white hover:bg-action/90"
+        className="flex h-[52px] items-center rounded-button px-5 text-[15px] font-semibold bg-linear-to-b from-action to-action-pressed text-white shadow-button transition-[transform,box-shadow] duration-150 hover:shadow-button-hover active:scale-[0.98]"
       >
         برو به صفحه‌ی اول
       </Link>

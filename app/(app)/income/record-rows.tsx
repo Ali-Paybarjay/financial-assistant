@@ -84,7 +84,7 @@ function RowShell({
         !isActive && "opacity-55",
       )}
     >
-      <span className="flex size-[34px] shrink-0 items-center justify-center text-ink-faint">
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-paper text-ink-muted">
         {icon}
       </span>
 

@@ -148,19 +148,24 @@ function WorkspaceCard({
   const Glyph = WORKSPACE_ICON[workspace];
 
   return (
+    // A door, not a notice board: the whole card presses, its icon has a
+    // shape and a colour, the chevron is a disc that fills on hover, and the
+    // border lights up when it has focus. It was a white box with a title in
+    // it, which is what a notice looks like.
     <Link
       href={meta.href}
-      className="group flex min-h-[200px] flex-col gap-3 rounded-card bg-surface p-5 shadow-lift transition-shadow hover:shadow-[0_2px_4px_rgb(25_26_46/0.06),0_18px_40px_-20px_rgb(25_26_46/0.45)]"
+      className="group relative flex min-h-[220px] flex-col gap-4 rounded-card border-[1.5px] border-transparent bg-surface p-5 shadow-lift transition-[transform,box-shadow,border-color] duration-150 hover:border-action/35 hover:shadow-[0_2px_4px_rgb(25_26_46/0.06),0_18px_40px_-20px_rgb(25_26_46/0.45)] focus-visible:border-action active:scale-[0.99]"
     >
-      <span className="flex items-center gap-2.5">
-        <Glyph size={20} className="shrink-0 text-ink-faint" />
-        <span className="min-w-0 flex-1 text-[17px] font-semibold text-ink">
+      <span className="flex items-center gap-3">
+        <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-action-tint text-action">
+          <Glyph size={26} weight="duotone" />
+        </span>
+        <span className="min-w-0 flex-1 text-[18px] font-semibold text-ink">
           {meta.title}
         </span>
-        <CaretLeft
-          size={16}
-          className="shrink-0 text-ink-faint transition-colors group-hover:text-action"
-        />
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-paper text-ink-muted transition-colors group-hover:bg-action group-hover:text-white">
+          <CaretLeft size={16} weight="bold" />
+        </span>
       </span>
 
       <span className="max-w-[46ch] text-caption text-ink-muted">{meta.blurb}</span>

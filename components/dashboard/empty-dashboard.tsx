@@ -25,7 +25,7 @@ export function EmptyDashboard({ onStart }: { onStart: () => void }) {
         <button
           type="button"
           onClick={onStart}
-          className="mt-4 flex h-[52px] w-full max-w-[340px] items-center justify-center gap-2 rounded-control bg-action text-[15px] font-semibold text-white transition-colors hover:bg-action/90 active:bg-action-pressed"
+          className="mt-4 flex h-[52px] w-full max-w-[340px] items-center justify-center gap-2 rounded-button text-[15px] font-semibold bg-linear-to-b from-action to-action-pressed text-white shadow-button transition-[transform,box-shadow] duration-150 hover:shadow-button-hover active:scale-[0.98]"
         >
           <Plus size={20} weight="bold" />
           اولین هزینه‌ات را ثبت کن

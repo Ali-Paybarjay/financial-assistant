@@ -81,9 +81,9 @@ export function SettingsView({
       <button
         type="button"
         onClick={() => setSheet("profile")}
-        className="flex w-full items-center gap-3 rounded-well bg-paper p-4 text-start hover:border-hairline-strong"
+        className="group flex w-full items-center gap-3 rounded-card border-[1.5px] border-transparent bg-surface p-4 text-start shadow-lift transition-[transform,box-shadow,border-color] duration-150 hover:border-action/35 focus-visible:border-action active:scale-[0.99]"
       >
-        <span className="flex size-12 items-center justify-center rounded-full bg-action-tint text-[18px] font-semibold text-action">
+        <span className="flex size-12 items-center justify-center rounded-2xl bg-action-tint text-[18px] font-semibold text-action">
           {(profile.full_name ?? "؟").trim().charAt(0)}
         </span>
         <span className="flex min-w-0 flex-1 flex-col">
@@ -92,7 +92,9 @@ export function SettingsView({
           </span>
           <span className="truncate text-caption text-ink-muted">{subtitle}</span>
         </span>
-        <CaretLeft size={16} className="text-ink-faint" />
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-paper text-ink-muted transition-colors group-hover:bg-action group-hover:text-white">
+          <CaretLeft size={16} weight="bold" />
+        </span>
       </button>
 
       <Group title="پول">
@@ -207,7 +209,12 @@ function Row({
 }) {
   const body = (
     <>
-      <span className="text-ink-faint">{icon}</span>
+      {/* A tinted disc: these rows are doors to other pages, so the action
+          colour is honest here, and the shape is what makes a row of five
+          identical lines scannable. */}
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-action-tint text-action">
+        {icon}
+      </span>
       <span className="flex-1 text-[14px] text-ink">{label}</span>
       {value && <span className="text-caption text-ink-muted">{value}</span>}
       <CaretLeft size={16} className="text-ink-faint" />
@@ -237,7 +244,9 @@ function RiskRow({ label }: { label: string }) {
       onClick={() => startTransition(() => resetRiskAnswers())}
       className="flex h-14 w-full items-center gap-3 px-4 text-start hover:bg-paper disabled:opacity-50"
     >
-      <Target size={20} className="text-ink-faint" />
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-action-tint text-action">
+        <Target size={20} />
+      </span>
       <span className="flex-1 text-[14px] text-ink">
         {isPending ? "دارم آماده می‌کنم…" : "پاسخ دوباره به سؤال‌های ریسک"}
       </span>

@@ -78,16 +78,19 @@ export function TransactionRowItem({
 
   const content = (
     <>
-      {/* A plain glyph, not a filled chip. Every row used to carry a square in
-          the action colour, which washed a whole list blue and said nothing —
-          that colour means «you can press this», on a list where every row is
-          equally pressable. Muted here, ochre only where the row is still a
-          guess, so the rows that want checking are the ones that stand out. */}
-      <SourceIcon
-        size={20}
-        weight="regular"
-        className={cn("shrink-0", unconfirmed ? "text-guess" : "text-ink-faint")}
-      />
+      {/* A glyph in a paper disc — shape without the action colour. A list
+          of blue squares said «press this» on rows that are all equally
+          pressable; a bare glyph had no shape at all. Paper gives the row a
+          handle, and ochre is kept for the rows that are still a guess, so
+          those stay the ones that stand out. */}
+      <span
+        className={cn(
+          "flex size-9 shrink-0 items-center justify-center rounded-xl",
+          unconfirmed ? "bg-guess-tint text-guess" : "bg-paper text-ink-muted",
+        )}
+      >
+        <SourceIcon size={18} />
+      </span>
 
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span
