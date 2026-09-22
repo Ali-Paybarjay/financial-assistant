@@ -141,6 +141,15 @@ async function visit(
     }
   }
 
+  // Every page names itself to someone navigating by headings. Asserted for
+  // the same reason the rest of this file exists: the dashboard lost its own
+  // for a while — the heading was inside a row that only exists from 960px,
+  // so on a phone the screen the app opens on had none at all — and nothing
+  // in the project could see that.
+  if ((await page.getByRole("heading", { level: 1 }).count()) === 0) {
+    problems.push(`${route.path} has no level-1 heading`);
+  }
+
   if (crashes.length > 0) {
     problems.push(`${route.path} threw in the browser: ${crashes[0]}`);
   }
