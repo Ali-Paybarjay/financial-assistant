@@ -83,12 +83,25 @@ NEXT_PUBLIC_APP_URL  ←  VERCEL_PROJECT_PRODUCTION_URL  ←  http://localhost:3
 | `pnpm check:rtl` | جست‌وجوی کلاس‌های جهت‌دار فیزیکی (`ml-`, `right-`, …) که در RTL باگ می‌سازند |
 | `pnpm test` | تست‌های واحد |
 | `pnpm test:e2e` | تست E2E |
+| `pnpm test:smoke` | باز کردن تک‌تک صفحه‌ها در مرورگر — فقط اینکه بالا می‌آیند |
 | `pnpm gen:types` | بازتولید تایپ‌های دیتابیس از Supabase |
 
 روی هر pull request، همان چیزی که `pnpm verify` اجرا می‌کند در GitHub Actions هم اجرا می‌شود
 ([`.github/workflows/verify.yml`](.github/workflows/verify.yml)) — بدون هیچ secretی، چون
 هیچ‌چیز این پروژه موقع build به دیتابیس دست نمی‌زند. تست E2E عمداً آنجا نیست: به یک پروژه‌ی
 Supabase واقعی و حساب‌های تست وصل است و ردیف می‌نویسد، پس دستی اجرا می‌شود.
+
+کنارش یک workflow دوم هست، [`smoke.yml`](.github/workflows/smoke.yml)، که تک‌تک صفحه‌ها را
+در مرورگر باز می‌کند. `verify` هیچ صفحه‌ای را باز نمی‌کند، پس مسیری که کامپایل می‌شود و بعد
+موقع رندر می‌شکند از هر پنج مرحله‌اش سبز رد می‌شود — یک‌بار همین اتفاق افتاد و صفحه‌ی اولِ
+بعد از ورود با همه‌چیزِ سبز، «این صفحه بالا نیامد» را به یک preview فرستاد. این یکی چیزی
+نمی‌نویسد؛ فقط وارد می‌شود و نگاه می‌کند، و برای همین می‌تواند روی هر pull request اجرا شود.
+
+برای اجرا شدن به سه secret نیاز دارد (Settings → Secrets and variables → Actions):
+`NEXT_PUBLIC_SUPABASE_URL`، `NEXT_PUBLIC_SUPABASE_ANON_KEY` و `E2E_PASSWORD` — و عمداً
+به service-role key و کلید OpenRouter نیاز ندارد، چون باز کردن صفحه‌ها به آنها کاری ندارد.
+تا وقتی نباشند، job با یک اخطار از خودش رد می‌شود به‌جای اینکه قرمز بماند؛ **تیکِ سبزِ یک
+اجرای رد‌شده یعنی هیچ صفحه‌ای باز نشده** — متن اخطار را بخوان.
 
 ## قواعد غیرقابل‌مذاکره
 
