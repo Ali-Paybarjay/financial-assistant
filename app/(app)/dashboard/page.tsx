@@ -2,7 +2,7 @@ import { requireViewer } from "@/lib/auth";
 import { listCategories } from "@/lib/queries/categories";
 import { listAccountsWithBalances } from "@/lib/queries/accounts";
 import { listGoalsWithProgress } from "@/lib/queries/goals";
-import { accountsDue, preferredAccountId, totalBalance } from "@/lib/accounts";
+import { accountsDue, totalBalance } from "@/lib/accounts";
 import {
   listTransactions,
   monthlySeries,
@@ -10,7 +10,13 @@ import {
 } from "@/lib/queries/transactions";
 import { ensureRecurringPosted, listMissedRecurring } from "@/lib/queries/recurring";
 import { listEnvelopes, suggestedBudgets } from "@/lib/queries/envelopes";
-import { projectedMonthEnd } from "@/lib/cashflow";
+import {
+  dismissedInsightKeys,
+  oldestUnconfirmed,
+  weeklySpend,
+} from "@/lib/queries/insights";
+import { buildInsights } from "@/lib/insights";
+import { monthlySurplus, projectedMonthEnd } from "@/lib/cashflow";
 import { daysLeftInMonth, monthRange, shiftMonth, todayInTimeZone } from "@/lib/date";
 import { DashboardView } from "./dashboard-view";
 
@@ -47,6 +53,9 @@ export default async function DashboardPage({
     allGoals,
     envelopes,
     suggestions,
+    week,
+    oldestUnconfirmedAt,
+    dismissedKeys,
   ] =
     await Promise.all([
       listCategories(),
@@ -61,6 +70,11 @@ export default async function DashboardPage({
       // Every envelope figure comes from SQL beside the ledger. Rule 6.
       listEnvelopes(range.month),
       suggestedBudgets(range.month, viewer.currency),
+      // The three the board does not already have. The pointer at the stream
+      // has to name a real number — «چند نکته برایت دارم» is not worth a tap.
+      weeklySpend(today),
+      oldestUnconfirmed(),
+      dismissedInsightKeys(),
     ]);
 
   // The whole active list, not the four the card shows: the entry sheet needs
@@ -99,6 +113,31 @@ export default async function DashboardPage({
       })
     : null;
 
+  const insights = buildInsights({
+    today,
+    month: { start: range.from, end: range.to, daysGone, daysLeft },
+    totals: {
+      income: totals.income,
+      expense: totals.expense,
+      unconfirmedCount: totals.unconfirmedCount,
+      oldestUnconfirmedAt,
+    },
+    previousWeek: week.previous,
+    currentWeek: week.current,
+    envelopes,
+    goals,
+    accountsDue: accountsDue(accounts, today, viewer.timeZone),
+    missedRecurring: missed.length,
+    dismissedKeys,
+    monthlySurplus: monthlySurplus({
+      series: seriesPoints,
+      currentMonth: range.month,
+      sources: [],
+      recurring: [],
+      baselines: [],
+    }).amount,
+  });
+
   // A tap on an envelope opens the ledger filtered to it, and the ledger
   // filters by slug rather than by id.
   const slugById = Object.fromEntries(
@@ -119,7 +158,7 @@ export default async function DashboardPage({
       suggestions={Object.fromEntries(suggestions)}
       slugById={slugById}
       forecast={forecast}
-      insightCount={0}
+      insightCount={insights.length}
       totals={{
         income: totals.income,
         expense: totals.expense,
@@ -133,7 +172,6 @@ export default async function DashboardPage({
       accounts={accounts}
       accountsTotal={totalBalance(accounts)}
       accountsDue={accountsDue(accounts, today, viewer.timeZone)}
-      defaultAccountId={preferredAccountId(accounts)}
     />
   );
 }

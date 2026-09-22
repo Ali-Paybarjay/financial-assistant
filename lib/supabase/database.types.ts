@@ -174,6 +174,17 @@ export type CategoryBudgetRow = {
   created_at: string;
 };
 
+/**
+ * «I have seen this and I do not want it again.» The insight itself is never
+ * stored — only this. See migration 0020.
+ */
+export type InsightDismissalRow = {
+  user_id: string;
+  /** «rule:scope», owned by lib/insights.ts. */
+  insight_key: string;
+  dismissed_at: string;
+};
+
 /** One row of envelope_status(). Derived on read, never stored. */
 export type EnvelopeStatusRow = {
   category_id: string;
@@ -518,6 +529,7 @@ export type Database = {
       dong_expense_shares: Table<DongExpenseShareRow, "units">;
       dong_payments: Table<DongPaymentRow, "kind">;
       category_budgets: Table<CategoryBudgetRow>;
+      insight_dismissals: Table<InsightDismissalRow, "dismissed_at">;
     };
     Views: Record<never, never>;
     Functions: {

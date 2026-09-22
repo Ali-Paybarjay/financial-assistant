@@ -27,6 +27,8 @@ export function ManualForm({
   goals,
   defaultAccountId,
   today,
+  initialAmount,
+  initialMerchant,
   onSaved,
 }: {
   currency: CurrencyCode;
@@ -35,6 +37,13 @@ export function ManualForm({
   goals: GoalRow[];
   defaultAccountId: string | null;
   today: string;
+  /**
+   * What the composer's pre-model gate already read out of the text. «قهوه ۵»
+   * needs no model — it needs these two fields filled in — so the form opens
+   * with them rather than the user typing the same thing twice.
+   */
+  initialAmount?: string;
+  initialMerchant?: string;
   onSaved: (message: string) => void;
 }) {
   const [formError, setFormError] = useState<string>();
@@ -50,13 +59,13 @@ export function ManualForm({
     resolver: zodResolver(transactionFormSchema),
     defaultValues: {
       type: "expense",
-      amount: "",
+      amount: initialAmount ?? "",
       categorySlug: "groceries",
       accountId: defaultAccountId ?? "",
       toAccountId: "",
       goalId: "",
       occurredOn: today,
-      merchant: "",
+      merchant: initialMerchant ?? "",
       note: "",
     },
   });

@@ -2,10 +2,14 @@
 
 import { usePathname } from "next/navigation";
 import { Sidebar } from "./sidebar";
-import { TabBar, hasTabBar } from "./tab-bar";
+import { hasTabBar } from "./tab-bar";
 import { WorkspaceSwitch } from "./workspace-switch";
+import { Composer } from "@/components/entry/composer";
 import { GuestBanner } from "@/components/guest/guest-banner";
 import { workspaceForPath } from "@/lib/workspaces";
+import type { CurrencyCode } from "@/lib/money";
+import type { EnvelopeRow } from "@/lib/envelopes";
+import type { AccountRow, CategoryRow, GoalRow } from "@/lib/supabase/database.types";
 import { cn } from "@/lib/utils";
 
 /**
@@ -23,10 +27,25 @@ import { cn } from "@/lib/utils";
 export function AppShell({
   name,
   subtitle,
+  entry,
   children,
 }: {
   name: string;
   subtitle: string;
+  /**
+   * What the composer needs to record a purchase. Read once in the layout
+   * rather than per page, because the bar is on every page — that is the
+   * whole point of it replacing a button that was only on two of them.
+   */
+  entry: {
+    currency: CurrencyCode;
+    categories: CategoryRow[];
+    accounts: AccountRow[];
+    goals: GoalRow[];
+    envelopes: EnvelopeRow[];
+    defaultAccountId: string | null;
+    today: string;
+  };
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -50,19 +69,33 @@ export function AppShell({
           </div>
         )}
 
-        {/* pb-20 clears the fixed tab bar; it disappears with the bar, both at
-            960px and in a workspace that has no bar to clear. */}
+        {/* One composer, not one per breakpoint. Rendering it twice and
+            hiding one would put two elements with id="composer-text" on the
+            page, which makes the label ambiguous and the field unfocusable
+            by id. It sits here, where the desktop wants it — above the
+            board — and its own `fixed` lifts it to the bottom of the screen
+            on a phone, where there is nothing underneath it to cover. */}
+        {workspace && (
+          <div className="min-[960px]:mx-auto min-[960px]:w-full min-[960px]:max-w-[1120px] min-[960px]:px-7 min-[960px]:pt-6">
+            <Composer workspace={workspace} {...entry} />
+          </div>
+        )}
+
+        {/* 120px clears the composer — a 42px field, the four tabs, and the
+            device's own bottom inset. It used to be pb-20 for a tab bar
+            alone. It disappears with the bar, both at 960px and in a
+            workspace that has no bar to clear. */}
         <main
           className={cn(
             "min-w-0 flex-1",
-            workspace && hasTabBar(workspace) && "pb-20 min-[960px]:pb-0",
+            workspace && hasTabBar(workspace)
+              ? "pb-[120px] min-[960px]:pb-0"
+              : workspace && "pb-[64px] min-[960px]:pb-0",
           )}
         >
           {children}
         </main>
       </div>
-
-      {workspace && <TabBar workspace={workspace} />}
     </div>
   );
 }

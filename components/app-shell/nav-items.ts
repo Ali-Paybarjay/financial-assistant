@@ -1,10 +1,11 @@
 import {
   ArrowsClockwise,
   Bank,
+  ChatTeardropText,
   CreditCard,
   Gear,
-  House,
   ListDashes,
+  SquaresFour,
   Target,
   UsersThree,
   Wallet,
@@ -48,13 +49,20 @@ export type WorkspaceNav = {
  */
 export const WORKSPACE_NAV: Record<WorkspaceId, WorkspaceNav> = {
   personal: {
+    /**
+     * «تراکنش‌ها» left this list when the board arrived. It has two doors of
+     * its own now — the search at the top of the board, and a tap on any
+     * envelope — and a bar of five items on a phone gives each of them 75px,
+     * which is under the minimum touch target the design commits to.
+     */
     primary: [
-      { href: "/dashboard", label: "داشبورد", icon: House },
-      { href: "/transactions", label: "تراکنش‌ها", icon: ListDashes },
+      { href: "/dashboard", label: "پاکت‌ها", icon: SquaresFour },
+      { href: "/stream", label: "جریان", icon: ChatTeardropText },
       { href: "/goals", label: "هدف‌ها", icon: Target },
       { href: "/settings", label: "تنظیمات", icon: Gear },
     ],
     desktopOnly: [
+      { href: "/transactions", label: "تراکنش‌ها", icon: ListDashes },
       { href: "/accounts", label: "حساب‌ها", icon: CreditCard },
       { href: "/income", label: "درآمد", icon: Wallet },
       { href: "/income?tab=recurring", label: "هزینه‌های ثابت", icon: ArrowsClockwise },

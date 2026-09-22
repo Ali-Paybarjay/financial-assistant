@@ -3,7 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CaretLeft, CaretRight, ChatTeardropText, MagnifyingGlass, Plus } from "@phosphor-icons/react/dist/ssr";
+import {
+  CaretLeft,
+  CaretRight,
+  ChatTeardropText,
+  MagnifyingGlass,
+} from "@phosphor-icons/react/dist/ssr";
 import { Money } from "@/components/money";
 import { KpiCards } from "@/components/dashboard/kpi-cards";
 import { BalanceCard } from "@/components/dashboard/balance-card";
@@ -13,7 +18,6 @@ import { EmptyDashboard } from "@/components/dashboard/empty-dashboard";
 import { AccountBalances } from "@/components/dashboard/account-balances";
 import { ReconcileBanner } from "@/components/accounts/reconcile-banner";
 import { TransactionRowItem } from "@/components/transactions/transaction-row";
-import { EntryLauncher } from "@/components/entry/entry-sheet";
 import { MissedBanner, MissedReview } from "./missed-review";
 import { faNumber, faPercent } from "@/lib/format";
 import { formatMonthFa, shiftMonth } from "@/lib/date";
@@ -54,7 +58,6 @@ export function DashboardView({
   accounts,
   accountsTotal,
   accountsDue,
-  defaultAccountId,
 }: {
   currency: CurrencyCode;
   name: string;
@@ -84,11 +87,8 @@ export function DashboardView({
   accountsTotal: number;
   /** Open accounts not yet checked against the bank this month. */
   accountsDue: AccountWithBalance[];
-  /** Open groups, for the one entry point the feature has on a phone. */
-  defaultAccountId: string | null;
 }) {
   const router = useRouter();
-  const [entryOpen, setEntryOpen] = useState(false);
   const [missedOpen, setMissedOpen] = useState(false);
 
   const balance = totals.income - totals.expense;
@@ -100,6 +100,16 @@ export function DashboardView({
   // since closed should still say which goal that was.
   const goalById = new Map(goals.map((goal) => [goal.id, goal]));
   const openGoals = goals.filter((goal) => goal.status === "active");
+
+  /**
+   * Put the cursor in the composer, which lives in the shell rather than on
+   * this page. By id because that is the one thing the two share — a context
+   * carrying a ref would mean every page paying for a provider so that the
+   * empty state can move focus once.
+   */
+  function focusComposer() {
+    document.getElementById("composer-text")?.focus();
+  }
 
   function goToMonth(delta: number) {
     router.push(`/dashboard?month=${shiftMonth(month, delta)}`);
@@ -135,26 +145,15 @@ export function DashboardView({
     // Financial figures gain nothing from stretching, so the content stops at
     // 1120px and centres. One breakpoint, not three.
     <div className="mx-auto w-full max-w-[560px] min-[960px]:max-w-[1120px] min-[960px]:px-7 min-[960px]:py-6">
-      {/* A floating button on a desktop hides something that has room, so the
-          primary action moves into the header there. */}
-      <div className="flex items-center justify-between min-[960px]:pb-4">
-        {/* The page's name, kept in the accessibility tree at every width.
-            It used to live inside this row's `hidden` — which meant that on
-            a phone, the screen the whole app opens on had no heading at all
-            for anyone navigating by them. Shown from 960px, where there is
-            room for it beside the button; announced always. */}
-        <h1 className="sr-only text-title font-semibold text-ink min-[960px]:not-sr-only">
-          داشبورد
-        </h1>
-        <button
-          type="button"
-          onClick={() => setEntryOpen(true)}
-          className="hidden h-11 items-center gap-2 rounded-control bg-lapis px-4 text-[14px] font-semibold text-white transition-colors hover:bg-lapis/90 active:bg-lapis-pressed min-[960px]:flex"
-        >
-          <Plus size={18} weight="bold" />
-          ثبت هزینه
-        </button>
-      </div>
+      {/* The page's name, kept in the accessibility tree at every width. It
+          used to live inside a row that was `hidden` below 960px — which
+          meant that on a phone, the screen the whole app opens on had no
+          heading at all for anyone navigating by them. The button that used
+          to sit beside it is gone: recording a purchase is the composer's
+          job now, on every page rather than this one. */}
+      <h1 className="sr-only text-title font-semibold text-ink min-[960px]:not-sr-only min-[960px]:pb-4">
+        پاکت‌ها
+      </h1>
 
       {/* One of the two doors to the ledger, now that it has left the tab
           bar. The other is a tap on any envelope. */}
@@ -220,7 +219,7 @@ export function DashboardView({
 
         {isEmpty ? (
           <>
-            <EmptyDashboard onStart={() => setEntryOpen(true)} />
+            <EmptyDashboard onStart={focusComposer} />
             {/* An empty month is exactly when a user goes looking for the
                 pages that are not in the tab bar, so these outlive it. */}
             <ReconcileBanner due={accountsDue} />
@@ -384,16 +383,6 @@ export function DashboardView({
         onOpenChange={setMissedOpen}
       />
 
-      <EntryLauncher
-        currency={currency}
-        categories={categories}
-        accounts={accounts}
-        goals={openGoals}
-        defaultAccountId={defaultAccountId}
-        today={today}
-        open={entryOpen}
-        onOpenChange={setEntryOpen}
-      />
     </div>
   );
 }

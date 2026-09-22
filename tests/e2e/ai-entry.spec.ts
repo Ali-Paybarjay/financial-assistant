@@ -6,9 +6,14 @@ import { ALPHA_EMAIL as EMAIL, PASSWORD } from "./credentials";
  * «۴۵ دلار خرید سوپرمارکت و ۱۲ دلار قهوه» and two transactions with the right
  * categories appear in the confirm card.
  *
- * This spec makes a real model call, so it is deliberately short.
+ * It used to open the floating button and pick the «متن» tab first. Both are
+ * gone: the composer is the text field, on every page, and there is nothing
+ * to open. The second test changed with it — a sentence carrying no number
+ * never reaches the model at all now, because lib/entry/quick-parse.ts stops
+ * it and opens the form instead. See DECISIONS.md.
+ *
+ * The first test makes a real model call, so it is deliberately short.
  */
-
 
 async function login(page: Page) {
   await page.goto("/login");
@@ -19,22 +24,17 @@ async function login(page: Page) {
   await page.waitForURL(/\/($|onboarding)/);
 }
 
-async function openTextTab(page: Page) {
-  await page.getByRole("button", { name: "ثبت هزینه" }).first().click();
-  await page.getByRole("tab", { name: "متن" }).click();
-}
+/** The composer's field, which is in the shell rather than on any one page. */
+const composer = (page: Page) => page.getByLabel("چه خریدی؟");
 
 test("free text becomes two transactions in the confirm card", async ({ page }) => {
   test.setTimeout(90_000);
 
   await login(page);
   await page.goto("/dashboard");
-  await openTextTab(page);
 
-  await page
-    .getByPlaceholder(/امروز ۴۵ دلار/)
-    .fill("امروز ۴۵ دلار خرید از سوپرمارکت و ۱۲ دلار قهوه");
-  await page.getByRole("button", { name: "بخوانش" }).click();
+  await composer(page).fill("امروز ۴۵ دلار خرید از سوپرمارکت و ۱۲ دلار قهوه");
+  await page.getByRole("button", { name: "ثبت", exact: true }).click();
 
   await expect(page.getByText("کارت تأیید")).toBeVisible({ timeout: 45_000 });
 
@@ -53,19 +53,26 @@ test("free text becomes two transactions in the confirm card", async ({ page }) 
   await expect(page.getByText("رستوران و کافه").first()).toBeVisible();
 });
 
-test("a sentence with no amount is refused rather than guessed", async ({ page }) => {
-  test.setTimeout(90_000);
+test("a sentence with no amount never reaches the model", async ({ page }) => {
+  test.setTimeout(60_000);
 
   await login(page);
   await page.goto("/dashboard");
-  await openTextTab(page);
 
-  await page.getByPlaceholder(/امروز ۴۵ دلار/).fill("امروز رفتم خرید کردم");
-  await page.getByRole("button", { name: "بخوانش" }).click();
-
-  // The amount is the one field that is never inferred.
-  await expect(page.getByText(/مبلغی در متن پیدا نکردم/)).toBeVisible({
-    timeout: 45_000,
+  // If anything asks the model to read this, the test fails: the whole point
+  // of the gate is that text with no number in it costs nothing.
+  let asked = false;
+  await page.route("**/api/parse/text", async (route) => {
+    asked = true;
+    await route.abort();
   });
-  await expect(page.getByText("کارت تأیید")).toBeHidden();
+
+  await composer(page).fill("امروز رفتم خرید کردم");
+  await page.getByRole("button", { name: "ثبت", exact: true }).click();
+
+  // The form opens instead, ready for the amount — which is the one field
+  // this app never infers.
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByLabel("مبلغ")).toBeVisible();
+  expect(asked).toBe(false);
 });

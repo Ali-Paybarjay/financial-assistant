@@ -132,7 +132,7 @@ export async function readStatementFile({
   let truncated = chunks.length > MAX_CALLS_PER_FILE;
 
   for (const chunk of chunks.slice(0, MAX_CALLS_PER_FILE)) {
-    const allowance = await remainingCalls(timeZone);
+    const allowance = await remainingCalls(timeZone, "parse_statement");
     if (allowance.remaining <= 0) {
       await logUsage({ userId, feature: "parse_statement", model: MODEL, status: "rejected" });
       // Whatever was read before the ceiling is still worth offering.

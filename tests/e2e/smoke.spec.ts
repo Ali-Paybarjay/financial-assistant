@@ -85,6 +85,7 @@ const SIGNED_IN_ROUTES: Route[] = [
     shows: "ماندهٔ <ماه>",
     landmark: (page) => page.getByText(/ماندهٔ\s/).first(),
   },
+  { path: "/stream", shows: "جریان", landmark: heading("جریان") },
   { path: "/transactions", shows: "تراکنش‌ها", landmark: heading("تراکنش‌ها") },
   { path: "/accounts", shows: "حساب‌ها", landmark: heading("حساب‌ها") },
   {

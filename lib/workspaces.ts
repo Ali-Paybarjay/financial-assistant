@@ -60,6 +60,7 @@ export const WORKSPACES: Record<WorkspaceId, WorkspaceMeta> = {
 const ROUTES: Record<WorkspaceId, readonly string[]> = {
   personal: [
     "/dashboard",
+    "/stream",
     "/transactions",
     "/accounts",
     "/income",
