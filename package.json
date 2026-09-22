@@ -12,6 +12,7 @@
     "verify": "pnpm typecheck && pnpm lint && pnpm check:rtl && pnpm test && pnpm build",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:smoke": "playwright test tests/e2e/smoke.spec.ts",
     "gen:types": "supabase gen types typescript --linked > lib/supabase/database.types.ts"
   },
   "dependencies": {

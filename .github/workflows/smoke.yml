@@ -1,0 +1,150 @@
+# Opens every page of the app in a browser, signed in, and checks it came up.
+#
+# This is the gap `verify` cannot cover. That workflow runs typecheck, lint,
+# check:rtl, unit tests and a build, and not one of them ever loads a page —
+# so a route that compiles and then throws while rendering passes all five.
+# It happened: the hub, the first screen after signing in, shipped its error
+# boundary to a preview deployment with every check green. The reasoning, and
+# what each assertion is for, is at the top of tests/e2e/smoke.spec.ts.
+#
+# Separate from verify.yml on purpose. That one needs no secrets, which is
+# what lets it run on a pull request from a fork and makes it incapable of
+# leaking anything; this one signs in as a real account against the real
+# Supabase project, so it cannot have that property and is kept apart rather
+# than dragging verify down with it.
+#
+# It needs three secrets, and deliberately not the other four this app has:
+# no service-role key, no OpenRouter key, no cron secret. Opening pages needs
+# none of them, and a workflow that holds a credential it does not use is a
+# credential in one more place.
+#
+#   NEXT_PUBLIC_SUPABASE_URL        both are public by design — they reach the
+#   NEXT_PUBLIC_SUPABASE_ANON_KEY   browser — but they are needed at build
+#                                   time, so they are set here too
+#   E2E_PASSWORD                    the fixture accounts' shared password
+#   E2E_EMAIL                       optional; defaults to alpha@testmail.dev
+#
+# Until those exist the job skips itself with a warning rather than failing,
+# so that a fresh clone is not red for a reason nobody can fix from the code.
+# A green tick on a skipped run means nobody opened a page — read the warning.
+#
+# It writes nothing. Read-only navigation is what makes it safe to point at
+# the real project on every pull request.
+
+name: smoke
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # A pull request from a fork is not given the secrets, so the job could
+    # only fail in a way the contributor cannot act on.
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      # An unset secret arrives as "", and "" is not caught by the `??` that
+      # gives this its default in tests/e2e/credentials.ts.
+      E2E_EMAIL: ${{ secrets.E2E_EMAIL || 'alpha@testmail.dev' }}
+      E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+      # Set, so Playwright drives the server started below rather than
+      # starting a dev server of its own.
+      E2E_BASE_URL: http://127.0.0.1:3000
+
+    steps:
+      - name: Are the credentials configured?
+        id: creds
+        run: |
+          missing=""
+          [ -n "$NEXT_PUBLIC_SUPABASE_URL" ] || missing="$missing NEXT_PUBLIC_SUPABASE_URL"
+          [ -n "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ] || missing="$missing NEXT_PUBLIC_SUPABASE_ANON_KEY"
+          [ -n "$E2E_PASSWORD" ] || missing="$missing E2E_PASSWORD"
+
+          if [ -z "$missing" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "ready=false" >> "$GITHUB_OUTPUT"
+          echo "::warning title=Smoke skipped::No page was opened. Missing repository secrets:$missing"
+          {
+            echo "## Smoke skipped — no page was opened"
+            echo
+            echo "Missing repository secrets:$missing"
+            echo
+            echo "Add them under Settings → Secrets and variables → Actions."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/checkout@v4
+        if: steps.creds.outputs.ready == 'true'
+
+      - uses: pnpm/action-setup@v4
+        if: steps.creds.outputs.ready == 'true'
+        with:
+          version: 12.4.2
+
+      - uses: actions/setup-node@v4
+        if: steps.creds.outputs.ready == 'true'
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+        if: steps.creds.outputs.ready == 'true'
+
+      # Chromium only: the suite runs one project, and the other two browsers
+      # are a minute of download each for nothing.
+      - name: Install Chromium
+        if: steps.creds.outputs.ready == 'true'
+        run: pnpm exec playwright install --with-deps chromium
+
+      # A production build, not a dev server. The bug this exists to catch is
+      # about the server/client boundary, and that boundary is drawn
+      # differently in a real build.
+      - name: Build
+        if: steps.creds.outputs.ready == 'true'
+        run: pnpm build
+
+      - name: Start the app
+        if: steps.creds.outputs.ready == 'true'
+        run: |
+          pnpm start > app.log 2>&1 &
+          for _ in $(seq 1 60); do
+            if curl -sf -o /dev/null http://127.0.0.1:3000/login; then
+              echo "the app answered after $SECONDS s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error title=Smoke failed::the app never came up"
+          cat app.log
+          exit 1
+
+      - name: Every page comes up
+        if: steps.creds.outputs.ready == 'true'
+        run: pnpm exec playwright test tests/e2e/smoke.spec.ts
+
+      # The trace is the difference between "a page did not come up" and
+      # knowing which element was missing and what the server said.
+      - name: Keep the traces
+        if: failure() && steps.creds.outputs.ready == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-traces
+          path: |
+            test-results/
+            app.log
+          retention-days: 7
