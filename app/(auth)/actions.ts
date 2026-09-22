@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
@@ -59,9 +60,14 @@ function translateAuthError(message: string): string {
 }
 
 /**
- * Where the links in confirmation and reset emails point. Falls back to the
- * domain Vercel injects, so a deployment cannot silently mail out localhost
- * links because someone forgot to set a variable.
+ * Where the links in **emails** point. Falls back to the domain Vercel
+ * injects, so a deployment cannot silently mail out localhost links because
+ * someone forgot to set a variable.
+ *
+ * Emails only. A confirmation link is opened whenever the person gets round
+ * to it — a different day, often a different device — so it has to name a
+ * durable address rather than whichever deployment happened to send it. The
+ * OAuth round trip is the opposite case and uses `requestOrigin()`.
  */
 function appUrl(path: string): string {
   const explicit = process.env.NEXT_PUBLIC_APP_URL;
@@ -138,11 +144,44 @@ export async function resetPassword(raw: unknown): Promise<ActionResult> {
   redirect("/");
 }
 
+/**
+ * The origin this request actually arrived on.
+ *
+ * Only for the OAuth round trip, which comes back inside the same browsing
+ * session and therefore has to come back to the same site. `appUrl()` is
+ * absolute and always names production, which is right for an email opened
+ * three days from now and wrong here: it means signing in with Google on a
+ * preview deployment silently lands you on production, looking at different
+ * code and wondering why nothing changed.
+ *
+ * Trusting a request header to build a redirect is normally how open
+ * redirects happen. It is safe here, and only here, because the header is not
+ * what decides where the user ends up — Supabase will only send them to a URL
+ * on its own redirect allow-list, and refuses to anything else by falling
+ * back to the configured Site URL. The header can pick among permitted
+ * destinations; it cannot add one. If that allow-list is ever emptied or set
+ * to a wildcard, this stops being safe.
+ */
+async function requestOrigin(): Promise<string | null> {
+  const headerList = await headers();
+  // Vercel sets the x-forwarded pair; `host` covers running it anywhere else.
+  const host = headerList.get("x-forwarded-host") ?? headerList.get("host");
+  if (!host) return null;
+  const protocol =
+    headerList.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  return `${protocol}://${host}`;
+}
+
 export async function signInWithGoogle(): Promise<ActionResult> {
   const supabase = await createClient();
+  const origin = await requestOrigin();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
-    options: { redirectTo: appUrl("/callback") },
+    options: {
+      redirectTo: origin
+        ? new URL("/callback", origin).toString()
+        : appUrl("/callback"),
+    },
   });
 
   if (error) return { error: translateAuthError(error.message) };
