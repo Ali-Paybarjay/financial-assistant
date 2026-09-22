@@ -33,7 +33,7 @@ export function ResetPasswordForm() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-display text-question font-bold text-ink">رمز تازه</h1>
+        <h1 className="font-display text-display-l font-bold text-ink">رمز تازه</h1>
         <p className="mt-1 text-body text-ink-muted">
           یک رمز تازه بگذار تا واردت کنم.
         </p>

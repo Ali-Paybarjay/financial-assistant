@@ -87,7 +87,7 @@ export function MemberSheet({
         </Field>
 
         <label className="flex items-center gap-2.5 rounded-control border border-hairline bg-paper px-3 py-2.5">
-          <input type="checkbox" className="size-4 accent-action" {...register("isMe")} />
+          <input type="checkbox" className="size-4 accent-lapis" {...register("isMe")} />
           <span className="text-caption text-ink">
             این نفر خودم هستم
             <span className="mt-0.5 block text-ink-muted">

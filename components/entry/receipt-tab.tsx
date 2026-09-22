@@ -153,7 +153,7 @@ export function ReceiptTab({
     <div className="flex flex-col gap-3">
       <FormError>{error}</FormError>
 
-      <div className="flex h-[180px] flex-col items-center justify-center gap-2 rounded-well border-2 border-dashed border-hairline-strong/45 bg-paper px-4 text-center">
+      <div className="flex h-[180px] flex-col items-center justify-center gap-2 rounded-card border-2 border-dashed border-hairline-strong bg-paper px-4 text-center">
         <Receipt size={28} className="text-ink-faint" />
         <p className="text-caption text-ink-muted">
           {status ?? "فقط مبلغ کل را برمی‌دارم، نه تک‌تک آیتم‌ها."}

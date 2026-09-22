@@ -50,20 +50,11 @@ export function AppShell({
           </div>
         )}
 
-        {/* A flex column, so a short page's sheet still stretches to the
-            bottom of the viewport on a phone, where it is full-bleed — a sheet
-            that stops halfway reads as a page that failed to finish loading.
-            pb-20 clears the fixed tab bar, and disappears with it: at 960px,
-            and in a workspace that has no bar to clear. */}
+        {/* pb-20 clears the fixed tab bar; it disappears with the bar, both at
+            960px and in a workspace that has no bar to clear. */}
         <main
           className={cn(
-            "flex min-w-0 flex-1 flex-col",
-            // On a phone the page's sheet is full-bleed, so the strip this
-            // padding reserves for the tab bar would otherwise show the paper
-            // ground through the bottom of the sheet. The hub is excluded on
-            // purpose: it has no workspace and no sheet — there the paper IS
-            // the page, and the two choices are what sit on it.
-            workspace && "bg-surface min-[960px]:bg-transparent",
+            "min-w-0 flex-1",
             workspace && hasTabBar(workspace) && "pb-20 min-[960px]:pb-0",
           )}
         >

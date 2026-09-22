@@ -40,107 +40,56 @@
 }
 
 /* ---------------------------------------------------------------------------
-   «دفتر و مداد» — ink and pencil.
-   ---------------------------------------------------------------------------
-   The organising idea, and the thing every rule below serves: this screen is a
-   ledger in which some lines are inked and some are still in pencil.
-
-   The app guesses. You photograph a receipt or say «قهوه پنج دلار» and a model
-   fills the fields in. So every screen carries two kinds of value at once —
-   facts the user put there, and proposals the app made — and the question
-   worth answering at a glance is «what on this screen can I trust».
-
-     solid   = settled. It happened, or the user confirmed it.
-     dashed  = provisional. The model guessed it, or it has not happened yet.
-
-   One grammar, two jobs: the dashed rule under a guessed merchant name and the
-   dashed tail of the month's runway are the same statement. Days nobody has
-   lived yet are no more settled than an amount nobody has checked.
-
-   Colour is semantic, never decorative — the brief's rule, kept strictly:
-
-     action    you can act on this (links, primary buttons, active nav, focus)
-     ink       this is a fact
-     guess     the model proposed this
-     positive  money in / ahead      negative  money out / behind
-
-   Nothing is tinted because a block looked bare. Every pair below was measured
-   against both #ffffff and --color-paper; all text clears WCAG AA.
+   Design tokens. Source of truth: design_handoff_financial_assistant/
+   PLAN-design-tokens.md. Nothing below this block invents a colour.
    --------------------------------------------------------------------------- */
 
 @theme {
   --font-sans: Vazirmatn, system-ui, sans-serif;
   --font-display: Estedad, Vazirmatn, sans-serif;
 
-  /* The sheet content lives on, and the tinted ground it sits over. The ratio
-     between them is deliberately small (1.17:1) — paper marks a boundary, it
-     is not a colour anyone should notice. */
+  --color-paper: #f1f3f6;
   --color-surface: #ffffff;
-  --color-paper: #edecf2;
+  --color-ink: #14181f;
+  --color-ink-muted: #5c6573;
+  --color-ink-faint: #8b93a1;
+  --color-hairline: #e2e6ec;
+  --color-hairline-strong: #c4ccd8;
 
-  /* Iron-gall, not a tinted near-black standing in for black. */
-  --color-ink: #191a2e;
-  --color-ink-muted: #585c74;
-  /* The quietest tier that is still readable as text: 5.47 on the sheet, 4.66
-     on paper. A faint that fails AA is a faint not worth having. */
-  --color-ink-faint: #646881;
+  --color-lapis: #23459b;
+  --color-lapis-pressed: #16307a;
+  --color-lapis-tint: #edf1fa;
 
-  --color-hairline: #e4e3ec;
-  /* 3.27:1 against the sheet, so the edge of an input is a boundary a
-     low-vision user can actually find (WCAG 1.4.11). The old #c4ccd8 was
-     1.7:1 and effectively invisible. */
-  --color-hairline-strong: #8a89a1;
+  --color-positive: #0e6b4f;
+  --color-positive-tint: #e7f2ee;
+  --color-negative: #ad2e24;
+  --color-negative-tint: #fbebe9;
 
-  /* نیل — Persian indigo. Deliberately not the royal blue every finance app
-     reaches for: darker, violet-cast, and it reads as ink, which is the whole
-     idea. Far enough from positive-green and guess-ochre to stay distinct for
-     a colour-blind reader. */
-  --color-action: #302c73;
-  --color-action-pressed: #221e57;
-  --color-action-tint: #ecebf6;
+  --color-guess: #8a5a00;
+  --color-guess-text: #6e4700;
+  --color-guess-tint: #fdf4de;
+  --color-guess-border: #efdfb4;
 
-  --color-positive: #0f6b44;
-  --color-positive-tint: #e6f2ec;
-  --color-negative: #a62a21;
-  --color-negative-tint: #fbeae8;
-
-  /* Pencil. Warm ochre, because a guess must not be mistaken for either gain
-     or loss — it is not bad news, it is unfinished news. */
-  --color-guess: #8c5b14;
-  --color-guess-text: #6f4810;
-  --color-guess-tint: #fbf3e2;
-  --color-guess-border: #e6d3ad;
-
-  /* Radius says what kind of thing something is. Surfaces that lift off the
-     page: 16. Things you press or type into: 10. Inset wells: 12. Content that
-     merely sits on the sheet gets none, because it is not an object. */
-  --radius-card: 16px;
+  --radius-card: 14px;
   --radius-control: 10px;
-  --radius-well: 12px;
 
-  /* One shadow, for the few things that genuinely float above the sheet. */
-  --shadow-lift: 0 1px 2px rgb(25 26 46 / 0.05), 0 12px 28px -18px rgb(25 26 46 / 0.35);
-  --shadow-fab: 0 10px 26px -12px rgb(48 44 115 / 0.75);
+  --shadow-float: 0 1px 2px rgb(20 24 31 / 0.04), 0 8px 24px -14px rgb(20 24 31 / 0.16);
+  --shadow-fab: 0 8px 24px -10px rgb(35 69 155 / 0.7);
 
-  /* Two voices. Vazirmatn reports; Estedad speaks — and Estedad is allowed on
-     screen at most twice: the one figure that answers the page's question, and
-     the one line that asks it. */
-  --text-figure-lg: 22px;
-  --text-figure-lg--line-height: 26px;
-  --text-figure-md: 16px;
-  --text-figure-md--line-height: 20px;
-  --text-question: 26px;
-  --text-question--line-height: 34px;
+  --text-display-xl: 40px;
+  --text-display-xl--line-height: 44px;
+  --text-display-l: 28px;
+  --text-display-l--line-height: 34px;
+  --text-num-l: 24px;
+  --text-num-l--line-height: 28px;
   --text-title: 19px;
   --text-title--line-height: 26px;
-  --text-section: 15px;
-  --text-section--line-height: 22px;
   --text-body: 15px;
   --text-body--line-height: 24px;
   --text-label: 13px;
   --text-label--line-height: 18px;
   --text-caption: 12px;
-  --text-caption--line-height: 17px;
+  --text-caption--line-height: 16px;
   --text-micro: 11px;
   --text-micro--line-height: 14px;
 }
@@ -159,39 +108,37 @@
   --card-foreground: var(--color-ink);
   --popover: var(--color-surface);
   --popover-foreground: var(--color-ink);
-  --primary: var(--color-action);
+  --primary: var(--color-lapis);
   --primary-foreground: #ffffff;
-  --secondary: var(--color-action-tint);
-  --secondary-foreground: var(--color-action);
+  --secondary: var(--color-lapis-tint);
+  --secondary-foreground: var(--color-lapis);
   --muted: var(--color-paper);
   --muted-foreground: var(--color-ink-muted);
-  --accent: var(--color-action-tint);
-  --accent-foreground: var(--color-action);
+  --accent: var(--color-lapis-tint);
+  --accent-foreground: var(--color-lapis);
   --destructive: var(--color-negative);
   --border: var(--color-hairline);
   --input: var(--color-hairline-strong);
-  --ring: var(--color-action);
+  --ring: var(--color-lapis);
 
-  /* One hue, stepped by lightness, so a chart's order survives greyscale and
-     colour-blindness. A rainbow would imply the categories differ in kind. */
-  --chart-1: #302c73;
-  --chart-2: #474391;
-  --chart-3: #6461ab;
-  --chart-4: #8886c5;
-  --chart-5: #b3b1dd;
+  --chart-1: #23459b;
+  --chart-2: #3e5cb2;
+  --chart-3: #6280c8;
+  --chart-4: #93a8dc;
+  --chart-5: #c2cdeb;
   /* The "سایر" bucket. Grey, so it never reads as a real category. */
-  --chart-other: #c9c8d3;
+  --chart-other: #c9cdd4;
 
   --radius: 10px;
 
   --sidebar: var(--color-surface);
   --sidebar-foreground: var(--color-ink);
-  --sidebar-primary: var(--color-action);
+  --sidebar-primary: var(--color-lapis);
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: var(--color-action-tint);
-  --sidebar-accent-foreground: var(--color-action);
+  --sidebar-accent: var(--color-lapis-tint);
+  --sidebar-accent-foreground: var(--color-lapis);
   --sidebar-border: var(--color-hairline);
-  --sidebar-ring: var(--color-action);
+  --sidebar-ring: var(--color-lapis);
 }
 
 @theme inline {
@@ -250,82 +197,20 @@
     line-height: var(--text-body--line-height);
     -webkit-font-smoothing: antialiased;
   }
-
-  /* So a number typed into a field lines up with the same number rendered
-     beside it — see <Money>, which owns every figure the product displays. */
-  input,
-  textarea,
-  select {
-    font-family: inherit;
-  }
 }
 
-/* Inside @layer base on purpose. Outside a layer these would outrank every
-   Tailwind utility, so a control that draws its own focus state — the amount
-   field, whose whole border and ring light up — got this ring drawn inside it
-   as well, and "outline-none" could not turn it off. In the base layer the
-   utilities win, and anything that does not opt out still gets a ring. */
-@layer base {
-  :focus-visible {
-    outline: 2px solid var(--color-action);
-    outline-offset: 2px;
-  }
-
-  ::selection {
-    background: #d9d7ee;
-  }
+:focus-visible {
+  outline: 2px solid var(--color-lapis);
+  outline-offset: 2px;
 }
 
-/* ---------------------------------------------------------------------------
-   The rule grammar. Solid means settled, dashed means not yet — see the note
-   at the top of this file. Utilities rather than one-off classes, because the
-   same two states appear on a field, a row, a total and a month.
-   --------------------------------------------------------------------------- */
-
-/* A value the model produced that nobody has checked. The word «حدس زدم» is
-   always rendered alongside, so colour is never the only carrier. */
-.rule-guess {
-  border-bottom: 2px dashed var(--color-guess);
-  padding-bottom: 2px;
+::selection {
+  background: #d6e0f5;
 }
 
-/* The same value once the user has accepted it. */
-.rule-settled {
-  border-bottom: 2px solid var(--color-ink);
-  padding-bottom: 2px;
-}
-
-/* The month as a runway: the part already lived is inked, the part still to
-   come is in pencil. The dashes are painted rather than bordered so the
-   remaining segment can flex to whatever is left of the month.
-
-   The flex row inherits the document's RTL direction, so the lived days start
-   at the right — where a Persian reader starts — and the month runs out
-   towards the left. */
-.runway {
-  display: flex;
-  height: 3px;
-  align-items: stretch;
-  gap: 3px;
-}
-
-.runway-gone {
-  border-radius: 2px;
-  background: var(--color-ink);
-}
-
-.runway-left {
-  flex: 1;
-  border-radius: 2px;
-  background: repeating-linear-gradient(
-    to left,
-    var(--color-ink-faint) 0 3px,
-    transparent 3px 7px
-  );
-}
-
-/* Plays once, when a guess is accepted — the only motion in the product that
-   is not answering a tap. */
+/* The signature element: a 2px rule under any model-produced value.
+   Dashed brass = guessed, solid ink = confirmed. The settle animation runs
+   once when a guess is accepted. */
 @keyframes confidence-settle {
   from {
     opacity: 0;

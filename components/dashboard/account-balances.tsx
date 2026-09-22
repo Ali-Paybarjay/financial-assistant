@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Plus } from "@phosphor-icons/react/dist/ssr";
+import { CaretLeft, Plus, Wallet } from "@phosphor-icons/react/dist/ssr";
 import { Button } from "@/components/ui/button";
 import { Money } from "@/components/money";
-import { Rows, Section, Well } from "@/components/page";
 import { faNumber } from "@/lib/format";
 import type { CurrencyCode } from "@/lib/money";
 import type { AccountWithBalance } from "@/lib/accounts";
@@ -12,7 +11,7 @@ import type { AccountWithBalance } from "@/lib/accounts";
 /**
  * What the accounts hold, on the dashboard.
  *
- * Deliberately separate from the month's figures: those answer "how did this
+ * Deliberately separate from the month's KPI cards: those answer "how did this
  * month go", and this answers "how much is there". A month can be in surplus
  * while the account is empty, and putting the two numbers in one row would
  * invite them to be read as one.
@@ -27,34 +26,34 @@ export function AccountBalances({
   currency: CurrencyCode;
 }) {
   const open = accounts.filter((account) => account.is_active);
-  // Not null. Hiding this when there is nothing in it also hides the only
+  // Not null. Hiding the card when there is nothing in it also hides the only
   // route to the accounts page a phone has — at exactly the moment the user
   // would be going there to add their first account.
   if (open.length === 0) return <AccountsInvitation />;
 
   return (
-    <Section
-      title="موجودی حساب‌ها"
-      action={
-        <Link href="/accounts" className="text-caption font-medium text-action">
-          همه
-        </Link>
-      }
-    >
-      <div className="flex items-baseline justify-between gap-2 pb-2.5">
-        <span className="text-caption text-ink-muted">
-          {faNumber(open.length)} حساب باز
+    <section className="overflow-hidden rounded-card border border-hairline bg-surface">
+      <Link
+        href="/accounts"
+        className="flex items-center justify-between gap-2 p-4 pb-2.5 hover:bg-paper"
+      >
+        <span className="flex items-center gap-2">
+          <Wallet size={18} className="text-lapis" />
+          <h2 className="text-[15px] font-semibold text-ink">موجودی حساب‌ها</h2>
         </span>
-        <Money minor={total} currency={currency} size="kpi" tone="auto" />
-      </div>
+        <span className="flex items-center gap-1.5">
+          <Money minor={total} currency={currency} size="kpi" tone="auto" />
+          <CaretLeft size={14} className="text-ink-faint" />
+        </span>
+      </Link>
 
-      {/* Only the first three, so the dashboard keeps its shape whether the
-          user has one account or nine; the page itself has the rest. */}
-      <Rows>
+      {/* Only past two, so the dashboard keeps its shape whether the user has
+          one account or nine; the page itself has the rest. */}
+      <ul className="px-4 pb-3">
         {open.slice(0, 3).map((account) => (
-          <div
+          <li
             key={account.id}
-            className="flex items-baseline justify-between gap-2 py-2"
+            className="flex items-baseline justify-between gap-2 border-t border-hairline py-2 first:border-t-0"
           >
             <span className="truncate text-caption text-ink-muted">{account.title}</span>
             <Money
@@ -67,34 +66,38 @@ export function AccountBalances({
                   : "text-[13px] font-medium text-ink"
               }
             />
-          </div>
+          </li>
         ))}
         {open.length > 3 && (
-          <div className="py-2 text-caption text-ink-muted">
+          <li className="border-t border-hairline pt-2 text-caption text-ink-muted">
             و {faNumber(open.length - 3)} حساب دیگر
-          </div>
+          </li>
         )}
-      </Rows>
-    </Section>
+      </ul>
+    </section>
   );
 }
 
-/** What this is before the first account exists. */
+/** What the card is before the first account exists. */
 function AccountsInvitation() {
   return (
-    <Section title="حساب‌ها">
-      <Well className="flex flex-col items-start gap-3">
-        <p className="max-w-[52ch] text-body text-ink-muted">
-          موجودی هر حساب را یک‌بار بنویس؛ از آن به بعد هر خرج و درآمدی که به آن حساب
-          بزنی، خودش کم و زیادش می‌کند.
-        </p>
-        <Button asChild variant="outline">
-          <Link href="/accounts">
-            <Plus size={18} />
-            افزودن اولین حساب
-          </Link>
-        </Button>
-      </Well>
-    </Section>
+    <section className="rounded-card border border-hairline bg-surface p-5">
+      <span className="flex size-11 items-center justify-center rounded-full bg-lapis-tint text-lapis">
+        <Wallet size={22} />
+      </span>
+
+      <h2 className="mt-3 text-[17px] font-semibold text-ink">حساب‌ها</h2>
+      <p className="mt-1.5 text-body text-ink-muted">
+        موجودی هر حساب را یک‌بار بنویس؛ از آن به بعد هر خرج و درآمدی که به آن حساب
+        بزنی، خودش کم و زیادش می‌کند.
+      </p>
+
+      <Button asChild size="lg" variant="outline" className="mt-4 w-full">
+        <Link href="/accounts">
+          <Plus size={18} />
+          افزودن اولین حساب
+        </Link>
+      </Button>
+    </section>
   );
 }

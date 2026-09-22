@@ -100,7 +100,7 @@ export function Step3({
                     dueDay: suggestion.dueDay,
                   })
                 }
-                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-hairline-strong bg-surface px-3.5 text-[13px] text-ink transition-colors hover:border-action hover:bg-action-tint hover:text-action"
+                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-hairline-strong bg-surface px-3.5 text-[13px] text-ink transition-colors hover:border-lapis hover:bg-lapis-tint hover:text-lapis"
               >
                 <Plus size={14} />
                 {suggestion.title}
@@ -110,7 +110,7 @@ export function Step3({
 
           <div className="flex flex-col gap-3">
             {fields.length === 0 && (
-              <p className="rounded-well border border-dashed border-hairline-strong/45 bg-paper p-4 text-caption text-ink-muted">
+              <p className="rounded-card border border-dashed border-hairline-strong bg-paper p-4 text-caption text-ink-muted">
                 یکی از چیپ‌های بالا را بزن، یا ردیف دلخواه اضافه کن.
               </p>
             )}
@@ -118,7 +118,7 @@ export function Step3({
             {fields.map((field, index) => (
               <div
                 key={field.id}
-                className="flex flex-col gap-2 rounded-well bg-paper p-3"
+                className="flex flex-col gap-2 rounded-card border border-hairline bg-paper p-3"
               >
                 <div className="flex items-center gap-2">
                   <Input

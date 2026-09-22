@@ -73,7 +73,7 @@ export function AccountRowItem({
         onClick={onEdit}
         className="flex min-w-0 flex-1 items-center gap-3 text-start"
       >
-      <span className="flex size-[34px] shrink-0 items-center justify-center text-ink-faint">
+      <span className="flex size-[34px] shrink-0 items-center justify-center rounded-control bg-lapis-tint text-lapis">
         <KindIcon size={18} />
       </span>
 
@@ -83,9 +83,7 @@ export function AccountRowItem({
             {account.title}
           </span>
           {account.is_default && (
-            // A state, not an action: it says which account the app reaches
-            // for, and nothing here is pressable in the action colour's sense.
-            <span className="shrink-0 rounded-full bg-paper px-1.5 py-0.5 text-[11px] font-medium text-ink-muted">
+            <span className="shrink-0 rounded-full bg-lapis-tint px-1.5 py-0.5 text-[11px] font-medium text-lapis">
               پیش‌فرض
             </span>
           )}
@@ -122,8 +120,8 @@ export function AccountRowItem({
           className={cn(
             "flex size-9 shrink-0 items-center justify-center rounded-control border transition-colors",
             reconcile.due
-              ? "border-action bg-action text-white hover:bg-action/90"
-              : "border-hairline-strong bg-surface text-ink-muted hover:border-action hover:text-action",
+              ? "border-lapis bg-lapis text-white hover:bg-lapis/90"
+              : "border-hairline-strong bg-surface text-ink-muted hover:border-lapis hover:text-lapis",
           )}
         >
           <ArrowClockwise size={17} />

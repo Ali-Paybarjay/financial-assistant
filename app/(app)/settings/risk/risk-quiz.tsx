@@ -29,7 +29,7 @@ export function RiskQuiz() {
         <Link
           href="/settings"
           aria-label="بازگشت به تنظیمات"
-          className="flex size-10 items-center justify-center rounded-control text-ink-muted hover:bg-action-tint hover:text-action"
+          className="flex size-10 items-center justify-center rounded-control text-ink-muted hover:bg-lapis-tint hover:text-lapis"
         >
           <CaretRight size={20} />
         </Link>
@@ -38,10 +38,10 @@ export function RiskQuiz() {
         </span>
       </header>
 
-      <p className="mt-6 text-caption font-semibold tracking-[0.1em] text-action">
+      <p className="mt-6 text-caption font-semibold tracking-[0.1em] text-lapis">
         ریسک‌پذیری
       </p>
-      <h1 className="mt-2 font-display text-question font-bold text-pretty text-ink">
+      <h1 className="mt-2 font-display text-display-l font-bold text-pretty text-ink">
         {question.prompt}
       </h1>
       <p className="mt-2 text-body text-ink-muted">

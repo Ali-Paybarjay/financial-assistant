@@ -21,7 +21,6 @@ import {
   Warning,
   WarningCircle,
 } from "@phosphor-icons/react/dist/ssr";
-import { PageSheet } from "@/components/page";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { useIsGuest } from "@/components/guest/guest-provider";
 import { GuestSignOutSheet, useSignOut } from "@/components/sign-out";
@@ -73,7 +72,7 @@ export function SettingsView({
     .join(" · ");
 
   return (
-    <PageSheet className="px-4 py-4 min-[960px]:px-7 min-[960px]:py-6">
+    <div className="mx-auto w-full max-w-[560px] px-4 py-4">
       <h1 className="mb-4 text-title font-semibold text-ink">تنظیمات</h1>
 
       <GuestCard />
@@ -81,9 +80,9 @@ export function SettingsView({
       <button
         type="button"
         onClick={() => setSheet("profile")}
-        className="flex w-full items-center gap-3 rounded-well bg-paper p-4 text-start hover:border-hairline-strong"
+        className="flex w-full items-center gap-3 rounded-card border border-hairline bg-surface p-4 text-start hover:border-hairline-strong"
       >
-        <span className="flex size-12 items-center justify-center rounded-full bg-action-tint text-[18px] font-semibold text-action">
+        <span className="flex size-12 items-center justify-center rounded-full bg-lapis-tint text-[18px] font-semibold text-lapis">
           {(profile.full_name ?? "؟").trim().charAt(0)}
         </span>
         <span className="flex min-w-0 flex-1 flex-col">
@@ -130,7 +129,7 @@ export function SettingsView({
 
       <Group title="حساب">
         <div className="flex h-14 items-center gap-3 px-4">
-          <UserCircle size={20} className="text-ink-faint" />
+          <UserCircle size={20} className="text-lapis" />
           <span className="flex-1 text-[14px] text-ink">ایمیل</span>
           <span dir="ltr" className="truncate text-caption text-ink-muted">
             {isGuest ? "—" : email}
@@ -177,7 +176,7 @@ export function SettingsView({
         onClose={() => setSheet(null)}
         name={profile.full_name ?? ""}
       />
-    </PageSheet>
+    </div>
   );
 }
 
@@ -185,7 +184,7 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
   return (
     <>
       <h2 className="mb-1.5 mt-5 text-caption font-semibold text-ink-muted">{title}</h2>
-      <div className="divide-y divide-hairline overflow-hidden">
+      <div className="divide-y divide-hairline overflow-hidden rounded-card border border-hairline bg-surface">
         {children}
       </div>
     </>
@@ -207,7 +206,7 @@ function Row({
 }) {
   const body = (
     <>
-      <span className="text-ink-faint">{icon}</span>
+      <span className="text-lapis">{icon}</span>
       <span className="flex-1 text-[14px] text-ink">{label}</span>
       {value && <span className="text-caption text-ink-muted">{value}</span>}
       <CaretLeft size={16} className="text-ink-faint" />
@@ -237,7 +236,7 @@ function RiskRow({ label }: { label: string }) {
       onClick={() => startTransition(() => resetRiskAnswers())}
       className="flex h-14 w-full items-center gap-3 px-4 text-start hover:bg-paper disabled:opacity-50"
     >
-      <Target size={20} className="text-ink-faint" />
+      <Target size={20} className="text-lapis" />
       <span className="flex-1 text-[14px] text-ink">
         {isPending ? "دارم آماده می‌کنم…" : "پاسخ دوباره به سؤال‌های ریسک"}
       </span>
@@ -258,7 +257,7 @@ function GuestCard() {
   if (!isGuest) return null;
 
   return (
-    <div className="mb-4 rounded-well bg-guess-tint p-4">
+    <div className="mb-4 rounded-card border border-guess-border bg-guess-tint p-4">
       <div className="flex items-center gap-2">
         <Warning size={18} weight="fill" className="shrink-0 text-guess" />
         <h2 className="text-[15px] font-semibold text-ink">حساب مهمان</h2>

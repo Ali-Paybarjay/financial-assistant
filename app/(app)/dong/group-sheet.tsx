@@ -168,7 +168,7 @@ export function GroupSheet({
         </div>
 
         {locked && (
-          <p className="rounded-well border border-dashed border-hairline-strong/45 bg-paper px-3 py-2.5 text-caption text-ink-muted">
+          <p className="rounded-control border border-dashed border-hairline-strong bg-paper px-3 py-2.5 text-caption text-ink-muted">
             واحد پول بعد از اولین ثبت قفل می‌شود: عوض‌کردنش مبلغ‌های ثبت‌شده را
             بی‌آنکه دست بخورند، معنای دیگری می‌داد.
           </p>
@@ -187,7 +187,7 @@ export function GroupSheet({
         />
 
         {usable.length === 0 && accounts.length > 0 && (
-          <p className="rounded-well border border-dashed border-hairline-strong/45 bg-paper px-3 py-2.5 text-caption text-ink-muted">
+          <p className="rounded-control border border-dashed border-hairline-strong bg-paper px-3 py-2.5 text-caption text-ink-muted">
             هیچ حسابی به {currency} نداری، پس این دوره به حسابداری
             شخصی وصل نمی‌شود. این اپ نرخ تبدیل ندارد و نمی‌خواهد از خودش درآورد.
           </p>

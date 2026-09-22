@@ -47,8 +47,10 @@ export function ConfidenceValue({
       <span
         aria-describedby={isGuess && label ? noteId : undefined}
         className={cn(
-          "w-fit font-medium",
-          isGuess ? "rule-guess text-guess-text" : "rule-settled text-ink",
+          "w-fit border-b-2 pb-[2px] font-medium",
+          isGuess
+            ? "border-dashed border-guess text-guess-text"
+            : "border-solid border-ink text-ink",
           justConfirmed && !isGuess && "confidence-settle",
         )}
       >

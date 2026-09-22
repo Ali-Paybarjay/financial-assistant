@@ -67,7 +67,7 @@ export function ConfirmCard({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="overflow-hidden">
+      <div className="overflow-hidden rounded-card border border-hairline">
         <div className="flex items-baseline justify-between gap-2 bg-paper px-3 py-2.5">
           <span className="text-caption font-semibold text-ink">کارت تأیید</span>
           <span className="text-caption text-ink-muted">
