@@ -158,6 +158,35 @@ export type GoalProgressRow = {
   saved: number;
 };
 
+/**
+ * A ceiling on one category, from one month onwards. There is no row per
+ * month: the ceiling that applies to any month is the newest row whose
+ * effective_from is not after it. See migration 0019.
+ */
+export type CategoryBudgetRow = {
+  id: string;
+  user_id: string;
+  category_id: string;
+  amount_minor: number;
+  currency: string;
+  /** Always a month start, YYYY-MM-01. */
+  effective_from: string;
+  created_at: string;
+};
+
+/** One row of envelope_status(). Derived on read, never stored. */
+export type EnvelopeStatusRow = {
+  category_id: string;
+  name_fa: string;
+  /** null = no ceiling set for this month. */
+  budget_minor: number | null;
+  spent_minor: number;
+  /** null without a ceiling; negative once the ceiling is passed. */
+  remaining_minor: number | null;
+  /** How much of spent_minor is still an unconfirmed guess. */
+  unconfirmed_minor: number;
+};
+
 export type IncomeSourceRow = {
   id: string;
   user_id: string;
@@ -488,6 +517,7 @@ export type Database = {
       dong_expenses: Table<DongExpenseRow, "split_mode">;
       dong_expense_shares: Table<DongExpenseShareRow, "units">;
       dong_payments: Table<DongPaymentRow, "kind">;
+      category_budgets: Table<CategoryBudgetRow>;
     };
     Views: Record<never, never>;
     Functions: {
@@ -507,6 +537,11 @@ export type Database = {
       goal_progress: {
         Args: Record<never, never>;
         Returns: GoalProgressRow[];
+      };
+      /** Both bounds inclusive, and both are the user's month, never UTC's. */
+      envelope_status: {
+        Args: { p_month_start: string; p_month_end: string };
+        Returns: EnvelopeStatusRow[];
       };
       dong_balances: {
         Args: { p_group_id: string };
