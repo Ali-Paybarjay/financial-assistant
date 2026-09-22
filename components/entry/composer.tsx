@@ -60,6 +60,7 @@ export function Composer({
   const [text, setText] = useState("");
   const [sheet, setSheet] = useState<SheetState>(null);
   const [error, setError] = useState<string>();
+  const [isDropping, setIsDropping] = useState(false);
   const [isReading, startReading] = useTransition();
 
   function submit() {
@@ -103,8 +104,37 @@ export function Composer({
   return (
     <>
       {/* Fixed on a phone; from 960px it sits in the flow above the board,
-          where there is room for it and nothing to cover. */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-hairline bg-surface pb-[env(safe-area-inset-bottom)] min-[960px]:static min-[960px]:z-auto min-[960px]:rounded-card min-[960px]:border">
+          where there is room for it and nothing to cover — and where a
+          receipt can be dropped onto it, which is how a scan arrives on a
+          desktop. A phone has no drag and drop and has the camera button
+          instead, so the handlers cost it nothing. */}
+      <div
+        onDragOver={(event) => {
+          if (!event.dataTransfer.types.includes("Files")) return;
+          event.preventDefault();
+          setIsDropping(true);
+        }}
+        onDragLeave={() => setIsDropping(false)}
+        onDrop={(event) => {
+          const file = event.dataTransfer.files?.[0];
+          setIsDropping(false);
+          if (!file) return;
+          event.preventDefault();
+          // Anything else dropped here is a mistake worth naming rather than
+          // an upload worth attempting.
+          if (!file.type.startsWith("image/")) {
+            setError("این را نخواندم — عکس فاکتور بده.");
+            return;
+          }
+          setError(undefined);
+          setSheet({ kind: "receipt", file });
+        }}
+        className={cn(
+          "fixed inset-x-0 bottom-0 z-30 border-t border-hairline bg-surface pb-[env(safe-area-inset-bottom)] transition-colors",
+          "min-[960px]:static min-[960px]:z-auto min-[960px]:rounded-card min-[960px]:border",
+          isDropping && "min-[960px]:border-lapis min-[960px]:bg-lapis-tint",
+        )}
+      >
         <div className="mx-auto flex max-w-[560px] items-center gap-2 px-4 py-2.5 min-[960px]:max-w-none min-[960px]:px-3">
           <button
             type="button"

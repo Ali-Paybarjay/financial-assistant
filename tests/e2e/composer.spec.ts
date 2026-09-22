@@ -92,3 +92,49 @@ test("the trip side has no bar that would write to the personal ledger", async (
   await page.waitForLoadState("networkidle");
   await expect(page.locator("#composer-text")).toHaveCount(0);
 });
+
+/**
+ * Dropping on the bar, which is how a receipt arrives on a desktop.
+ *
+ * Its own viewport, because this is the width where the bar sits in the flow
+ * with room around it rather than pinned to the bottom edge of a phone.
+ *
+ * Only the refusal is asserted here. Dropping a real image would compress it,
+ * upload it to storage and spend a model call, and that whole path already
+ * has receipt.spec.ts; what is untested without this is the branch that
+ * decides a dropped thing is not a receipt at all — which is the one that
+ * fails silently, by opening a sheet that then cannot read anything.
+ */
+test.describe("dropping on the composer", () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test("a dropped file that is not an image is refused, not uploaded", async ({
+    page,
+  }) => {
+    test.setTimeout(90_000);
+    await login(page);
+    await page.goto("/dashboard");
+    await expect(page.locator("#composer-text")).toBeVisible();
+
+    await dropFile(page, "notes.txt", "text/plain");
+
+    await expect(page.getByText("عکس فاکتور بده")).toBeVisible();
+    await expect(page.getByRole("dialog")).toBeHidden();
+  });
+});
+
+/** Drops one synthetic file onto the composer, through a real DataTransfer. */
+async function dropFile(page: Page, name: string, type: string) {
+  await page.evaluate(
+    ({ name, type }) => {
+      const bar = document.getElementById("composer-text")?.closest(".fixed");
+      if (!bar) throw new Error("composer not found");
+      const data = new DataTransfer();
+      data.items.add(new File(["x"], name, { type }));
+      bar.dispatchEvent(
+        new DragEvent("drop", { dataTransfer: data, bubbles: true, cancelable: true }),
+      );
+    },
+    { name, type },
+  );
+}
