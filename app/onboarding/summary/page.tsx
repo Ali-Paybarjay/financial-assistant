@@ -45,7 +45,7 @@ export default async function SummaryPage() {
         <ExitButton />
       </header>
 
-      <h1 className="mt-6 font-display text-display-l font-bold text-ink">
+      <h1 className="mt-6 font-display text-question font-bold text-ink">
         این تصویر مالی توست
       </h1>
       <p className="mt-2 text-body text-ink-muted">
@@ -86,7 +86,7 @@ export default async function SummaryPage() {
       {(riskLabel || (goals && goals.length > 0)) && (
         <div className="mt-6 flex flex-wrap gap-2">
           {riskLabel && (
-            <span className="inline-flex h-8 items-center rounded-full bg-lapis-tint px-3 text-caption font-medium text-lapis">
+            <span className="inline-flex h-8 items-center rounded-full bg-action-tint px-3 text-caption font-medium text-action">
               ریسک‌پذیری: {riskLabel}
             </span>
           )}
@@ -116,7 +116,7 @@ function SummaryRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-card border border-hairline bg-paper px-4 py-3.5">
+    <div className="flex items-center justify-between rounded-well bg-paper px-4 py-3.5">
       <span className="text-label text-ink-muted">{label}</span>
       {children}
     </div>

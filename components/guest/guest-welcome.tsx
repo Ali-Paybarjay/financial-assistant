@@ -51,7 +51,7 @@ export function GuestWelcome() {
             upgrade is an update to this same user, so nothing they type before
             it is thrown away. If that were not true, asking them to sign up
             later would be asking them to start over. */}
-        <p className="rounded-card bg-lapis-tint px-3 py-2.5 text-caption text-lapis">
+        <p className="rounded-well bg-action-tint px-3 py-2.5 text-caption text-action">
           هر وقت خواستی اطلاعاتت بماند، حساب بساز — هر چیزی که تا آن لحظه وارد
           کرده‌ای سر جایش می‌ماند.
         </p>

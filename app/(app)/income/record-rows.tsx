@@ -45,7 +45,7 @@ function ActiveToggle({
       onClick={() => startTransition(async () => void (await setRecordActive(table, id, !isActive)))}
       className={cn(
         "relative h-[22px] w-10 shrink-0 rounded-full transition-colors disabled:opacity-50",
-        isActive ? "bg-lapis" : "bg-hairline-strong",
+        isActive ? "bg-action" : "bg-hairline-strong",
       )}
     >
       <span
@@ -84,7 +84,7 @@ function RowShell({
         !isActive && "opacity-55",
       )}
     >
-      <span className="flex size-[34px] shrink-0 items-center justify-center rounded-control bg-lapis-tint text-lapis">
+      <span className="flex size-[34px] shrink-0 items-center justify-center text-ink-faint">
         {icon}
       </span>
 

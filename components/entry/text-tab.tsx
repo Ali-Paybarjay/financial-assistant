@@ -119,13 +119,13 @@ export function TextTab({
         rows={4}
         autoFocus
         placeholder="مثلاً: امروز ۴۵ دلار خرید از سوپرمارکت و ۱۲ دلار قهوه"
-        className="w-full resize-none rounded-control border border-hairline-strong bg-surface p-3 text-[16px] text-ink outline-none transition-colors placeholder:text-ink-faint focus-visible:border-lapis focus-visible:ring-2 focus-visible:ring-lapis/20"
+        className="w-full resize-none rounded-control border border-hairline-strong bg-surface p-3 text-[16px] text-ink outline-none transition-colors placeholder:text-ink-faint focus-visible:border-action focus-visible:ring-2 focus-visible:ring-action/20"
       />
 
       {/* Dictation is the "voice" method: every phone already has it, it needs
           no account, and the text lands editable instead of behind a transcript. */}
       <p className="flex items-center gap-1.5 text-caption text-ink-muted">
-        <Microphone size={14} className="shrink-0 text-lapis" />
+        <Microphone size={14} className="shrink-0 text-ink-faint" />
         به‌جای تایپ می‌توانی میکروفون کیبوردت را بزنی و بگویی.
       </p>
 

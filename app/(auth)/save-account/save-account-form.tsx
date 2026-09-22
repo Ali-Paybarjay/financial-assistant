@@ -43,10 +43,10 @@ export function SaveAccountForm() {
   if (sentTo) {
     return (
       <div className="flex flex-col gap-4">
-        <div className="flex size-12 items-center justify-center rounded-full bg-lapis-tint">
-          <EnvelopeSimple size={24} className="text-lapis" />
+        <div className="flex size-12 items-center justify-center rounded-full bg-action-tint">
+          <EnvelopeSimple size={24} className="text-ink" />
         </div>
-        <h1 className="font-display text-display-l font-bold text-ink">ایمیلت را باز کن</h1>
+        <h1 className="font-display text-question font-bold text-ink">ایمیلت را باز کن</h1>
         <p className="text-body text-ink-muted">
           یک لینک تأیید به{" "}
           <span dir="ltr" className="font-medium text-ink">
@@ -72,7 +72,7 @@ export function SaveAccountForm() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-display text-display-l font-bold text-ink">
+        <h1 className="font-display text-question font-bold text-ink">
           اطلاعاتت را نگه دار
         </h1>
         <p className="mt-1 text-body text-ink-muted">
@@ -80,7 +80,7 @@ export function SaveAccountForm() {
         </p>
       </div>
 
-      <p className="flex items-start gap-2 rounded-card bg-positive-tint px-3 py-2.5 text-caption text-positive">
+      <p className="flex items-start gap-2 rounded-well bg-positive-tint px-3 py-2.5 text-caption text-positive">
         <ShieldCheck size={16} weight="fill" className="mt-0.5 shrink-0" />
         هر چیزی که تا اینجا وارد کرده‌ای — تراکنش‌ها، حساب‌ها، هدف‌ها و دنگ‌ها —
         همین‌جا می‌ماند. چیزی از نو شروع نمی‌شود.
@@ -132,7 +132,7 @@ export function SaveAccountForm() {
 
       <Link
         href="/"
-        className="flex items-center justify-center gap-1 text-caption text-ink-muted hover:text-lapis"
+        className="flex items-center justify-center gap-1 text-caption text-ink-muted hover:text-action"
       >
         <CaretRight size={14} />
         فعلاً نه، برگرد به نرم‌افزار

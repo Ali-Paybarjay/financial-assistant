@@ -15,6 +15,7 @@ import {
   Users,
   Vault,
 } from "@phosphor-icons/react/dist/ssr";
+import { PageSheet } from "@/components/page";
 import { Button } from "@/components/ui/button";
 import { Money } from "@/components/money";
 import { SegmentedControl } from "@/components/segmented-control";
@@ -145,13 +146,13 @@ export function GroupView({
   }
 
   return (
-    <div className="mx-auto w-full max-w-[560px] px-4 py-4">
+    <PageSheet className="px-4 py-4 min-[960px]:px-7 min-[960px]:py-6">
       <header className="mb-4">
         <div className="flex items-center gap-2">
           <Link
             href="/dong"
             aria-label="برگشت به دوره‌ها"
-            className="flex size-9 shrink-0 items-center justify-center rounded-full text-ink-muted hover:bg-lapis-tint hover:text-lapis"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full text-ink-muted hover:bg-action-tint hover:text-action"
           >
             <ArrowRight size={18} />
           </Link>
@@ -179,7 +180,7 @@ export function GroupView({
 
       {/* The one number the viewer opened this page for. */}
       {myBalance && (
-        <div className="mb-3 flex items-baseline justify-between rounded-card border border-hairline bg-surface px-4 py-3">
+        <div className="mb-3 flex items-baseline justify-between rounded-well bg-paper px-4 py-3">
           <span className="text-caption text-ink-muted">
             {standing(myBalance.net) === "owed"
               ? "از بقیه طلبکاری"
@@ -202,7 +203,7 @@ export function GroupView({
           group, this one is about their bank account, and the two are almost
           never the same. */}
       {(moved.out > 0 || moved.in > 0) && (
-        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-card border border-hairline bg-surface px-4 py-3">
+        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-well bg-paper px-4 py-3">
           <span className="text-caption text-ink-muted">از حساب‌های خودت</span>
           <span className="flex items-baseline gap-4 text-caption text-ink-muted">
             <span>
@@ -222,7 +223,7 @@ export function GroupView({
         <button
           type="button"
           onClick={() => setGroupSheet(true)}
-          className="mb-3 w-full rounded-card border border-dashed border-hairline-strong bg-paper px-4 py-3 text-start text-caption text-ink-muted hover:border-lapis hover:text-lapis"
+          className="mb-3 w-full rounded-well border border-dashed border-hairline-strong/45 bg-paper px-4 py-3 text-start text-caption text-ink-muted hover:border-action hover:text-action"
         >
           برای این دوره حسابی انتخاب نکرده‌ای. اگر انتخاب کنی، هر خریدی که خودت
           پولش را بدهی در حسابداری شخصی‌ات هم ثبت می‌شود.
@@ -252,7 +253,7 @@ export function GroupView({
                 body="هر چیزی که کسی پولش را داده اینجا ثبت می‌شود — با اسم کسی که پرداخته و کسانی که سهیم‌اند."
               />
             ) : (
-              <div className="overflow-hidden rounded-card border border-hairline bg-surface">
+              <div className="overflow-hidden">
                 {expenses.map((expense) => (
                   <ExpenseRowItem
                     key={expense.id}
@@ -286,7 +287,7 @@ export function GroupView({
                 body="قرضِ وسط راه، پول ریخته‌شده به صندوق، یا تسویه‌ی آخر دوره — هر سه اینجا می‌آیند."
               />
             ) : (
-              <div className="overflow-hidden rounded-card border border-hairline bg-surface">
+              <div className="overflow-hidden">
                 {payments.map((payment) => (
                   <PaymentRowItem
                     key={payment.id}
@@ -320,7 +321,7 @@ export function GroupView({
 
         {tab === "people" && (
           <>
-            <div className="overflow-hidden rounded-card border border-hairline bg-surface">
+            <div className="overflow-hidden">
               {members.map((member) => {
                 const balance = balanceById.get(member.id);
                 return (
@@ -389,7 +390,7 @@ export function GroupView({
                   <Vault size={16} />
                   ساختن صندوق دوره
                 </Button>
-                <p className="mt-2 rounded-control border border-dashed border-hairline-strong bg-paper px-3 py-2.5 text-caption text-ink-muted">
+                <p className="mt-2 rounded-well border border-dashed border-hairline-strong/45 bg-paper px-3 py-2.5 text-caption text-ink-muted">
                   اگر اول دوره همه مبلغی روی هم می‌گذارند، صندوق بساز: پول ریختن به آن
                   یک پرداخت است و خرج‌کردن از آن یک خرید، و آخر دوره خودش نشان می‌دهد
                   چقدر از صندوق مانده.
@@ -461,7 +462,7 @@ export function GroupView({
         groupId={group.id}
         member={editingMember}
       />
-    </div>
+    </PageSheet>
   );
 }
 
@@ -475,8 +476,8 @@ function EmptyPanel({
   body: string;
 }) {
   return (
-    <div className="flex flex-col items-center gap-2 rounded-card border border-dashed border-hairline-strong bg-surface px-4 py-8 text-center">
-      <span className="flex size-12 items-center justify-center rounded-full bg-lapis-tint text-lapis">
+    <div className="flex flex-col items-center gap-2 rounded-well border border-dashed border-hairline-strong/45 bg-surface px-4 py-8 text-center">
+      <span className="flex size-12 items-center justify-center rounded-full bg-paper text-ink-faint">
         {icon}
       </span>
       <p className="text-body text-ink">{title}</p>

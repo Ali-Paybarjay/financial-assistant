@@ -152,7 +152,7 @@ export function EditTransactionSheet({
       {transaction && fromDong && (
         <div className="flex flex-col gap-4">
           <div className="flex items-start gap-3 rounded-control border border-hairline bg-paper p-3">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-lapis-tint text-lapis">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-action-tint text-action">
               <UsersThree size={18} />
             </span>
             <p className="text-caption text-ink-muted">

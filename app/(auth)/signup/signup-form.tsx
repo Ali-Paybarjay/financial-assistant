@@ -37,10 +37,10 @@ export function SignupForm() {
   if (sentTo) {
     return (
       <div className="flex flex-col gap-4">
-        <div className="flex size-12 items-center justify-center rounded-full bg-lapis-tint">
-          <EnvelopeSimple size={24} className="text-lapis" />
+        <div className="flex size-12 items-center justify-center rounded-full bg-action-tint">
+          <EnvelopeSimple size={24} className="text-ink" />
         </div>
-        <h1 className="font-display text-display-l font-bold text-ink">ایمیلت را باز کن</h1>
+        <h1 className="font-display text-question font-bold text-ink">ایمیلت را باز کن</h1>
         <p className="text-body text-ink-muted">
           یک لینک تأیید به{" "}
           <span dir="ltr" className="font-medium text-ink">
@@ -58,7 +58,7 @@ export function SignupForm() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-display text-display-l font-bold text-ink">حساب بساز</h1>
+        <h1 className="font-display text-question font-bold text-ink">حساب بساز</h1>
         <p className="mt-1 text-body text-ink-muted">
           چند ثانیه طول می‌کشد. بعدش تصویر مالی‌ات را با هم می‌سازیم.
         </p>
@@ -110,7 +110,7 @@ export function SignupForm() {
 
       <p className="text-caption text-ink-muted">
         حساب داری؟{" "}
-        <Link href="/login" className="font-medium text-lapis hover:underline">
+        <Link href="/login" className="font-medium text-action hover:underline">
           وارد شو
         </Link>
       </p>
