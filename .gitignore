@@ -15,6 +15,9 @@
 
 # next.js
 /.next/
+# A parallel dev server or build gets its own via NEXT_DIST_DIR; see
+# next.config.ts for why a second Next process needs one.
+/.next-*/
 /out/
 
 # production

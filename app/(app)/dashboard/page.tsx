@@ -9,6 +9,8 @@ import {
   monthTotals,
 } from "@/lib/queries/transactions";
 import { ensureRecurringPosted, listMissedRecurring } from "@/lib/queries/recurring";
+import { listEnvelopes, suggestedBudgets } from "@/lib/queries/envelopes";
+import { projectedMonthEnd } from "@/lib/cashflow";
 import { daysLeftInMonth, monthRange, shiftMonth, todayInTimeZone } from "@/lib/date";
 import { DashboardView } from "./dashboard-view";
 
@@ -43,6 +45,8 @@ export default async function DashboardPage({
     series,
     recent,
     allGoals,
+    envelopes,
+    suggestions,
   ] =
     await Promise.all([
       listCategories(),
@@ -54,6 +58,9 @@ export default async function DashboardPage({
       // Progress comes from the ledger, so the card cannot quietly disagree
       // with the goals page about how far along something is.
       listGoalsWithProgress(),
+      // Every envelope figure comes from SQL beside the ledger. Rule 6.
+      listEnvelopes(range.month),
+      suggestedBudgets(range.month, viewer.currency),
     ]);
 
   // The whole active list, not the four the card shows: the entry sheet needs
@@ -76,14 +83,27 @@ export default async function DashboardPage({
     return series.get(month) ?? { month, income: 0, expense: 0, logged: 0 };
   });
 
-  const byCategory = [...totals.byCategory.entries()]
-    .map(([categoryId, amount]) => ({
-      id: categoryId,
-      name:
-        categories.find((category) => category.id === categoryId)?.name_fa ?? "بدون دسته",
-      amount,
-    }))
-    .sort((a, b) => b.amount - a.amount);
+  const daysLeft = daysLeftInMonth(viewer.timeZone, today);
+  const daysInMonth = Number(range.to.split("-")[2]);
+  // Only meaningful for the month being lived in. A month already over has no
+  // rate left to carry forward, and drawing one would be inventing a future
+  // for a past — so the card shows the balance alone.
+  const isCurrentMonth = range.month === current.month;
+  const daysGone = isCurrentMonth ? daysInMonth - daysLeft : daysInMonth;
+  const forecast = isCurrentMonth
+    ? projectedMonthEnd({
+        income: totals.income,
+        expense: totals.expense,
+        daysGone,
+        daysInMonth,
+      })
+    : null;
+
+  // A tap on an envelope opens the ledger filtered to it, and the ledger
+  // filters by slug rather than by id.
+  const slugById = Object.fromEntries(
+    categories.map((category) => [category.id, category.slug]),
+  );
 
   return (
     <DashboardView
@@ -91,16 +111,21 @@ export default async function DashboardPage({
       name={viewer.profile.full_name ?? ""}
       today={today}
       month={range.month}
-      isCurrentMonth={range.month === current.month}
+      isCurrentMonth={isCurrentMonth}
       missed={missed}
-      daysLeft={daysLeftInMonth(viewer.timeZone, today)}
+      daysLeft={daysLeft}
+      daysGone={daysGone}
+      envelopes={envelopes}
+      suggestions={Object.fromEntries(suggestions)}
+      slugById={slugById}
+      forecast={forecast}
+      insightCount={0}
       totals={{
         income: totals.income,
         expense: totals.expense,
         unconfirmedCount: totals.unconfirmedCount,
       }}
       previousTotals={{ income: previousTotals.income, expense: previousTotals.expense }}
-      byCategory={byCategory}
       series={seriesPoints}
       recent={recent}
       goals={goals}

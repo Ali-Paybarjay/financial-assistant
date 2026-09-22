@@ -2,8 +2,9 @@ import { requireViewer } from "@/lib/auth";
 import { listCategories } from "@/lib/queries/categories";
 import { listAccounts } from "@/lib/queries/accounts";
 import { listGoalsWithProgress } from "@/lib/queries/goals";
-import { listTransactions } from "@/lib/queries/transactions";
-import { monthRange, todayInTimeZone } from "@/lib/date";
+import { listTransactions, monthTotals } from "@/lib/queries/transactions";
+import { listEnvelopes, suggestedBudgets } from "@/lib/queries/envelopes";
+import { daysLeftInMonth, monthRange, todayInTimeZone } from "@/lib/date";
 import { TransactionsView } from "./transactions-view";
 
 export default async function TransactionsPage({
@@ -40,6 +41,12 @@ export default async function TransactionsPage({
   // checking it here is what keeps the chip from naming a filter that is not on.
   const accountId = accounts.find((entry) => entry.id === params.account)?.id;
 
+  const [totals, envelopes, suggestions] = await Promise.all([
+    monthTotals(range.from, range.to),
+    listEnvelopes(range.month),
+    suggestedBudgets(range.month, viewer.currency),
+  ]);
+
   const transactions = await listTransactions({
     from: range.from,
     to: range.to,
@@ -48,6 +55,21 @@ export default async function TransactionsPage({
     categoryIds: categoryId ? [categoryId] : undefined,
     accountIds: accountId ? [accountId] : undefined,
   });
+
+  const byCategory = [...totals.byCategory.entries()]
+    .map(([id, amount]) => ({
+      id,
+      name: categories.find((entry) => entry.id === id)?.name_fa ?? "بدون دسته",
+      amount,
+    }))
+    .sort((a, b) => b.amount - a.amount);
+
+  // The month being viewed may not be the month being lived in, and a past
+  // month has no days left to spread anything over.
+  const current = monthRange(viewer.timeZone, today);
+  const daysInMonth = Number(range.to.split("-")[2]);
+  const daysLeft =
+    range.month === current.month ? daysLeftInMonth(viewer.timeZone, today) : 0;
 
   return (
     <TransactionsView
@@ -64,6 +86,11 @@ export default async function TransactionsPage({
         type,
         query: params.q,
       }}
+      byCategory={byCategory}
+      envelope={envelopes.find((row) => row.category_id === categoryId) ?? null}
+      envelopeSuggestion={(categoryId && suggestions.get(categoryId)) || null}
+      daysGone={daysInMonth - daysLeft}
+      daysLeft={daysLeft}
     />
   );
 }

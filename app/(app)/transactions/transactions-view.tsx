@@ -14,10 +14,13 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/native-select";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { TransactionRowItem } from "@/components/transactions/transaction-row";
+import { CategoryDonut, type CategorySlice } from "@/components/dashboard/category-donut";
+import { EnvelopeHeader } from "./envelope-header";
 import { EditTransactionSheet } from "./edit-sheet";
 import { faNumber } from "@/lib/format";
 import { formatDayMonthFa, shiftMonth, formatMonthFa } from "@/lib/date";
-import type { CurrencyCode } from "@/lib/money";
+import type { EnvelopeRow } from "@/lib/envelopes";
+import type { CurrencyCode, Minor } from "@/lib/money";
 import type {
   AccountRow,
   CategoryRow,
@@ -44,6 +47,11 @@ export function TransactionsView({
   accounts,
   goals,
   activeFilters,
+  byCategory,
+  envelope,
+  envelopeSuggestion,
+  daysGone,
+  daysLeft,
 }: {
   currency: CurrencyCode;
   today: string;
@@ -53,6 +61,14 @@ export function TransactionsView({
   accounts: AccountRow[];
   goals: GoalRow[];
   activeFilters: ActiveFilters;
+  /** The month's spending split by category. Moved here from the dashboard. */
+  byCategory: CategorySlice[];
+  /** The envelope for the filtered category, when exactly one is filtered to. */
+  envelope: EnvelopeRow | null;
+  /** A ceiling worth proposing for it, where there is history for one. */
+  envelopeSuggestion: Minor | null;
+  daysGone: number;
+  daysLeft: number;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -216,6 +232,31 @@ export function TransactionsView({
           <Money minor={filteredTotal} currency={currency} size="row" tone="auto" signed />
         </span>
       </div>
+
+      {/* The ceiling this category is measured against, above the rows that
+          made it. Only when the filter names one category — a header saying
+          «over by $34» above a mixed list would be describing something the
+          list does not add up to. */}
+      {envelope && (
+        <EnvelopeHeader
+          envelope={envelope}
+          suggestion={envelopeSuggestion}
+          currency={currency}
+          daysGone={daysGone}
+          daysLeft={daysLeft}
+          rowCount={visible.length}
+        />
+      )}
+
+      {/* The donut moved here from the dashboard, unchanged. It answers «what
+          did I spend it on», which is a question about the ledger; the
+          dashboard now answers «how much is left», which is not. Hidden when
+          a category filter is on, where a single-slice donut says nothing. */}
+      {!activeFilters.category && byCategory.length > 0 && (
+        <div className="mt-4">
+          <CategoryDonut slices={byCategory} currency={currency} />
+        </div>
+      )}
 
       {groups.length === 0 ? (
         <p className="mt-6 rounded-card border border-hairline bg-surface p-6 text-center text-body text-ink-muted">

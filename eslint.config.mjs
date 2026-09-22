@@ -14,7 +14,9 @@ const eslintConfig = [
   {
     ignores: [
       "node_modules/**",
-      ".next/**",
+      // Any Next build directory, including the NEXT_DIST_DIR a parallel
+      // dev server or build is given so it does not fight the default one.
+      ".next*/**",
       "out/**",
       "build/**",
       "next-env.d.ts",

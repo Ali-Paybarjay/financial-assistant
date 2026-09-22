@@ -76,9 +76,14 @@ const SIGNED_IN_ROUTES: Route[] = [
     path: "/dashboard",
     // Not the <h1>: on the dashboard it lives in a header that only exists
     // from 960px, so at the 375px this suite runs at there is no visible
-    // level-1 heading at all. This line is in both of the page's states.
-    shows: "مانده‌ی این ماه",
-    landmark: (page) => page.getByText("مانده‌ی این ماه").first(),
+    // level-1 heading at all.
+    //
+    // The balance card used to be labelled «مانده‌ی این ماه» and now names
+    // the month it is showing — «ماندهٔ سپتامبر» — because the card is no
+    // longer always about the current month. So the label is matched by its
+    // stable half, which is in both of the page's states.
+    shows: "ماندهٔ <ماه>",
+    landmark: (page) => page.getByText(/ماندهٔ\s/).first(),
   },
   { path: "/transactions", shows: "تراکنش‌ها", landmark: heading("تراکنش‌ها") },
   { path: "/accounts", shows: "حساب‌ها", landmark: heading("حساب‌ها") },

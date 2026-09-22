@@ -5,7 +5,12 @@ import {
   planSavings,
   type GoalWithProgress,
 } from "@/lib/goals";
-import { declaredSurplus, monthlySurplus, observedSurplus } from "@/lib/cashflow";
+import {
+  declaredSurplus,
+  monthlySurplus,
+  observedSurplus,
+  projectedMonthEnd,
+} from "@/lib/cashflow";
 import type {
   IncomeSourceRow,
   RecurringExpenseRow,
@@ -463,5 +468,51 @@ describe("monthlySurplus", () => {
     const surplus = monthlySurplus({ series: [], currentMonth: current, ...declared });
 
     expect(surplus).toEqual({ amount: 150_000, basis: "declared", months: 0 });
+  });
+});
+
+describe("projectedMonthEnd", () => {
+  it("carries the spending rate to the end of the month", () => {
+    // Half the month gone, $1,000 spent, $3,000 in. Spending lands at $2,000.
+    expect(
+      projectedMonthEnd({
+        income: 300_000,
+        expense: 100_000,
+        daysGone: 15,
+        daysInMonth: 30,
+      }),
+    ).toBe(100_000);
+  });
+
+  it("does not extrapolate income", () => {
+    // A salary arrives on a day, not at a rate. Doubling the days gone halves
+    // the projected spend and leaves the income alone.
+    expect(
+      projectedMonthEnd({
+        income: 300_000,
+        expense: 100_000,
+        daysGone: 30,
+        daysInMonth: 30,
+      }),
+    ).toBe(200_000);
+  });
+
+  it("reports the month as it stands before a day has passed", () => {
+    // Nothing to divide by, and the figures themselves are the best answer.
+    expect(
+      projectedMonthEnd({ income: 300_000, expense: 0, daysGone: 0, daysInMonth: 31 }),
+    ).toBe(300_000);
+  });
+
+  it("goes negative when the rate outruns the income", () => {
+    // The case the dashboard exists to catch: fine today, short by the 30th.
+    expect(
+      projectedMonthEnd({
+        income: 300_000,
+        expense: 120_000,
+        daysGone: 10,
+        daysInMonth: 30,
+      }),
+    ).toBe(-60_000);
   });
 });

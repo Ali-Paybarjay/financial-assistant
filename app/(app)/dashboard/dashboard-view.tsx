@@ -3,11 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CaretLeft, CaretRight, Plus } from "@phosphor-icons/react/dist/ssr";
+import { CaretLeft, CaretRight, ChatTeardropText, MagnifyingGlass, Plus } from "@phosphor-icons/react/dist/ssr";
 import { Money } from "@/components/money";
 import { KpiCards } from "@/components/dashboard/kpi-cards";
-import { CategoryDonut, type CategorySlice } from "@/components/dashboard/category-donut";
+import { BalanceCard } from "@/components/dashboard/balance-card";
 import { MonthBars } from "@/components/dashboard/month-bars";
+import { EnvelopeBoard } from "./envelope-board";
 import { EmptyDashboard } from "@/components/dashboard/empty-dashboard";
 import { AccountBalances } from "@/components/dashboard/account-balances";
 import { ReconcileBanner } from "@/components/accounts/reconcile-banner";
@@ -17,7 +18,8 @@ import { MissedBanner, MissedReview } from "./missed-review";
 import { faNumber, faPercent } from "@/lib/format";
 import { formatMonthFa, shiftMonth } from "@/lib/date";
 import { requiredMonthly, type GoalWithProgress } from "@/lib/goals";
-import type { CurrencyCode } from "@/lib/money";
+import type { EnvelopeRow } from "@/lib/envelopes";
+import type { CurrencyCode, Minor } from "@/lib/money";
 import type { MonthPoint } from "@/lib/queries/transactions";
 import type { AccountWithBalance } from "@/lib/accounts";
 import type {
@@ -37,9 +39,14 @@ export function DashboardView({
   isCurrentMonth,
   missed,
   daysLeft,
+  daysGone,
+  envelopes,
+  suggestions,
+  slugById,
+  forecast,
+  insightCount,
   totals,
   previousTotals,
-  byCategory,
   series,
   recent,
   goals,
@@ -57,9 +64,18 @@ export function DashboardView({
   /** Fixed bills of past months that were never generated, oldest first. */
   missed: MissedRecurringRow[];
   daysLeft: number;
+  /** Days of the month already lived, including today. */
+  daysGone: number;
+  envelopes: EnvelopeRow[];
+  /** categoryId -> a ceiling worth proposing, where there is history for one. */
+  suggestions: Record<string, Minor>;
+  slugById: Record<string, string>;
+  /** Where the month lands at the current rate. null for a month already over. */
+  forecast: Minor | null;
+  /** How many things the stream has to say, for the one-line pointer to it. */
+  insightCount: number;
   totals: { income: number; expense: number; unconfirmedCount: number };
   previousTotals: { income: number; expense: number };
-  byCategory: CategorySlice[];
   series: MonthPoint[];
   recent: TransactionRow[];
   goals: GoalWithProgress[];
@@ -140,51 +156,59 @@ export function DashboardView({
         </button>
       </div>
 
-      <div className="min-[960px]:grid min-[960px]:grid-cols-[1.35fr_1fr_1fr_1fr] min-[960px]:gap-3">
-        <header className="border-b border-hairline bg-surface px-4 pb-4 pt-3.5 min-[960px]:rounded-card min-[960px]:border min-[960px]:px-5 min-[960px]:py-4">
-          <div className="flex items-center justify-between min-[960px]:hidden">
-            <span className="flex size-9 items-center justify-center rounded-full bg-lapis-tint text-[15px] font-semibold text-lapis">
-              {name.trim().charAt(0) || "؟"}
-            </span>
-            {monthSelector}
-          </div>
+      {/* One of the two doors to the ledger, now that it has left the tab
+          bar. The other is a tap on any envelope. */}
+      <form
+        action="/transactions"
+        className="flex items-center gap-2 px-4 pt-3 min-[960px]:px-0 min-[960px]:pt-0 min-[960px]:pb-3"
+      >
+        <label htmlFor="dashboard-search" className="sr-only">
+          جست‌وجو در تراکنش‌ها
+        </label>
+        <span className="flex h-11 flex-1 items-center gap-2 rounded-control bg-paper px-3">
+          <MagnifyingGlass size={17} className="shrink-0 text-ink-faint" />
+          <input
+            id="dashboard-search"
+            name="q"
+            type="search"
+            placeholder="جست‌وجو در تراکنش‌ها"
+            className="w-full bg-transparent text-[16px] text-ink outline-none placeholder:text-ink-faint"
+          />
+        </span>
+      </form>
 
-          <div className="hidden min-[960px]:block">{monthSelector}</div>
+      <div className="flex flex-col gap-3 px-4 pt-3 min-[960px]:px-0">
+        <div className="flex items-center justify-between">
+          <span className="flex size-9 items-center justify-center rounded-full bg-lapis-tint text-[15px] font-semibold text-lapis min-[960px]:hidden">
+            {name.trim().charAt(0) || "؟"}
+          </span>
+          {monthSelector}
+        </div>
 
-          <p className="mt-3 text-label text-ink-muted">مانده‌ی این ماه</p>
-          {isEmpty ? (
-            <>
-              <Money minor={balance} currency={currency} size="hero" />
-              <p className="mt-1 text-caption text-ink-muted">
-                هنوز هیچ هزینه‌ای ثبت نشده — این عدد همان درآمدی است که در ثبت‌نام گفتی.
-              </p>
-            </>
-          ) : (
-            <>
-              <Money minor={balance} currency={currency} size="hero" tone="auto" signed />
-              <p className="mt-1 flex items-center gap-2 text-caption text-ink-muted">
-                <span>{faNumber(daysLeft)} روز تا پایان ماه</span>
-                <span aria-hidden className="h-3 w-px bg-hairline" />
-                <span className="flex items-center gap-1">
-                  روزی
-                  <Money minor={Math.max(perDay, 0)} currency={currency} />
-                </span>
-              </p>
-            </>
-          )}
-        </header>
-
-        {!isEmpty && (
-          <div className="contents">
-            <div className="px-4 pt-3 min-[960px]:col-span-3 min-[960px]:p-0">
-              <KpiCards
-                totals={totals}
-                previous={previousTotals}
-                currency={currency}
-                hasUnconfirmed={totals.unconfirmedCount > 0}
-              />
-            </div>
-          </div>
+        {isEmpty ? (
+          <section className="rounded-card bg-ink p-4 text-white">
+            <p className="text-label text-white/70">ماندهٔ {formatMonthFa(month)}</p>
+            <Money
+              minor={balance}
+              currency={currency}
+              size="hero"
+              className="mt-1 block text-positive-on-ink"
+            />
+            <p className="mt-1 text-caption text-white/70">
+              هنوز هیچ هزینه‌ای ثبت نشده — این عدد همان درآمدی است که در ثبت‌نام گفتی.
+            </p>
+          </section>
+        ) : (
+          <BalanceCard
+            balance={balance}
+            forecast={forecast}
+            currency={currency}
+            daysGone={daysGone}
+            daysLeft={daysLeft}
+            perDayAllowed={daysLeft > 0 ? Math.max(perDay, 0) : null}
+            perDaySpent={daysGone > 0 ? Math.round(totals.expense / daysGone) : null}
+            monthLabel={formatMonthFa(month)}
+          />
         )}
       </div>
 
@@ -208,28 +232,39 @@ export function DashboardView({
           </>
         ) : (
           <>
-            {totals.unconfirmedCount > 0 && (
+            <EnvelopeBoard
+              envelopes={envelopes}
+              suggestions={suggestions}
+              slugById={slugById}
+              currency={currency}
+              daysLeft={daysLeft}
+            />
+
+            {/* The yellow banner this replaces said there was something to
+                deal with but not what, and sent every kind of unfinished
+                business to the same page. The stream is where they live now,
+                so the board only has to point. */}
+            {insightCount > 0 && (
               <Link
-                href="/transactions"
-                className="flex items-center gap-2 rounded-control border border-guess-border bg-guess-tint px-3 py-2.5"
+                href="/stream"
+                className="flex items-center gap-2 rounded-control bg-lapis-tint px-3 py-2.5"
               >
-                <span
-                  aria-hidden
-                  className="h-0.5 w-4 shrink-0 border-t-2 border-dashed border-guess"
-                />
-                <span className="flex-1 text-caption font-medium text-guess-text">
-                  {faNumber(totals.unconfirmedCount)} تراکنش تأییدنشده در این جمع هست.
+                <ChatTeardropText size={17} className="shrink-0 text-lapis" />
+                <span className="flex-1 text-caption font-medium text-ink">
+                  {streamHint(insightCount, totals.unconfirmedCount)}
                 </span>
-                <span className="text-caption font-semibold text-lapis">بررسی</span>
+                <CaretLeft size={14} className="shrink-0 text-lapis" />
               </Link>
             )}
 
-            <div className="flex flex-col gap-3 min-[960px]:grid min-[960px]:grid-cols-[1fr_1.25fr]">
-              {byCategory.length > 0 && (
-                <CategoryDonut slices={byCategory} currency={currency} />
-              )}
-              <MonthBars series={series} currency={currency} />
-            </div>
+            <MonthBars series={series} currency={currency} />
+
+            <KpiCards
+              totals={totals}
+              previous={previousTotals}
+              currency={currency}
+              hasUnconfirmed={totals.unconfirmedCount > 0}
+            />
 
             <div className="flex flex-col gap-3 min-[960px]:grid min-[960px]:grid-cols-[1fr_1.25fr] min-[960px]:items-start">
               {openGoals.length > 0 && (
@@ -361,4 +396,19 @@ export function DashboardView({
       />
     </div>
   );
+}
+
+/**
+ * The one line the board gives the stream.
+ *
+ * Counts, not adjectives: «۲ بینش تازه و ۱ حدس تأییدنشده» tells the user
+ * whether it is worth the tap, and «چند نکته برایت دارم» does not.
+ */
+function streamHint(insightCount: number, unconfirmedCount: number): string {
+  const parts: string[] = [];
+  if (insightCount > 0) parts.push(`${faNumber(insightCount)} بینش تازه`);
+  if (unconfirmedCount > 0) {
+    parts.push(`${faNumber(unconfirmedCount)} حدس تأییدنشده`);
+  }
+  return `${parts.join(" و ")} در جریان هست.`;
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   ArrowsClockwise,
   ArrowsLeftRight,
@@ -47,6 +48,7 @@ export function TransactionRowItem({
   toAccountTitle,
   goalTitle,
   currency,
+  href,
   onSelect,
 }: {
   transaction: TransactionRow;
@@ -58,7 +60,10 @@ export function TransactionRowItem({
   /** The goal this row funded or spent, when it names one. */
   goalTitle?: string;
   currency: CurrencyCode;
-  onSelect: () => void;
+  /** Where the row goes. Given, the row is a link and Cmd-click works. */
+  href?: string;
+  /** Acted on in place instead — opening the edit sheet, not navigating. */
+  onSelect?: () => void;
 }) {
   const isTransfer = transaction.type === "transfer";
   // A transfer's icon names what happened, not how it was entered: "I moved
@@ -71,12 +76,8 @@ export function TransactionRowItem({
     ? "انتقال بین حساب‌ها"
     : transaction.merchant || transaction.note || category?.name_fa || "بدون عنوان";
 
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className="flex w-full items-center gap-3 border-b border-hairline p-3 text-start last:border-b-0 hover:bg-paper"
-    >
+  const content = (
+    <>
       <span
         className={cn(
           "flex size-[34px] shrink-0 items-center justify-center rounded-control",
@@ -171,6 +172,25 @@ export function TransactionRowItem({
           </span>
         )}
       </span>
+    </>
+  );
+
+  const rowClass =
+    "flex w-full items-center gap-3 border-b border-hairline p-3 text-start last:border-b-0 hover:bg-paper";
+
+  // A row that goes somewhere is a link, so Cmd-click and middle-click do what
+  // they do everywhere else. A row that opens the edit sheet in place is not.
+  if (href) {
+    return (
+      <Link href={href} className={rowClass}>
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <button type="button" onClick={onSelect} className={rowClass}>
+      {content}
     </button>
   );
 }

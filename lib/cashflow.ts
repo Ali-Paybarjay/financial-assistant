@@ -168,3 +168,34 @@ export function monthlySurplus(input: {
 export function surplusWindowStart(currentMonth: IsoDate): IsoDate {
   return shiftMonth(currentMonth, -WINDOW_MONTHS);
 }
+
+/**
+ * Where this month lands if the rest of it looks like the part already lived.
+ *
+ * The dashboard's forecast, and the figure the `pace_over` insight fires on.
+ * Here rather than in either of them because this module is the one answer to
+ * «how much is left at the end of the month» — a card and a sentence that
+ * disagreed about it would be two features arguing in front of the user.
+ *
+ * Income is taken as already known rather than extrapolated. A salary arrives
+ * on a day, not at a rate, so spreading it across the month would make the
+ * 3rd look catastrophic and the 28th look fine, every single month. Spending
+ * is the half that genuinely accumulates, so spending is the half projected.
+ *
+ * It is a straight-line guess and it is drawn under a dashed rule wherever it
+ * appears, for the same reason every uncertain figure in this app is.
+ */
+export function projectedMonthEnd(input: {
+  income: Minor;
+  expense: Minor;
+  /** Days of the month already lived, including today. */
+  daysGone: number;
+  daysInMonth: number;
+}): Minor {
+  const { income, expense, daysGone, daysInMonth } = input;
+  // Before any day has passed there is no rate to carry forward, and the
+  // month's own figures are the best answer available.
+  if (daysGone <= 0) return income - expense;
+  const projectedExpense = Math.round((expense / daysGone) * daysInMonth);
+  return income - projectedExpense;
+}
