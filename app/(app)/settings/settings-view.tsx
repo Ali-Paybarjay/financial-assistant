@@ -27,6 +27,7 @@ import { GuestSignOutSheet, useSignOut } from "@/components/sign-out";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/native-select";
+import { Switch } from "@/components/ui/switch";
 import { Field, FormError } from "@/components/field";
 import { CURRENCIES, type CurrencyCode } from "@/lib/money";
 import {
@@ -42,6 +43,7 @@ import {
   deleteCategory,
   resetRiskAnswers,
   saveCategory,
+  setDefaultWorkspace,
   updateCurrency,
   updateProfile,
 } from "./actions";
@@ -116,6 +118,10 @@ export function SettingsView({
           label="ارز پایه"
           value={CURRENCY_LABELS[currency]}
         />
+      </Group>
+
+      <Group title="شروع">
+        <StartRow current={profile.default_workspace} />
       </Group>
 
       <Group title="پروفایل">
@@ -224,6 +230,40 @@ function Row({
     <button type="button" onClick={onClick} className={className}>
       {body}
     </button>
+  );
+}
+
+/**
+ * «Ask me which section every time.»
+ *
+ * On when nothing is remembered, which is the state a new account starts in
+ * — so the switch reads as a thing you turn off rather than a setting you
+ * have to find and turn on. Turning it off here would have nothing to
+ * remember yet, so it only ever puts the chooser back.
+ */
+function StartRow({ current }: { current: "personal" | "dong" | null }) {
+  const [isPending, startTransition] = useTransition();
+  const asksEveryTime = current === null;
+
+  return (
+    <div className="flex h-14 w-full items-center gap-3 px-4">
+      <span className="text-lapis">
+        <SquaresFour size={20} />
+      </span>
+      <label htmlFor="ask-workspace" className="flex-1 text-[14px] text-ink">
+        هر بار بپرس کدام بخش
+      </label>
+      <Switch
+        id="ask-workspace"
+        checked={asksEveryTime}
+        disabled={isPending || asksEveryTime}
+        onCheckedChange={() =>
+          startTransition(async () => {
+            await setDefaultWorkspace(null);
+          })
+        }
+      />
+    </div>
   );
 }
 

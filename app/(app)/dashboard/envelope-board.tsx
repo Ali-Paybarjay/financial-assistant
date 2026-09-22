@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { EnvelopeCard, UnsetEnvelopeCard } from "@/components/dashboard/envelope-card";
 import { BudgetSheet } from "@/components/dashboard/budget-sheet";
+import { BudgetInvite } from "@/components/dashboard/budget-invite";
+import { dismissInsight } from "@/app/(app)/stream/actions";
 import { envelopeState, type EnvelopeRow } from "@/lib/envelopes";
 import type { CurrencyCode, Minor } from "@/lib/money";
 
@@ -21,6 +24,7 @@ export function EnvelopeBoard({
   slugById,
   currency,
   daysLeft,
+  invite,
 }: {
   envelopes: EnvelopeRow[];
   /** categoryId -> the median of the last three months, where there is one. */
@@ -28,8 +32,16 @@ export function EnvelopeBoard({
   slugById: Record<string, string>;
   currency: CurrencyCode;
   daysLeft: number;
+  /**
+   * What to offer someone who has set no ceiling at all, and the key that
+   * remembers them saying no. null once any ceiling exists, or once they have.
+   */
+  invite: { candidates: EnvelopeRow[]; key: string } | null;
 }) {
+  const router = useRouter();
   const [editing, setEditing] = useState<EnvelopeRow | null>(null);
+  const [inviteClosed, setInviteClosed] = useState(false);
+  const [, startDismissing] = useTransition();
 
   // `envelope_status()` already sorts the unset ones last; this splits them
   // out because they are laid out differently, not to reorder them.
@@ -42,6 +54,25 @@ export function EnvelopeBoard({
 
   return (
     <section className="flex flex-col gap-3">
+      {invite && !inviteClosed && (
+        <BudgetInvite
+          candidates={invite.candidates}
+          suggestions={suggestions}
+          currency={currency}
+          onSetBudget={setEditing}
+          onDismiss={() => {
+            setInviteClosed(true);
+            // Reuses the dismissal table the stream already has: the same
+            // «I have seen this» fact, keyed the same way, rather than a
+            // second column on the profile that means almost the same thing.
+            startDismissing(async () => {
+              await dismissInsight(invite.key);
+              router.refresh();
+            });
+          }}
+        />
+      )}
+
       <div className="flex items-baseline justify-between gap-2">
         <h2 className="text-title font-semibold text-ink">پاکت‌های این ماه</h2>
         <Link href="/settings" className="text-caption font-medium text-lapis">

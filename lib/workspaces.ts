@@ -19,12 +19,32 @@
  * This module is the single answer to "which side am I on", derived from the
  * url rather than stored: a link, a refresh and a back button all have to
  * agree, and a remembered workspace is the one thing that cannot.
+ *
+ * `profiles.default_workspace` is not a counter-example, and the difference
+ * is worth being precise about because it looks like one. What it stores is
+ * the default *destination of «/»* — one route's redirect target — and not
+ * the current workspace. Nothing reads it to decide what side a page belongs
+ * to; `workspaceForPath` is still the only thing that answers that, still
+ * from the url, still with nothing remembered. The chooser at «/» is a
+ * question, and for someone who only ever opens one side it is a question
+ * they answer identically every time. Remembering their answer to it changes
+ * where one link goes; it does not make the current workspace stateful.
  */
 
 export type WorkspaceId = "personal" | "dong";
 
 /** The chooser. Not a workspace itself — it is where you stand between them. */
 export const HUB_PATH = "/";
+
+/**
+ * The chooser, asked for on purpose.
+ *
+ * «/» redirects to profiles.default_workspace when one is set, so a plain
+ * link to HUB_PATH from inside a workspace would bounce the user straight
+ * back where they came from — the switch would look broken. This is the
+ * address that always shows the choice.
+ */
+export const HUB_CHOOSE_PATH = "/?choose=1";
 
 export type WorkspaceMeta = {
   id: WorkspaceId;

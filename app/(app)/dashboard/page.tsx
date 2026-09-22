@@ -22,6 +22,9 @@ import { DashboardView } from "./dashboard-view";
 
 const SERIES_MONTHS = 6;
 
+/** What to ask a brand-new account about, having no history to rank. */
+const INVITE_SLUGS = ["groceries", "dining", "transport"];
+
 export default async function DashboardPage({
   searchParams,
 }: {
@@ -138,6 +141,41 @@ export default async function DashboardPage({
     }).amount,
   });
 
+  /**
+   * Someone who has set no ceiling at all gets the board explained once,
+   * with the three categories the question is most obviously about.
+   *
+   * Those are the three they actually spent most on this month where there is
+   * any spending, and the three the design names otherwise — a brand-new
+   * account has no history to rank, and «خوراک، رستوران، حمل‌ونقل» is a better
+   * opening question than an empty list.
+   */
+  const hasAnyBudget = envelopes.some((row) => row.budget_minor !== null);
+  const inviteKey = `budget_invite:${range.month.slice(0, 7)}`;
+  const spentCandidates = envelopes.filter((row) => row.spent_minor > 0).slice(0, 3);
+  const fallbackCandidates = INVITE_SLUGS.flatMap((slug) => {
+    const category = categories.find((entry) => entry.slug === slug);
+    if (!category) return [];
+    return [
+      {
+        category_id: category.id,
+        name_fa: category.name_fa,
+        budget_minor: null,
+        spent_minor: 0,
+        remaining_minor: null,
+        unconfirmed_minor: 0,
+      },
+    ];
+  });
+  const invite =
+    hasAnyBudget || dismissedKeys.has(inviteKey) || !isCurrentMonth
+      ? null
+      : {
+          candidates:
+            spentCandidates.length > 0 ? spentCandidates : fallbackCandidates,
+          key: inviteKey,
+        };
+
   // A tap on an envelope opens the ledger filtered to it, and the ledger
   // filters by slug rather than by id.
   const slugById = Object.fromEntries(
@@ -157,6 +195,7 @@ export default async function DashboardPage({
       envelopes={envelopes}
       suggestions={Object.fromEntries(suggestions)}
       slugById={slugById}
+      invite={invite}
       forecast={forecast}
       insightCount={insights.length}
       totals={{

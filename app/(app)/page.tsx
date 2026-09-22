@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { CaretLeft } from "@phosphor-icons/react/dist/ssr";
 import { requireViewer } from "@/lib/auth";
 import { listAccountsWithBalances } from "@/lib/queries/accounts";
@@ -12,6 +13,7 @@ import { WORKSPACE_ICON } from "@/components/app-shell/nav-items";
 import { Money } from "@/components/money";
 import { HubSignOutButton } from "@/components/sign-out";
 import { WORKSPACES } from "@/lib/workspaces";
+import { RememberWorkspace } from "./remember-workspace";
 
 /**
  * The first screen after signing in: two boxes, one per side of the app.
@@ -25,8 +27,28 @@ import { WORKSPACES } from "@/lib/workspaces";
  * added, and «کل دارایی» that quietly includes what six people owe each other
  * would be the most misleading figure in the product.
  */
-export default async function HubPage() {
+export default async function HubPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ choose?: string }>;
+}) {
   const viewer = await requireViewer();
+  const { choose } = await searchParams;
+
+  // Someone who only ever opens one side answers this question identically
+  // every visit, so it stops being asked. «?choose» is how the switch in the
+  // header and the settings toggle get back here without being bounced
+  // straight out again.
+  //
+  // This segment has a loading.tsx, so the response has already begun
+  // streaming by the time a page can throw: Next turns this into a
+  // client-side navigation rather than a 3xx, and the browser stays on «/»
+  // for a moment before moving. Nothing of the hub is rendered in that
+  // moment — the decision is made above every fetch on this page, so what
+  // shows is the loading shell and then /dashboard.
+  if (viewer.profile.default_workspace && choose === undefined) {
+    redirect(WORKSPACES[viewer.profile.default_workspace].href);
+  }
 
   const today = todayInTimeZone(viewer.timeZone);
   const month = monthRange(viewer.timeZone, today);
@@ -125,6 +147,8 @@ export default async function HubPage() {
           }
         />
       </div>
+
+      <RememberWorkspace current={viewer.profile.default_workspace} />
     </div>
   );
 }

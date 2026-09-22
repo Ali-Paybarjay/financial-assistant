@@ -157,3 +157,28 @@ export async function deleteAccount(confirmation: string): Promise<SettingsResul
   await supabase.auth.signOut();
   redirect("/login");
 }
+
+/**
+ * Where «/» should land next time.
+ *
+ * Passing null puts the chooser back. This is the *destination of one route*,
+ * not the current workspace — see the comment in lib/workspaces.ts, which is
+ * the thing this is most likely to be mistaken for.
+ */
+export async function setDefaultWorkspace(
+  workspace: "personal" | "dong" | null,
+): Promise<SettingsResult> {
+  const viewer = await requireViewer();
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ default_workspace: workspace })
+    .eq("id", viewer.userId);
+
+  if (error) return { error: "ذخیره نشد. دوباره بزن." };
+
+  revalidatePath("/");
+  revalidatePath("/settings");
+  return { ok: true };
+}

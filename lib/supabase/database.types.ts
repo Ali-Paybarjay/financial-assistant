@@ -45,6 +45,8 @@ export type MediaKind = "image" | "document";
 export type MediaStatus = "uploaded" | "processing" | "parsed" | "failed";
 export type GoalStatus = "active" | "achieved" | "paused" | "cancelled";
 export type RiskLabel = "conservative" | "balanced" | "growth";
+/** The two sides of the app. Mirrors WorkspaceId in lib/workspaces.ts. */
+export type WorkspaceId = "personal" | "dong";
 export type StatementImportStatus =
   | "uploading"
   | "parsing"
@@ -79,6 +81,11 @@ export type ProfileRow = {
   emergency_fund_months: number | null;
   savings_rate_estimate: number | null;
   onboarding_step: number;
+  /**
+   * Where «/» redirects. null = ask every time. NOT the current workspace,
+   * which is read from the url and never stored — see lib/workspaces.ts.
+   */
+  default_workspace: WorkspaceId | null;
   onboarding_completed_at: string | null;
   created_at: string;
   updated_at: string;
