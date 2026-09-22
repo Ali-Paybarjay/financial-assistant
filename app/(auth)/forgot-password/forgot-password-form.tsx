@@ -39,12 +39,12 @@ export function ForgotPasswordForm() {
   if (sent) {
     return (
       <div className="flex flex-col gap-4">
-        <h1 className="font-display text-display-l font-bold text-ink">فرستادم</h1>
+        <h1 className="font-display text-question font-bold text-ink">فرستادم</h1>
         <p className="text-body text-ink-muted">
           اگر حسابی با این ایمیل باشد، لینک بازیابی رمز به آن رسیده. رویش بزن تا
           رمز تازه بگذاری.
         </p>
-        <Link href="/login" className="text-caption font-medium text-lapis hover:underline">
+        <Link href="/login" className="text-caption font-medium text-action hover:underline">
           برگرد به ورود
         </Link>
       </div>
@@ -54,7 +54,7 @@ export function ForgotPasswordForm() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-display text-display-l font-bold text-ink">بازیابی رمز</h1>
+        <h1 className="font-display text-question font-bold text-ink">بازیابی رمز</h1>
         <p className="mt-1 text-body text-ink-muted">
           ایمیلت را بنویس تا لینک ساختن رمز تازه را برایت بفرستم.
         </p>
@@ -80,7 +80,7 @@ export function ForgotPasswordForm() {
         </Button>
       </form>
 
-      <Link href="/login" className="text-caption font-medium text-lapis hover:underline">
+      <Link href="/login" className="text-caption font-medium text-action hover:underline">
         برگرد به ورود
       </Link>
     </div>

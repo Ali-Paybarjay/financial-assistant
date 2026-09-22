@@ -5,7 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CaretLeft, CaretRight, Plus } from "@phosphor-icons/react/dist/ssr";
 import { Money } from "@/components/money";
+import { PageHeader, PageSheet, Rows, Section } from "@/components/page";
 import { KpiCards } from "@/components/dashboard/kpi-cards";
+import { MonthRunway } from "@/components/dashboard/month-runway";
 import { CategoryDonut, type CategorySlice } from "@/components/dashboard/category-donut";
 import { MonthBars } from "@/components/dashboard/month-bars";
 import { EmptyDashboard } from "@/components/dashboard/empty-dashboard";
@@ -26,7 +28,7 @@ import type {
   TransactionRow,
 } from "@/lib/supabase/database.types";
 
-/** How many goals the dashboard card lists before it stops being a summary. */
+/** How many goals the dashboard section lists before it stops being a summary. */
 const CARD_GOALS = 4;
 
 export function DashboardView({
@@ -85,18 +87,27 @@ export function DashboardView({
   const goalById = new Map(goals.map((goal) => [goal.id, goal]));
   const openGoals = goals.filter((goal) => goal.status === "active");
 
+  /**
+   * The runway's two halves. A month being browsed in the past is entirely
+   * behind the user, so it is drawn fully inked with nothing left to spend —
+   * the alternative, running today's date against a month it does not belong
+   * to, would draw a pencil tail on a month that has already ended.
+   */
+  const daysGone = isCurrentMonth ? Number(today.slice(8, 10)) : daysInMonth(month);
+  const runwayDaysLeft = isCurrentMonth ? daysLeft : 0;
+
   function goToMonth(delta: number) {
     router.push(`/dashboard?month=${shiftMonth(month, delta)}`);
   }
 
   const monthSelector = (
-    <div className="flex h-9 items-center gap-1 rounded-full border border-hairline bg-paper px-1">
+    <div className="flex h-9 items-center gap-1 rounded-full bg-paper px-1">
       {/* Caret-right steps back in an RTL reading order. */}
       <button
         type="button"
         aria-label="ماه قبل"
         onClick={() => goToMonth(-1)}
-        className="flex size-7 items-center justify-center rounded-full text-ink-muted hover:text-lapis"
+        className="flex size-7 items-center justify-center rounded-full text-ink-muted hover:text-action"
       >
         <CaretRight size={14} />
       </button>
@@ -108,7 +119,7 @@ export function DashboardView({
         aria-label="ماه بعد"
         disabled={isCurrentMonth}
         onClick={() => goToMonth(1)}
-        className="flex size-7 items-center justify-center rounded-full text-ink-muted hover:text-lapis disabled:text-hairline-strong disabled:hover:text-hairline-strong"
+        className="flex size-7 items-center justify-center rounded-full text-ink-muted hover:text-action disabled:text-ink-faint/50 disabled:hover:text-ink-faint/50"
       >
         <CaretLeft size={14} />
       </button>
@@ -116,67 +127,62 @@ export function DashboardView({
   );
 
   return (
-    // Financial figures gain nothing from stretching, so the content stops at
-    // 1120px and centres. One breakpoint, not three.
-    <div className="mx-auto w-full max-w-[560px] min-[960px]:max-w-[1120px] min-[960px]:px-7 min-[960px]:py-6">
-      {/* A floating button on a desktop hides something that has room, so the
-          primary action moves into the header there. */}
-      <div className="flex items-center justify-between min-[960px]:pb-4">
-        {/* The page's name, kept in the accessibility tree at every width.
-            It used to live inside this row's `hidden` — which meant that on
-            a phone, the screen the whole app opens on had no heading at all
-            for anyone navigating by them. Shown from 960px, where there is
-            room for it beside the button; announced always. */}
-        <h1 className="sr-only text-title font-semibold text-ink min-[960px]:not-sr-only">
-          داشبورد
-        </h1>
-        <button
-          type="button"
-          onClick={() => setEntryOpen(true)}
-          className="hidden h-11 items-center gap-2 rounded-control bg-lapis px-4 text-[14px] font-semibold text-white transition-colors hover:bg-lapis/90 active:bg-lapis-pressed min-[960px]:flex"
-        >
-          <Plus size={18} weight="bold" />
-          ثبت هزینه
-        </button>
-      </div>
-
-      <div className="min-[960px]:grid min-[960px]:grid-cols-[1.35fr_1fr_1fr_1fr] min-[960px]:gap-3">
-        <header className="border-b border-hairline bg-surface px-4 pb-4 pt-3.5 min-[960px]:rounded-card min-[960px]:border min-[960px]:px-5 min-[960px]:py-4">
-          <div className="flex items-center justify-between min-[960px]:hidden">
-            <span className="flex size-9 items-center justify-center rounded-full bg-lapis-tint text-[15px] font-semibold text-lapis">
-              {name.trim().charAt(0) || "؟"}
-            </span>
+    <PageSheet width="wide">
+      <div className="px-4 pb-4 pt-4 min-[960px]:px-7 min-[960px]:pb-5 min-[960px]:pt-6">
+        {/* The page's name is announced at every width but only drawn where
+            there is room for it beside the button. On a phone the balance
+            below says where you are more plainly than the word «داشبورد». */}
+        <PageHeader title="داشبورد" visuallyHidden className="mb-4 min-[960px]:mb-5">
+          {/* On a phone the heading is only announced, so this row would
+              otherwise hold one control and drift; the avatar gives the
+              justify-between something to push against, and puts «whose
+              ledger is this» where a person looks for it. */}
+          <span className="flex size-9 items-center justify-center rounded-full bg-action-tint text-caption font-semibold text-action min-[960px]:hidden">
+            {name.trim().charAt(0) || "؟"}
+          </span>
+          <div className="flex items-center gap-3">
             {monthSelector}
+            {/* A floating button on a desktop hides an action that has room. */}
+            <button
+              type="button"
+              onClick={() => setEntryOpen(true)}
+              className="hidden h-11 items-center gap-2 rounded-control bg-action px-4 text-[14px] font-semibold text-white transition-colors hover:bg-action/90 active:bg-action-pressed min-[960px]:flex"
+            >
+              <Plus size={18} weight="bold" />
+              ثبت هزینه
+            </button>
+          </div>
+        </PageHeader>
+
+        {/* The balance and the month's three figures: one reading of a month
+            beside three more, split by a rule rather than sealed into cards. */}
+        <div className="min-[960px]:grid min-[960px]:grid-cols-[minmax(0,1.1fr)_minmax(0,1.4fr)] min-[960px]:items-center min-[960px]:gap-8">
+          <div>
+            <p className="text-label text-ink-muted">مانده‌ی این ماه</p>
+
+            {isEmpty ? (
+              <>
+                <Money minor={balance} currency={currency} size="hero" />
+                <p className="mt-2 max-w-[42ch] text-caption text-ink-muted">
+                  هنوز هیچ هزینه‌ای ثبت نشده — این عدد همان درآمدی است که در ثبت‌نام
+                  گفتی.
+                </p>
+              </>
+            ) : (
+              <>
+                <Money minor={balance} currency={currency} size="hero" tone="auto" signed />
+                <MonthRunway
+                  daysGone={daysGone}
+                  daysLeft={runwayDaysLeft}
+                  perDay={runwayDaysLeft > 0 ? Math.max(perDay, 0) : null}
+                  currency={currency}
+                />
+              </>
+            )}
           </div>
 
-          <div className="hidden min-[960px]:block">{monthSelector}</div>
-
-          <p className="mt-3 text-label text-ink-muted">مانده‌ی این ماه</p>
-          {isEmpty ? (
-            <>
-              <Money minor={balance} currency={currency} size="hero" />
-              <p className="mt-1 text-caption text-ink-muted">
-                هنوز هیچ هزینه‌ای ثبت نشده — این عدد همان درآمدی است که در ثبت‌نام گفتی.
-              </p>
-            </>
-          ) : (
-            <>
-              <Money minor={balance} currency={currency} size="hero" tone="auto" signed />
-              <p className="mt-1 flex items-center gap-2 text-caption text-ink-muted">
-                <span>{faNumber(daysLeft)} روز تا پایان ماه</span>
-                <span aria-hidden className="h-3 w-px bg-hairline" />
-                <span className="flex items-center gap-1">
-                  روزی
-                  <Money minor={Math.max(perDay, 0)} currency={currency} />
-                </span>
-              </p>
-            </>
-          )}
-        </header>
-
-        {!isEmpty && (
-          <div className="contents">
-            <div className="px-4 pt-3 min-[960px]:col-span-3 min-[960px]:p-0">
+          {!isEmpty && (
+            <div className="mt-5 border-t border-hairline pt-4 min-[960px]:mt-0 min-[960px]:border-s min-[960px]:border-t-0 min-[960px]:ps-8 min-[960px]:pt-0">
               <KpiCards
                 totals={totals}
                 previous={previousTotals}
@@ -184,12 +190,12 @@ export function DashboardView({
                 hasUnconfirmed={totals.unconfirmedCount > 0}
               />
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      <div className="flex flex-col gap-3 p-4 min-[960px]:mt-3 min-[960px]:p-0">
-        {/* Above everything, because it says the figures below it are
+      <div className="flex flex-col gap-7 px-4 pb-8 min-[960px]:px-7 min-[960px]:pb-8">
+        {/* Above everything, because it says the figures above it are
             incomplete — and it is a button, because the app cannot settle
             these on its own but can act on the answers. */}
         <MissedBanner count={missed.length} onOpen={() => setMissedOpen(true)} />
@@ -211,46 +217,44 @@ export function DashboardView({
             {totals.unconfirmedCount > 0 && (
               <Link
                 href="/transactions"
-                className="flex items-center gap-2 rounded-control border border-guess-border bg-guess-tint px-3 py-2.5"
+                className="flex items-center gap-2.5 rounded-well bg-guess-tint px-3.5 py-3 transition-colors hover:bg-guess-tint/70"
               >
-                <span
-                  aria-hidden
-                  className="h-0.5 w-4 shrink-0 border-t-2 border-dashed border-guess"
-                />
+                <span aria-hidden className="h-0 w-5 shrink-0 rule-guess" />
                 <span className="flex-1 text-caption font-medium text-guess-text">
                   {faNumber(totals.unconfirmedCount)} تراکنش تأییدنشده در این جمع هست.
                 </span>
-                <span className="text-caption font-semibold text-lapis">بررسی</span>
+                <span className="text-caption font-semibold text-action">بررسی</span>
               </Link>
             )}
 
-            <div className="flex flex-col gap-3 min-[960px]:grid min-[960px]:grid-cols-[1fr_1.25fr]">
+            <div className="flex flex-col gap-7 min-[960px]:grid min-[960px]:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] min-[960px]:gap-x-8 min-[960px]:gap-y-7">
               {byCategory.length > 0 && (
                 <CategoryDonut slices={byCategory} currency={currency} />
               )}
               <MonthBars series={series} currency={currency} />
             </div>
 
-            <div className="flex flex-col gap-3 min-[960px]:grid min-[960px]:grid-cols-[1fr_1.25fr] min-[960px]:items-start">
+            <div className="flex flex-col gap-7 min-[960px]:grid min-[960px]:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] min-[960px]:items-start min-[960px]:gap-x-8 min-[960px]:gap-y-7">
               {openGoals.length > 0 && (
-                <section className="rounded-card border border-hairline bg-surface p-4">
-                  <div className="mb-3 flex items-baseline justify-between gap-2">
-                    <h2 className="text-[15px] font-semibold text-ink">هدف‌ها</h2>
-                    <Link href="/goals" className="text-caption font-medium text-lapis">
+                <Section
+                  title="هدف‌ها"
+                  action={
+                    <Link href="/goals" className="text-caption font-medium text-action">
                       برنامه
                     </Link>
-                  </div>
-                  <ul className="flex flex-col gap-3">
-                    {/* The card shows the first few; the whole list is here so
-                        the entry sheet can offer every goal a purchase might
-                        belong to. */}
+                  }
+                >
+                  <ul className="flex flex-col gap-3.5">
+                    {/* The section shows the first few; the whole list is here
+                        so the entry sheet can offer every goal a purchase
+                        might belong to. */}
                     {openGoals.slice(0, CARD_GOALS).map((goal) => {
                       const progress = Math.min(
                         100,
                         Math.round((goal.saved / goal.target_amount) * 100),
                       );
                       // What the date costs per month. Whether it fits the
-                      // month is the goals page's job — this card has no
+                      // month is the goals page's job — this summary has no
                       // surplus to weigh it against, and a number is still
                       // worth more here than a bar on its own.
                       const required = requiredMonthly(goal, today);
@@ -265,18 +269,18 @@ export function DashboardView({
                               <Money minor={goal.target_amount} currency={currency} />
                             </span>
                           </div>
+                          {/* A goal is the same statement as the month: what is
+                              saved is inked, what is still to come is not. */}
                           <div
                             role="progressbar"
                             aria-valuenow={progress}
                             aria-valuemin={0}
                             aria-valuemax={100}
                             aria-label={`${goal.title} — ${faPercent(progress)}`}
-                            className="h-2 overflow-hidden rounded-full bg-lapis-tint"
+                            className="runway"
                           >
-                            <div
-                              className="h-full rounded-full bg-lapis"
-                              style={{ width: `${progress}%` }}
-                            />
+                            <span className="runway-gone" style={{ width: `${progress}%` }} />
+                            {progress < 100 && <span className="runway-left" />}
                           </div>
                           {required !== null && (
                             <p className="text-caption text-ink-muted">
@@ -288,7 +292,7 @@ export function DashboardView({
                       );
                     })}
                   </ul>
-                </section>
+                </Section>
               )}
 
               {/* Above the balances, because it is the reason they might be
@@ -300,17 +304,23 @@ export function DashboardView({
                 total={accountsTotal}
                 currency={currency}
               />
+            </div>
 
-              <section className="overflow-hidden rounded-card border border-hairline bg-surface">
-                <div className="flex items-center justify-between p-4 pb-2">
-                  <h2 className="text-[15px] font-semibold text-ink">تراکنش‌های اخیر</h2>
-                  <Link
-                    href="/transactions"
-                    className="text-caption font-medium text-lapis"
-                  >
-                    همه
-                  </Link>
-                </div>
+            <Section
+              title="تراکنش‌های اخیر"
+              action={
+                <Link
+                  href="/transactions"
+                  className="text-caption font-medium text-action"
+                >
+                  همه
+                </Link>
+              }
+            >
+              {/* Capped on a wide screen. Across the full 1120px sheet the
+                  amount ends up a hand-span from the name it belongs to, and
+                  a column you have to track across is a column you misread. */}
+              <Rows className="min-[960px]:max-w-[720px]">
                 {recent.map((row) => (
                   <TransactionRowItem
                     key={row.id}
@@ -333,11 +343,8 @@ export function DashboardView({
                     onSelect={() => router.push("/transactions")}
                   />
                 ))}
-              </section>
-            </div>
-
-            {/* Last on the page, and deliberately: this is a feature beside
-                the month the rest of the dashboard is about, not part of it. */}
+              </Rows>
+            </Section>
           </>
         )}
       </div>
@@ -359,6 +366,12 @@ export function DashboardView({
         open={entryOpen}
         onOpenChange={setEntryOpen}
       />
-    </div>
+    </PageSheet>
   );
+}
+
+/** Days in the month a `YYYY-MM-01` key names. */
+function daysInMonth(month: string): number {
+  const [year, monthNumber] = month.split("-").map(Number);
+  return new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
 }

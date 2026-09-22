@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowClockwise, CheckCircle, Warning } from "@phosphor-icons/react/dist/ssr";
+import { PageSheet } from "@/components/page";
 import { Button } from "@/components/ui/button";
 import { StatementUploader } from "@/components/import/statement-uploader";
 import { StatementReport } from "@/components/import/statement-report";
@@ -53,7 +54,7 @@ export function ImportView({
   const [isPending, startTransition] = useTransition();
 
   return (
-    <div className="mx-auto w-full max-w-[560px] px-4 py-4">
+    <PageSheet className="px-4 py-4 min-[960px]:px-7 min-[960px]:py-6">
       <header className="mb-4">
         <h1 className="text-[22px] font-semibold text-ink">
           {lockedAccount ? `بروزرسانی ${lockedAccount.title}` : "صورت‌حساب بانکی"}
@@ -122,7 +123,7 @@ export function ImportView({
           onApplied={setApplied}
         />
       ) : current?.status === "parsing" ? (
-        <div className="flex flex-col gap-3 rounded-card border border-hairline bg-surface p-4">
+        <div className="flex flex-col gap-3 rounded-well bg-paper p-4">
           <p className="flex items-start gap-2 text-body text-ink">
             <ArrowClockwise size={20} className="mt-0.5 shrink-0 text-ink-muted" />
             هنوز دارم این صورت‌حساب را می‌خوانم. می‌توانی صفحه را ببندی و بعداً برگردی.
@@ -170,7 +171,7 @@ export function ImportView({
       {history.length > 0 && !applied && current?.status !== "review" && (
         <section className="mt-8">
           <h2 className="mb-2 text-[15px] font-semibold text-ink">صورت‌حساب‌های قبلی</h2>
-          <ul className="overflow-hidden rounded-card border border-hairline bg-surface">
+          <ul className="overflow-hidden">
             {history.map((entry) => (
               <li
                 key={entry.id}
@@ -196,7 +197,7 @@ export function ImportView({
           </ul>
         </section>
       )}
-    </div>
+    </PageSheet>
   );
 }
 

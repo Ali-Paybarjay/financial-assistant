@@ -45,13 +45,15 @@ export default async function HubPage() {
   const loudest = dongGroups[0];
 
   return (
-    <div className="mx-auto w-full max-w-[720px] px-4 py-6">
+    // The one screen with no sheet of its own: it is a fork in the road, not a
+    // page, so the two things you choose between are the sheets.
+    <div className="mx-auto w-full max-w-[760px] px-4 py-7 min-[720px]:py-10">
       <header className="mb-5 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-title font-semibold text-ink">
+          <h1 className="font-display text-question font-bold text-ink">
             {firstName ? `سلام ${firstName}` : "سلام"}
           </h1>
-          <p className="mt-1 text-caption text-ink-muted">
+          <p className="mt-1.5 max-w-[56ch] text-caption text-ink-muted">
             دو بخش جدا: حساب‌وکتاب خودت، و حساب‌وکتاب چندنفره. هر وقت خواستی از بالای
             صفحه بینشان جابه‌جا شو.
           </p>
@@ -61,7 +63,7 @@ export default async function HubPage() {
         <HubSignOutButton />
       </header>
 
-      <div className="grid gap-3 min-[720px]:grid-cols-2">
+      <div className="grid gap-4 min-[720px]:grid-cols-2">
         <WorkspaceCard
           workspace="personal"
           headline={
@@ -69,12 +71,13 @@ export default async function HubPage() {
               <Money
                 minor={totals.income - totals.expense}
                 currency={viewer.currency}
-                size="kpi"
+                size="inherit"
+                className="text-figure-lg font-bold"
                 signed
                 tone="auto"
               />
             ) : (
-              <span className="text-[16px] font-semibold text-ink-muted">—</span>
+              <span className="text-figure-lg font-semibold text-ink-muted">—</span>
             )
           }
           headlineLabel={hasLedger ? "مانده‌ی این ماه" : "هنوز چیزی ثبت نکرده‌ای"}
@@ -101,12 +104,13 @@ export default async function HubPage() {
               <Money
                 minor={loudest.net}
                 currency={loudest.currency}
-                size="kpi"
+                size="inherit"
+                className="text-figure-lg font-bold"
                 signed
                 tone="auto"
               />
             ) : (
-              <span className="text-[16px] font-semibold text-ink-muted">
+              <span className="text-figure-lg font-semibold text-ink-muted">
                 {openGroups > 0 ? "صاف" : "—"}
               </span>
             )
@@ -146,26 +150,30 @@ function WorkspaceCard({
   return (
     <Link
       href={meta.href}
-      className="flex min-h-[190px] flex-col gap-3 rounded-card border border-hairline bg-surface p-4 transition-colors hover:border-lapis hover:bg-lapis-tint/40"
+      className="group flex min-h-[200px] flex-col gap-3 rounded-card bg-surface p-5 shadow-lift transition-shadow hover:shadow-[0_2px_4px_rgb(25_26_46/0.06),0_18px_40px_-20px_rgb(25_26_46/0.45)]"
     >
       <span className="flex items-center gap-2.5">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-lapis-tint text-lapis">
-          <Glyph size={20} />
-        </span>
+        <Glyph size={20} className="shrink-0 text-ink-faint" />
         <span className="min-w-0 flex-1 text-[17px] font-semibold text-ink">
           {meta.title}
         </span>
-        <CaretLeft size={16} className="shrink-0 text-ink-faint" />
+        <CaretLeft
+          size={16}
+          className="shrink-0 text-ink-faint transition-colors group-hover:text-action"
+        />
       </span>
 
-      <span className="text-caption text-ink-muted">{meta.blurb}</span>
+      <span className="max-w-[46ch] text-caption text-ink-muted">{meta.blurb}</span>
 
-      <span className="mt-auto flex flex-col gap-0.5 border-t border-hairline pt-3">
+      {/* The number this side of the app is about, given the bottom of the
+          sheet to itself — the choice is made on what is actually going on,
+          not on two labels. */}
+      <span className="mt-auto flex flex-col gap-1 border-t border-hairline pt-3.5">
+        <span className="text-caption text-ink-muted">{headlineLabel}</span>
         <span className="flex items-baseline justify-between gap-2">
-          <span className="text-caption text-ink-muted">{headlineLabel}</span>
           {headline}
+          <span className="truncate text-caption text-ink-faint">{footer}</span>
         </span>
-        <span className="truncate text-caption text-ink-faint">{footer}</span>
       </span>
     </Link>
   );

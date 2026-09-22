@@ -31,7 +31,7 @@ export function TabBar({ workspace }: { workspace: WorkspaceId }) {
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex h-14 flex-col items-center justify-center gap-1",
-                  active ? "text-lapis" : "text-ink-muted",
+                  active ? "text-action" : "text-ink-muted",
                 )}
               >
                 <Icon size={22} weight={active ? "fill" : "regular"} />

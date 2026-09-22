@@ -193,7 +193,7 @@ export function AccountSheet({
         </Field>
 
         <label className="flex items-center gap-2.5 rounded-control border border-hairline bg-paper px-3 py-2.5">
-          <input type="checkbox" className="size-4 accent-lapis" {...register("isDefault")} />
+          <input type="checkbox" className="size-4 accent-action" {...register("isDefault")} />
           <span className="text-caption text-ink">
             موقع ثبت هزینه، پیش‌فرض همین حساب انتخاب باشد
           </span>
@@ -277,7 +277,7 @@ function RestateBalance({
       <button
         type="button"
         onClick={() => setPanelOpen(true)}
-        className="self-start text-caption font-medium text-lapis hover:underline"
+        className="self-start text-caption font-medium text-action hover:underline"
       >
         بانک عدد دیگری می‌گوید؟ موجودی را از نو بنویس
       </button>

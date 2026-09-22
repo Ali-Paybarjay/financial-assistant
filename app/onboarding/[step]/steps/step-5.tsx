@@ -99,7 +99,7 @@ export function Step5({
           {fields.map((field, index) => (
             <div
               key={field.id}
-              className="flex flex-col gap-3 rounded-card border border-hairline bg-paper p-3"
+              className="flex flex-col gap-3 rounded-well bg-paper p-3"
             >
               <div className="flex items-center gap-2">
                 <Input

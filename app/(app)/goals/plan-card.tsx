@@ -26,11 +26,11 @@ export function PlanCard({
 }) {
   if (surplus.basis === "unknown") {
     return (
-      <section className="mb-4 rounded-card border border-hairline bg-surface p-4">
-        <h2 className="text-[15px] font-semibold text-ink">برنامه‌ی پس‌انداز</h2>
+      <section className="mb-6">
+        <h2 className="text-section font-semibold text-ink">برنامه‌ی پس‌انداز</h2>
         <p className="mt-1.5 text-body text-ink-muted">
           نمی‌دانم هر ماه چقدر برایت می‌ماند، پس نمی‌توانم بگویم چقدر کنار بگذاری.{" "}
-          <Link href="/income" className="font-medium text-lapis underline">
+          <Link href="/income" className="font-medium text-action underline">
             درآمد و هزینه‌های ثابتت را وارد کن
           </Link>{" "}
           تا برنامه را بسازم.
@@ -42,8 +42,8 @@ export function PlanCard({
   const broke = surplus.amount <= 0;
 
   return (
-    <section className="mb-4 rounded-card border border-hairline bg-surface p-4">
-      <h2 className="text-[15px] font-semibold text-ink">برنامه‌ی پس‌انداز</h2>
+    <section className="mb-6">
+      <h2 className="text-section font-semibold text-ink">برنامه‌ی پس‌انداز</h2>
 
       <p className="mt-2 text-label text-ink-muted">
         {broke ? "این ماه چیزی برای کنار گذاشتن نمی‌ماند" : "هر ماه این‌قدر کنار بگذار"}
@@ -56,7 +56,7 @@ export function PlanCard({
       </p>
 
       {plan.shortfall > 0 && (
-        <p className="mt-3 rounded-control border border-guess-border bg-guess-tint px-3 py-2.5 text-caption text-guess-text">
+        <p className="mt-3 rounded-well bg-guess-tint px-3.5 py-3 text-caption text-guess-text">
           برای اینکه به همه‌ی تاریخ‌ها برسی ماهی{" "}
           <Money minor={plan.required} currency={currency} /> لازم است — یعنی{" "}
           <Money minor={plan.shortfall} currency={currency} /> بیشتر از چیزی که داری. سه

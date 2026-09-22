@@ -1,13 +1,14 @@
 "use client";
 
 import { Bar, BarChart, Cell, ResponsiveContainer, XAxis } from "recharts";
+import { Section } from "@/components/page";
 import { formatMonthFa } from "@/lib/date";
 import { toMajor, type CurrencyCode } from "@/lib/money";
 import type { MonthPoint } from "@/lib/queries/transactions";
 
-const INCOME_FILL = "#23459b";
-const EXPENSE_FILL = "#c2cdeb";
-const EXPENSE_STROKE = "#93a8dc";
+const INCOME_FILL = "#302c73";
+const EXPENSE_FILL = "#b3b1dd";
+const EXPENSE_STROKE = "#8886c5";
 
 export function MonthBars({
   series,
@@ -23,10 +24,10 @@ export function MonthBars({
   }));
 
   return (
-    <section className="rounded-card border border-hairline bg-surface p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-[15px] font-semibold text-ink">۶ ماه اخیر</h2>
-        <div className="flex items-center gap-3 text-micro text-ink-muted">
+    <Section
+      title="۶ ماه اخیر"
+      action={
+        <span className="flex items-center gap-3 text-micro text-ink-muted">
           <span className="flex items-center gap-1">
             <span className="size-2 rounded-[2px]" style={{ background: INCOME_FILL }} />
             درآمد
@@ -38,12 +39,12 @@ export function MonthBars({
             />
             هزینه
           </span>
-        </div>
-      </div>
-
-      <div className="h-[110px]">
+        </span>
+      }
+    >
+      <div className="h-[120px]">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} barGap={2} margin={{ top: 4, bottom: 0 }}>
+          <BarChart data={data} barGap={3} margin={{ top: 4, bottom: 0 }}>
             {/* Time runs left to right even in an RTL page: the design puts the
                 oldest month on the left, and an SVG axis does not flip with
                 the document direction anyway. */}
@@ -51,10 +52,10 @@ export function MonthBars({
               dataKey="label"
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 10, fill: "#5c6573" }}
+              tick={{ fontSize: 10, fill: "#585c74" }}
             />
-            <Bar dataKey="income" fill={INCOME_FILL} radius={[2, 2, 0, 0]} maxBarSize={9} />
-            <Bar dataKey="expense" radius={[2, 2, 0, 0]} maxBarSize={9}>
+            <Bar dataKey="income" fill={INCOME_FILL} radius={[3, 3, 0, 0]} maxBarSize={20} />
+            <Bar dataKey="expense" radius={[3, 3, 0, 0]} maxBarSize={20}>
               {data.map((point) => (
                 // A border, so the two series stay distinguishable in greyscale.
                 <Cell key={point.label} fill={EXPENSE_FILL} stroke={EXPENSE_STROKE} />
@@ -63,6 +64,6 @@ export function MonthBars({
           </BarChart>
         </ResponsiveContainer>
       </div>
-    </section>
+    </Section>
   );
 }

@@ -141,7 +141,7 @@ export function StatementReport({
         </p>
       )}
 
-      <section className="rounded-card border border-hairline bg-surface p-4">
+      <section className="rounded-well bg-paper p-4">
         <h2 className="text-[17px] font-semibold text-ink">گزارش صورت‌حساب</h2>
         <p className="mt-1 text-caption text-ink-muted">
           {[
@@ -209,13 +209,13 @@ export function StatementReport({
             <button
               type="button"
               onClick={() => setAllSelected(selected.length !== fresh.length)}
-              className="text-caption font-medium text-lapis hover:underline"
+              className="text-caption font-medium text-action hover:underline"
             >
               {selected.length === fresh.length ? "هیچ‌کدام" : "همه"}
             </button>
           </div>
 
-          <div className="overflow-hidden rounded-card border border-hairline bg-surface">
+          <div className="overflow-hidden">
             {fresh.map((line) => (
               <StatementLineRowItem
                 key={line.id}
@@ -247,7 +247,7 @@ export function StatementReport({
       )}
 
       {matched.length > 0 && (
-        <details className="overflow-hidden rounded-card border border-hairline bg-surface">
+        <details className="overflow-hidden">
           <summary className="cursor-pointer px-3 py-2.5 text-caption font-medium text-ink-muted">
             {faNumber(matched.length)} ردیف که قبلاً ثبت شده بود
           </summary>
@@ -300,7 +300,7 @@ function Tile({
       <dd
         className={
           emphasis
-            ? "mt-0.5 text-[20px] font-semibold text-lapis"
+            ? "mt-0.5 text-[20px] font-semibold text-action"
             : "mt-0.5 text-[20px] font-semibold text-ink"
         }
       >

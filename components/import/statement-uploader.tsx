@@ -179,7 +179,7 @@ export function StatementUploader({
         </Field>
       )}
 
-      <div className="flex flex-col items-center justify-center gap-2 rounded-card border-2 border-dashed border-hairline-strong bg-paper px-4 py-8 text-center">
+      <div className="flex flex-col items-center justify-center gap-2 rounded-well border-2 border-dashed border-hairline-strong/45 bg-paper px-4 py-8 text-center">
         <FileArrowUp size={30} className="text-ink-faint" />
         <p className="text-caption text-ink-muted">
           {status ?? "پرینت حساب یک تا سه ماهه را بده."}
@@ -192,7 +192,7 @@ export function StatementUploader({
       </div>
 
       {files.length > 0 && (
-        <ul className="overflow-hidden rounded-card border border-hairline">
+        <ul className="overflow-hidden">
           {files.map((file, index) => (
             <li
               key={`${file.name}-${index}`}
