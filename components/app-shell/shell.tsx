@@ -2,7 +2,6 @@
 
 import { usePathname } from "next/navigation";
 import { Sidebar } from "./sidebar";
-import { hasTabBar } from "./tab-bar";
 import { WorkspaceSwitch } from "./workspace-switch";
 import { Composer } from "@/components/entry/composer";
 import { GuestBanner } from "@/components/guest/guest-banner";
@@ -74,23 +73,43 @@ export function AppShell({
             page, which makes the label ambiguous and the field unfocusable
             by id. It sits here, where the desktop wants it — above the
             board — and its own `fixed` lifts it to the bottom of the screen
-            on a phone, where there is nothing underneath it to cover. */}
-        {workspace && (
+            on a phone, where there is nothing underneath it to cover.
+
+            Personal only, and that is rule 11 rather than a layout choice.
+            This bar writes to the personal ledger, so on a trip page it
+            would take «قهوه ۵» from someone looking at a shared expense list
+            and quietly file it as their own spending — the exact
+            cross-contamination the two workspaces exist to prevent. «دنگ و
+            دونگ» records an expense through its own sheet, which knows who
+            paid and how it splits; a free-text bar that knew neither would
+            have to guess both. */}
+        {workspace === "personal" && (
           <div className="min-[960px]:mx-auto min-[960px]:w-full min-[960px]:max-w-[1120px] min-[960px]:px-7 min-[960px]:pt-6">
             <Composer workspace={workspace} {...entry} />
           </div>
         )}
 
-        {/* 120px clears the composer — a 42px field, the four tabs, and the
-            device's own bottom inset. It used to be pb-20 for a tab bar
-            alone. It disappears with the bar, both at 960px and in a
-            workspace that has no bar to clear. */}
+        {/* Clears the composer, which is 122px plus whatever the device
+            reserves at its bottom edge: a 1px rule, 10px of padding, a 44px
+            row — the touch targets, not the 42px field, set that height —
+            10px more padding, and the 56px tab bar. It was pb-20 for a tab
+            bar alone.
+
+            The inset is carried through with calc rather than rounded into
+            the constant, because it is 0 on most phones and 34px on the ones
+            with a home indicator; a single number is either short on one or
+            leaves dead space on the other. The 2px over 122 is slack, not
+            arithmetic — the alternative is a list whose last row is two
+            pixels under the bar, which is exactly the kind of thing no gate
+            measures. tests/e2e/composer.spec.ts does.
+
+            Only where the bar actually is: «دنگ و دونگ» has neither a
+            composer nor a tab bar, so it has nothing to clear. */}
         <main
           className={cn(
             "min-w-0 flex-1",
-            workspace && hasTabBar(workspace)
-              ? "pb-[120px] min-[960px]:pb-0"
-              : workspace && "pb-[64px] min-[960px]:pb-0",
+            workspace === "personal" &&
+              "pb-[calc(124px+env(safe-area-inset-bottom))] min-[960px]:pb-0",
           )}
         >
           {children}

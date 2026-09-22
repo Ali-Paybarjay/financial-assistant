@@ -129,7 +129,7 @@ export function Composer({
           />
 
           <label htmlFor="composer-text" className="sr-only">
-            {workspace === "dong" ? "خرج تازه در همین دوره" : "چه خریدی؟"}
+            چه خریدی؟
           </label>
           <input
             id="composer-text"
