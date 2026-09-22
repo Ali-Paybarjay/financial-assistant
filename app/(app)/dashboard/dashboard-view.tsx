@@ -121,12 +121,19 @@ export function DashboardView({
     <div className="mx-auto w-full max-w-[560px] min-[960px]:max-w-[1120px] min-[960px]:px-7 min-[960px]:py-6">
       {/* A floating button on a desktop hides something that has room, so the
           primary action moves into the header there. */}
-      <div className="hidden items-center justify-between pb-4 min-[960px]:flex">
-        <h1 className="text-title font-semibold text-ink">داشبورد</h1>
+      <div className="flex items-center justify-between min-[960px]:pb-4">
+        {/* The page's name, kept in the accessibility tree at every width.
+            It used to live inside this row's `hidden` — which meant that on
+            a phone, the screen the whole app opens on had no heading at all
+            for anyone navigating by them. Shown from 960px, where there is
+            room for it beside the button; announced always. */}
+        <h1 className="sr-only text-title font-semibold text-ink min-[960px]:not-sr-only">
+          داشبورد
+        </h1>
         <button
           type="button"
           onClick={() => setEntryOpen(true)}
-          className="flex h-11 items-center gap-2 rounded-control bg-lapis px-4 text-[14px] font-semibold text-white transition-colors hover:bg-lapis/90 active:bg-lapis-pressed"
+          className="hidden h-11 items-center gap-2 rounded-control bg-lapis px-4 text-[14px] font-semibold text-white transition-colors hover:bg-lapis/90 active:bg-lapis-pressed min-[960px]:flex"
         >
           <Plus size={18} weight="bold" />
           ثبت هزینه
