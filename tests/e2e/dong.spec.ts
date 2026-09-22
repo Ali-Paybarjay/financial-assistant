@@ -169,6 +169,30 @@ test("splits a bill, and settles it", async ({ page }) => {
 });
 
 /**
+ * The hub's own way out.
+ *
+ * It is the one signed-in screen with no sidebar and no tab bar, so for a
+ * while it was also the one with no route to settings — the only way to sign
+ * out of the screen that exists to let you choose was to pick one of the two
+ * choices first. The button is asserted here, on the page it belongs to,
+ * because typecheck and lint cannot see a header.
+ */
+test("the hub can be signed out of without entering a workspace", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto("/");
+
+  const exit = page.getByRole("button", { name: "خروج", exact: true });
+  await expect(exit).toBeVisible({ timeout: 30_000 });
+
+  // A real account leaves on the tap: it is undone by signing back in, so
+  // there is nothing to confirm. Only a guest gets the sheet.
+  await exit.click();
+  await page.waitForURL(/\/login/);
+});
+
+/**
  * The split itself: after signing in you are asked which half of the app you
  * are here for, and each half shows only its own.
  *

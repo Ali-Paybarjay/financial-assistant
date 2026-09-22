@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useQueryClient } from "@tanstack/react-query";
 import { SignOut } from "@phosphor-icons/react/dist/ssr";
 import { Button } from "@/components/ui/button";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { useIsGuest } from "@/components/guest/guest-provider";
-import { logout } from "@/app/(auth)/actions";
+import { useSignOut } from "@/components/sign-out";
 
 /**
  * On every onboarding screen, because a seven-step flow with no visible way out
@@ -23,8 +22,7 @@ import { logout } from "@/app/(auth)/actions";
 export function ExitButton() {
   const [open, setOpen] = useState(false);
   const isGuest = useIsGuest();
-  const queryClient = useQueryClient();
-  const [isPending, startTransition] = useTransition();
+  const { signOut, isPending } = useSignOut();
 
   return (
     <>
@@ -75,15 +73,7 @@ export function ExitButton() {
               variant={isGuest ? "destructive" : "outline"}
               className="flex-1"
               disabled={isPending}
-              onClick={() =>
-                startTransition(() => {
-                  // Same rule as the sign-out row in settings: clear the client
-                  // cache before the session goes, so the next account on this
-                  // device never sees the previous one's numbers.
-                  queryClient.clear();
-                  return logout();
-                })
-              }
+              onClick={signOut}
             >
               {isPending
                 ? "دارم خارجت می‌کنم…"
