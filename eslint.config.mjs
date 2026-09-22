@@ -19,7 +19,10 @@ const eslintConfig = [
       "build/**",
       "next-env.d.ts",
       // Vendored reference material from the design phase, not project source.
+      // Both folders carry the design tool's own bundled runtime, which is
+      // built output rather than anything written here.
       "design_handoff_financial_assistant/**",
+      "design_handoff_v2/**",
     ],
   },
 ];

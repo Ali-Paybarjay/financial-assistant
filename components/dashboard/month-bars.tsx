@@ -4,10 +4,11 @@ import { Bar, BarChart, Cell, ResponsiveContainer, XAxis } from "recharts";
 import { formatMonthFa } from "@/lib/date";
 import { toMajor, type CurrencyCode } from "@/lib/money";
 import type { MonthPoint } from "@/lib/queries/transactions";
+import { CHART_RAMP } from "@/lib/chart-colors";
 
-const INCOME_FILL = "#23459b";
-const EXPENSE_FILL = "#c2cdeb";
-const EXPENSE_STROKE = "#93a8dc";
+const INCOME_FILL = CHART_RAMP[0];
+const EXPENSE_FILL = CHART_RAMP[4];
+const EXPENSE_STROKE = CHART_RAMP[3];
 
 export function MonthBars({
   series,

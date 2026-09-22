@@ -17,11 +17,8 @@ import {
   type MemberBalance,
   type Transfer,
 } from "@/lib/dong";
+import { CHART_OTHER, CHART_RAMP as RAMP } from "@/lib/chart-colors";
 import { MemberName } from "./rows";
-
-/** Same single-hue ramp as the dashboard's donut, for the same reasons. */
-const RAMP = ["#23459b", "#3e5cb2", "#6280c8", "#93a8dc", "#c2cdeb"];
-const OTHER = "#c9cdd4";
 
 export function DongReport({
   balances,
@@ -188,7 +185,7 @@ function TagBreakdown({
       fill: RAMP[index],
     })),
     ...(restTotal > 0
-      ? [{ key: "other", name: "سایر", amount: restTotal, fill: OTHER }]
+      ? [{ key: "other", name: "سایر", amount: restTotal, fill: CHART_OTHER }]
       : []),
   ];
 
