@@ -45,6 +45,8 @@ export type MediaKind = "image" | "document";
 export type MediaStatus = "uploaded" | "processing" | "parsed" | "failed";
 export type GoalStatus = "active" | "achieved" | "paused" | "cancelled";
 export type RiskLabel = "conservative" | "balanced" | "growth";
+/** The two sides of the app. Mirrors WorkspaceId in lib/workspaces.ts. */
+export type WorkspaceId = "personal" | "dong";
 export type StatementImportStatus =
   | "uploading"
   | "parsing"
@@ -79,6 +81,17 @@ export type ProfileRow = {
   emergency_fund_months: number | null;
   savings_rate_estimate: number | null;
   onboarding_step: number;
+  /**
+   * Where «/» redirects. null = ask every time. NOT the current workspace,
+   * which is read from the url and never stored — see lib/workspaces.ts.
+   */
+  default_workspace: WorkspaceId | null;
+  /**
+   * The durable copy of the theme choice. The stylesheet reads a cookie
+   * instead — `<html data-theme>` has to be right before any query runs — and
+   * this is what refills that cookie on another device. See lib/theme.ts.
+   */
+  theme: "light" | "dark" | "system";
   onboarding_completed_at: string | null;
   created_at: string;
   updated_at: string;
@@ -156,6 +169,62 @@ export type GoalProgressRow = {
   spent: number;
   /** opening_saved + funded − spent. Negative when it was overspent. */
   saved: number;
+};
+
+/**
+ * A ceiling on one category, from one month onwards. There is no row per
+ * month: the ceiling that applies to any month is the newest row whose
+ * effective_from is not after it. See migration 0019.
+ */
+export type CategoryBudgetRow = {
+  id: string;
+  user_id: string;
+  category_id: string;
+  amount_minor: number;
+  currency: string;
+  /** Always a month start, YYYY-MM-01. */
+  effective_from: string;
+  created_at: string;
+};
+
+/**
+ * «I have seen this and I do not want it again.» The insight itself is never
+ * stored — only this. See migration 0020.
+ */
+export type InsightDismissalRow = {
+  user_id: string;
+  /** «rule:scope», owned by lib/insights.ts. */
+  insight_key: string;
+  dismissed_at: string;
+};
+
+/** One row of envelope_status(). Derived on read, never stored. */
+export type EnvelopeStatusRow = {
+  category_id: string;
+  name_fa: string;
+  /** null = no ceiling set for this month. */
+  budget_minor: number | null;
+  spent_minor: number;
+  /** null without a ceiling; negative once the ceiling is passed. */
+  remaining_minor: number | null;
+  /** How much of spent_minor is still an unconfirmed guess. */
+  unconfirmed_minor: number;
+  /**
+   * What the user said in onboarding this category costs per month. A
+   * suggestion for the ceiling, never written as one — see migration 0022.
+   */
+  baseline_minor: number | null;
+};
+
+/**
+ * Whether a category is on the board because the user put it there, or off it
+ * because they took it off. No row means «decide from the evidence».
+ */
+export type EnvelopePreferenceRow = {
+  user_id: string;
+  category_id: string;
+  state: "shown" | "hidden";
+  updated_at: string;
 };
 
 export type IncomeSourceRow = {
@@ -458,7 +527,10 @@ export type DongGroupTotalRow = {
 export type Database = {
   public: {
     Tables: {
-      profiles: Table<ProfileRow, "timezone" | "base_currency" | "onboarding_step">;
+      profiles: Table<
+        ProfileRow,
+        "timezone" | "base_currency" | "onboarding_step" | "theme"
+      >;
       categories: Table<CategoryRow, "is_system" | "sort_order">;
       accounts: Table<
         AccountRow,
@@ -488,6 +560,9 @@ export type Database = {
       dong_expenses: Table<DongExpenseRow, "split_mode">;
       dong_expense_shares: Table<DongExpenseShareRow, "units">;
       dong_payments: Table<DongPaymentRow, "kind">;
+      category_budgets: Table<CategoryBudgetRow>;
+      insight_dismissals: Table<InsightDismissalRow, "dismissed_at">;
+      envelope_preferences: Table<EnvelopePreferenceRow, "updated_at">;
     };
     Views: Record<never, never>;
     Functions: {
@@ -507,6 +582,11 @@ export type Database = {
       goal_progress: {
         Args: Record<never, never>;
         Returns: GoalProgressRow[];
+      };
+      /** Both bounds inclusive, and both are the user's month, never UTC's. */
+      envelope_status: {
+        Args: { p_month_start: string; p_month_end: string };
+        Returns: EnvelopeStatusRow[];
       };
       dong_balances: {
         Args: { p_group_id: string };

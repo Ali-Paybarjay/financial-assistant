@@ -3,21 +3,24 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CaretLeft, CaretRight, Plus } from "@phosphor-icons/react/dist/ssr";
+import { CaretLeft, CaretRight, MagnifyingGlass } from "@phosphor-icons/react/dist/ssr";
 import { Money } from "@/components/money";
 import { KpiCards } from "@/components/dashboard/kpi-cards";
-import { CategoryDonut, type CategorySlice } from "@/components/dashboard/category-donut";
+import { BalanceCard } from "@/components/dashboard/balance-card";
 import { MonthBars } from "@/components/dashboard/month-bars";
+import { InsightList } from "@/components/dashboard/insight-list";
+import { EnvelopeBoard } from "./envelope-board";
 import { EmptyDashboard } from "@/components/dashboard/empty-dashboard";
 import { AccountBalances } from "@/components/dashboard/account-balances";
 import { ReconcileBanner } from "@/components/accounts/reconcile-banner";
 import { TransactionRowItem } from "@/components/transactions/transaction-row";
-import { EntryLauncher } from "@/components/entry/entry-sheet";
 import { MissedBanner, MissedReview } from "./missed-review";
-import { faNumber, faPercent } from "@/lib/format";
+import { faPercent } from "@/lib/format";
 import { formatMonthFa, shiftMonth } from "@/lib/date";
 import { requiredMonthly, type GoalWithProgress } from "@/lib/goals";
-import type { CurrencyCode } from "@/lib/money";
+import type { EnvelopeRow } from "@/lib/envelopes";
+import type { Insight } from "@/lib/insights";
+import type { CurrencyCode, Minor } from "@/lib/money";
 import type { MonthPoint } from "@/lib/queries/transactions";
 import type { AccountWithBalance } from "@/lib/accounts";
 import type {
@@ -37,9 +40,16 @@ export function DashboardView({
   isCurrentMonth,
   missed,
   daysLeft,
+  daysGone,
+  envelopes,
+  suggestions,
+  slugById,
+  invite,
+  availableCategories,
+  forecast,
+  insights,
   totals,
   previousTotals,
-  byCategory,
   series,
   recent,
   goals,
@@ -47,7 +57,6 @@ export function DashboardView({
   accounts,
   accountsTotal,
   accountsDue,
-  defaultAccountId,
 }: {
   currency: CurrencyCode;
   name: string;
@@ -57,9 +66,22 @@ export function DashboardView({
   /** Fixed bills of past months that were never generated, oldest first. */
   missed: MissedRecurringRow[];
   daysLeft: number;
+  /** Days of the month already lived, including today. */
+  daysGone: number;
+  envelopes: EnvelopeRow[];
+  /** categoryId -> a ceiling worth proposing, where there is history for one. */
+  suggestions: Record<string, Minor>;
+  slugById: Record<string, string>;
+  /** Offered only while no ceiling exists anywhere, and not once waved away. */
+  invite: { candidates: EnvelopeRow[]; key: string } | null;
+  /** Expense categories not on the board, for the «+ پاکت» picker. */
+  availableCategories: CategoryRow[];
+  /** Where the month lands at the current rate. null for a month already over. */
+  forecast: Minor | null;
+  /** What the app worked out about this month. Rendered on the board now. */
+  insights: Insight[];
   totals: { income: number; expense: number; unconfirmedCount: number };
   previousTotals: { income: number; expense: number };
-  byCategory: CategorySlice[];
   series: MonthPoint[];
   recent: TransactionRow[];
   goals: GoalWithProgress[];
@@ -68,11 +90,8 @@ export function DashboardView({
   accountsTotal: number;
   /** Open accounts not yet checked against the bank this month. */
   accountsDue: AccountWithBalance[];
-  /** Open groups, for the one entry point the feature has on a phone. */
-  defaultAccountId: string | null;
 }) {
   const router = useRouter();
-  const [entryOpen, setEntryOpen] = useState(false);
   const [missedOpen, setMissedOpen] = useState(false);
 
   const balance = totals.income - totals.expense;
@@ -85,6 +104,16 @@ export function DashboardView({
   const goalById = new Map(goals.map((goal) => [goal.id, goal]));
   const openGoals = goals.filter((goal) => goal.status === "active");
 
+  /**
+   * Put the cursor in the composer, which lives in the shell rather than on
+   * this page. By id because that is the one thing the two share — a context
+   * carrying a ref would mean every page paying for a provider so that the
+   * empty state can move focus once.
+   */
+  function focusComposer() {
+    document.getElementById("composer-text")?.focus();
+  }
+
   function goToMonth(delta: number) {
     router.push(`/dashboard?month=${shiftMonth(month, delta)}`);
   }
@@ -96,7 +125,7 @@ export function DashboardView({
         type="button"
         aria-label="ماه قبل"
         onClick={() => goToMonth(-1)}
-        className="flex size-7 items-center justify-center rounded-full text-ink-muted hover:text-lapis"
+        className="flex size-7 items-center justify-center rounded-full text-ink-muted hover:text-action"
       >
         <CaretRight size={14} />
       </button>
@@ -108,7 +137,7 @@ export function DashboardView({
         aria-label="ماه بعد"
         disabled={isCurrentMonth}
         onClick={() => goToMonth(1)}
-        className="flex size-7 items-center justify-center rounded-full text-ink-muted hover:text-lapis disabled:text-hairline-strong disabled:hover:text-hairline-strong"
+        className="flex size-7 items-center justify-center rounded-full text-ink-muted hover:text-action disabled:text-hairline-strong disabled:hover:text-hairline-strong"
       >
         <CaretLeft size={14} />
       </button>
@@ -119,72 +148,70 @@ export function DashboardView({
     // Financial figures gain nothing from stretching, so the content stops at
     // 1120px and centres. One breakpoint, not three.
     <div className="mx-auto w-full max-w-[560px] min-[960px]:max-w-[1120px] min-[960px]:px-7 min-[960px]:py-6">
-      {/* A floating button on a desktop hides something that has room, so the
-          primary action moves into the header there. */}
-      <div className="flex items-center justify-between min-[960px]:pb-4">
-        {/* The page's name, kept in the accessibility tree at every width.
-            It used to live inside this row's `hidden` — which meant that on
-            a phone, the screen the whole app opens on had no heading at all
-            for anyone navigating by them. Shown from 960px, where there is
-            room for it beside the button; announced always. */}
-        <h1 className="sr-only text-title font-semibold text-ink min-[960px]:not-sr-only">
-          داشبورد
-        </h1>
-        <button
-          type="button"
-          onClick={() => setEntryOpen(true)}
-          className="hidden h-11 items-center gap-2 rounded-control bg-lapis px-4 text-[14px] font-semibold text-white transition-colors hover:bg-lapis/90 active:bg-lapis-pressed min-[960px]:flex"
-        >
-          <Plus size={18} weight="bold" />
-          ثبت هزینه
-        </button>
-      </div>
+      {/* The page's name, kept in the accessibility tree at every width. It
+          used to live inside a row that was `hidden` below 960px — which
+          meant that on a phone, the screen the whole app opens on had no
+          heading at all for anyone navigating by them. The button that used
+          to sit beside it is gone: recording a purchase is the composer's
+          job now, on every page rather than this one. */}
+      <h1 className="sr-only text-title font-semibold text-ink min-[960px]:not-sr-only min-[960px]:pb-4">
+        داشبورد
+      </h1>
 
-      <div className="min-[960px]:grid min-[960px]:grid-cols-[1.35fr_1fr_1fr_1fr] min-[960px]:gap-3">
-        <header className="border-b border-hairline bg-surface px-4 pb-4 pt-3.5 min-[960px]:rounded-card min-[960px]:border min-[960px]:px-5 min-[960px]:py-4">
-          <div className="flex items-center justify-between min-[960px]:hidden">
-            <span className="flex size-9 items-center justify-center rounded-full bg-lapis-tint text-[15px] font-semibold text-lapis">
-              {name.trim().charAt(0) || "؟"}
-            </span>
-            {monthSelector}
-          </div>
+      {/* One of the two doors to the ledger, now that it has left the tab
+          bar. The other is a tap on any envelope. */}
+      <form
+        action="/transactions"
+        className="flex items-center gap-2 px-4 pt-3 min-[960px]:px-0 min-[960px]:pt-0 min-[960px]:pb-3"
+      >
+        <label htmlFor="dashboard-search" className="sr-only">
+          جست‌وجو در تراکنش‌ها
+        </label>
+        <span className="flex h-11 flex-1 items-center gap-2 rounded-control bg-paper px-3">
+          <MagnifyingGlass size={17} className="shrink-0 text-ink-faint" />
+          <input
+            id="dashboard-search"
+            name="q"
+            type="search"
+            placeholder="جست‌وجو در تراکنش‌ها"
+            className="w-full bg-transparent text-[16px] text-ink outline-none placeholder:text-ink-faint"
+          />
+        </span>
+      </form>
 
-          <div className="hidden min-[960px]:block">{monthSelector}</div>
+      <div className="flex flex-col gap-3 px-4 pt-3 min-[960px]:px-0">
+        <div className="flex items-center justify-between">
+          <span className="flex size-9 items-center justify-center rounded-full bg-action-tint text-[15px] font-semibold text-action min-[960px]:hidden">
+            {name.trim().charAt(0) || "؟"}
+          </span>
+          {monthSelector}
+        </div>
 
-          <p className="mt-3 text-label text-ink-muted">مانده‌ی این ماه</p>
-          {isEmpty ? (
-            <>
-              <Money minor={balance} currency={currency} size="hero" />
-              <p className="mt-1 text-caption text-ink-muted">
-                هنوز هیچ هزینه‌ای ثبت نشده — این عدد همان درآمدی است که در ثبت‌نام گفتی.
-              </p>
-            </>
-          ) : (
-            <>
-              <Money minor={balance} currency={currency} size="hero" tone="auto" signed />
-              <p className="mt-1 flex items-center gap-2 text-caption text-ink-muted">
-                <span>{faNumber(daysLeft)} روز تا پایان ماه</span>
-                <span aria-hidden className="h-3 w-px bg-hairline" />
-                <span className="flex items-center gap-1">
-                  روزی
-                  <Money minor={Math.max(perDay, 0)} currency={currency} />
-                </span>
-              </p>
-            </>
-          )}
-        </header>
-
-        {!isEmpty && (
-          <div className="contents">
-            <div className="px-4 pt-3 min-[960px]:col-span-3 min-[960px]:p-0">
-              <KpiCards
-                totals={totals}
-                previous={previousTotals}
-                currency={currency}
-                hasUnconfirmed={totals.unconfirmedCount > 0}
-              />
-            </div>
-          </div>
+        {isEmpty ? (
+          <section className="rounded-card border border-action-tint-edge bg-action-tint p-4">
+            <p className="text-caption text-ink-muted">ماندهٔ {formatMonthFa(month)}</p>
+            <Money
+              minor={balance}
+              currency={currency}
+              size="hero"
+              tone="auto"
+              className="mt-0.5 block"
+            />
+            <p className="mt-1 text-caption text-ink-muted">
+              هنوز هیچ هزینه‌ای ثبت نشده — این عدد همان درآمدی است که در ثبت‌نام گفتی.
+            </p>
+          </section>
+        ) : (
+          <BalanceCard
+            balance={balance}
+            forecast={forecast}
+            currency={currency}
+            daysGone={daysGone}
+            daysLeft={daysLeft}
+            perDayAllowed={daysLeft > 0 ? Math.max(perDay, 0) : null}
+            perDaySpent={daysGone > 0 ? Math.round(totals.expense / daysGone) : null}
+            monthLabel={formatMonthFa(month)}
+          />
         )}
       </div>
 
@@ -196,7 +223,7 @@ export function DashboardView({
 
         {isEmpty ? (
           <>
-            <EmptyDashboard onStart={() => setEntryOpen(true)} />
+            <EmptyDashboard onStart={focusComposer} />
             {/* An empty month is exactly when a user goes looking for the
                 pages that are not in the tab bar, so these outlive it. */}
             <ReconcileBanner due={accountsDue} />
@@ -208,35 +235,34 @@ export function DashboardView({
           </>
         ) : (
           <>
-            {totals.unconfirmedCount > 0 && (
-              <Link
-                href="/transactions"
-                className="flex items-center gap-2 rounded-control border border-guess-border bg-guess-tint px-3 py-2.5"
-              >
-                <span
-                  aria-hidden
-                  className="h-0.5 w-4 shrink-0 border-t-2 border-dashed border-guess"
-                />
-                <span className="flex-1 text-caption font-medium text-guess-text">
-                  {faNumber(totals.unconfirmedCount)} تراکنش تأییدنشده در این جمع هست.
-                </span>
-                <span className="text-caption font-semibold text-lapis">بررسی</span>
-              </Link>
-            )}
+            <InsightList insights={insights} currency={currency} />
 
-            <div className="flex flex-col gap-3 min-[960px]:grid min-[960px]:grid-cols-[1fr_1.25fr]">
-              {byCategory.length > 0 && (
-                <CategoryDonut slices={byCategory} currency={currency} />
-              )}
-              <MonthBars series={series} currency={currency} />
-            </div>
+            <EnvelopeBoard
+              envelopes={envelopes}
+              suggestions={suggestions}
+              slugById={slugById}
+              currency={currency}
+              daysLeft={daysLeft}
+              invite={invite}
+              available={availableCategories}
+            />
+
+
+            <MonthBars series={series} currency={currency} />
+
+            <KpiCards
+              totals={totals}
+              previous={previousTotals}
+              currency={currency}
+              hasUnconfirmed={totals.unconfirmedCount > 0}
+            />
 
             <div className="flex flex-col gap-3 min-[960px]:grid min-[960px]:grid-cols-[1fr_1.25fr] min-[960px]:items-start">
               {openGoals.length > 0 && (
                 <section className="rounded-card border border-hairline bg-surface p-4">
                   <div className="mb-3 flex items-baseline justify-between gap-2">
                     <h2 className="text-[15px] font-semibold text-ink">هدف‌ها</h2>
-                    <Link href="/goals" className="text-caption font-medium text-lapis">
+                    <Link href="/goals" className="text-caption font-medium text-action">
                       برنامه
                     </Link>
                   </div>
@@ -271,10 +297,10 @@ export function DashboardView({
                             aria-valuemin={0}
                             aria-valuemax={100}
                             aria-label={`${goal.title} — ${faPercent(progress)}`}
-                            className="h-2 overflow-hidden rounded-full bg-lapis-tint"
+                            className="h-2 overflow-hidden rounded-full bg-action-tint"
                           >
                             <div
-                              className="h-full rounded-full bg-lapis"
+                              className="h-full rounded-full bg-action"
                               style={{ width: `${progress}%` }}
                             />
                           </div>
@@ -306,7 +332,7 @@ export function DashboardView({
                   <h2 className="text-[15px] font-semibold text-ink">تراکنش‌های اخیر</h2>
                   <Link
                     href="/transactions"
-                    className="text-caption font-medium text-lapis"
+                    className="text-caption font-medium text-action"
                   >
                     همه
                   </Link>
@@ -347,17 +373,6 @@ export function DashboardView({
         currency={currency}
         open={missedOpen}
         onOpenChange={setMissedOpen}
-      />
-
-      <EntryLauncher
-        currency={currency}
-        categories={categories}
-        accounts={accounts}
-        goals={openGoals}
-        defaultAccountId={defaultAccountId}
-        today={today}
-        open={entryOpen}
-        onOpenChange={setEntryOpen}
       />
     </div>
   );

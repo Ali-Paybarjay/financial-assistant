@@ -301,7 +301,7 @@ export function ExpenseSheet({
                   <input
                     type="checkbox"
                     aria-label={`سهم ${member?.name ?? ""}`}
-                    className="size-4 shrink-0 accent-lapis"
+                    className="size-4 shrink-0 accent-action"
                     {...register(`shares.${index}.included`)}
                   />
                   <MemberName
@@ -315,7 +315,7 @@ export function ExpenseSheet({
                       min={1}
                       max={99}
                       aria-label={`سهم عددی ${member?.name ?? ""}`}
-                      className="h-9 w-14 rounded-control border border-hairline-strong bg-surface px-2 text-center text-[14px] tabular-nums outline-none focus-visible:border-lapis"
+                      className="h-9 w-14 rounded-control border border-hairline-strong bg-surface px-2 text-center text-[14px] tabular-nums outline-none focus-visible:border-action"
                       {...register(`shares.${index}.units`, { valueAsNumber: true })}
                     />
                   )}

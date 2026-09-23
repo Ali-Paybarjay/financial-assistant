@@ -5,8 +5,30 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getSessionUser } from "@/lib/auth";
 import { startOfDayUtc, todayInTimeZone } from "@/lib/date";
 
-/** The brief's ceiling, per user per day. */
-export const DAILY_CALL_LIMIT = 50;
+/** The three routes that cost money. */
+export type AiFeature = "parse_text" | "parse_receipt" | "parse_statement";
+
+/**
+ * The ceiling, per user per day, per feature.
+ *
+ * It used to be one number across all three routes, which was right while
+ * every model call started with a deliberate tap on a floating button. The
+ * composer changes that: text entry is now the fastest path in the app and
+ * will be used dozens of times a day, while a bank statement is a monthly
+ * chore that costs an order of magnitude more per call.
+ *
+ * One shared ceiling has to be set for the most expensive of those and then
+ * applies to the cheapest, so it either throttles ordinary typing or leaves
+ * the expensive path far too loose. Per-feature ceilings let each one be set
+ * against what it actually costs. The worst case rises from 50 calls to 85,
+ * and gets *cheaper*, because 50 statement parses cost many times what
+ * 60 text parses plus 20 receipts plus 5 statements do.
+ */
+export const FEATURE_DAILY_LIMITS: Record<AiFeature, number> = {
+  parse_text: 60,
+  parse_receipt: 20,
+  parse_statement: 5,
+};
 
 /**
  * What a guest gets instead.
@@ -43,26 +65,36 @@ export type Allowance = {
  * once can both read a count below the limit and both proceed; that costs a
  * couple of extra calls a day, which is cheaper than serialising every request
  * through a lock.
+ *
+ * A guest is still capped across all three features at once rather than per
+ * feature: their ceiling exists to keep the demo affordable for an account
+ * that costs one tap to make, and three of each would be three times the
+ * number that was actually reasoned about.
  */
-export async function remainingCalls(timeZone: string): Promise<Allowance> {
+export async function remainingCalls(
+  timeZone: string,
+  feature: AiFeature,
+): Promise<Allowance> {
   const supabase = await createClient();
   const user = await getSessionUser();
   const since = startOfDayUtc(todayInTimeZone(timeZone), timeZone);
 
   const isGuest = user?.is_anonymous === true;
-  const limit = isGuest ? GUEST_DAILY_CALL_LIMIT : DAILY_CALL_LIMIT;
+  const limit = isGuest ? GUEST_DAILY_CALL_LIMIT : FEATURE_DAILY_LIMITS[feature];
 
-  const { count } = await supabase
+  const query = supabase
     .from("ai_usage_logs")
     .select("id", { count: "exact", head: true })
     .gte("created_at", since.toISOString());
+
+  const { count } = await (isGuest ? query : query.eq("feature", feature));
 
   return { remaining: Math.max(0, limit - (count ?? 0)), limit, isGuest };
 }
 
 export type UsageRecord = {
   userId: string;
-  feature: "parse_text" | "parse_receipt" | "parse_statement";
+  feature: AiFeature;
   model: string;
   inputTokens?: number;
   outputTokens?: number;

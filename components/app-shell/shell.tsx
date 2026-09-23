@@ -2,10 +2,14 @@
 
 import { usePathname } from "next/navigation";
 import { Sidebar } from "./sidebar";
-import { TabBar, hasTabBar } from "./tab-bar";
 import { WorkspaceSwitch } from "./workspace-switch";
+import { Composer } from "@/components/entry/composer";
+import { SignOutButton } from "@/components/sign-out";
 import { GuestBanner } from "@/components/guest/guest-banner";
 import { workspaceForPath } from "@/lib/workspaces";
+import type { CurrencyCode } from "@/lib/money";
+import type { EnvelopeRow } from "@/lib/envelopes";
+import type { AccountRow, CategoryRow, GoalRow } from "@/lib/supabase/database.types";
 import { cn } from "@/lib/utils";
 
 /**
@@ -23,10 +27,25 @@ import { cn } from "@/lib/utils";
 export function AppShell({
   name,
   subtitle,
+  entry,
   children,
 }: {
   name: string;
   subtitle: string;
+  /**
+   * What the composer needs to record a purchase. Read once in the layout
+   * rather than per page, because the bar is on every page — that is the
+   * whole point of it replacing a button that was only on two of them.
+   */
+  entry: {
+    currency: CurrencyCode;
+    categories: CategoryRow[];
+    accounts: AccountRow[];
+    goals: GoalRow[];
+    envelopes: EnvelopeRow[];
+    defaultAccountId: string | null;
+    today: string;
+  };
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -45,24 +64,60 @@ export function AppShell({
         {/* The phone's version of the sidebar's header. Sticky, because
             «کجا هستم» is a question that comes back halfway down a list. */}
         {workspace && (
-          <div className="sticky top-0 z-20 border-b border-hairline bg-surface/95 px-4 py-2 backdrop-blur min-[960px]:hidden">
-            <WorkspaceSwitch workspace={workspace} />
+          <div className="sticky top-0 z-20 flex items-center gap-2 border-b border-hairline bg-surface/95 px-4 py-2 backdrop-blur min-[960px]:hidden">
+            <WorkspaceSwitch workspace={workspace} className="min-w-0 flex-1" />
+            {/* Reachable from every screen rather than only from settings. */}
+            <SignOutButton />
           </div>
         )}
 
-        {/* pb-20 clears the fixed tab bar; it disappears with the bar, both at
-            960px and in a workspace that has no bar to clear. */}
+        {/* One composer, not one per breakpoint. Rendering it twice and
+            hiding one would put two elements with id="composer-text" on the
+            page, which makes the label ambiguous and the field unfocusable
+            by id. It sits here, where the desktop wants it — above the
+            board — and its own `fixed` lifts it to the bottom of the screen
+            on a phone, where there is nothing underneath it to cover.
+
+            Personal only, and that is rule 11 rather than a layout choice.
+            This bar writes to the personal ledger, so on a trip page it
+            would take «قهوه ۵» from someone looking at a shared expense list
+            and quietly file it as their own spending — the exact
+            cross-contamination the two workspaces exist to prevent. «دنگ و
+            دونگ» records an expense through its own sheet, which knows who
+            paid and how it splits; a free-text bar that knew neither would
+            have to guess both. */}
+        {workspace === "personal" && (
+          <div className="min-[960px]:mx-auto min-[960px]:w-full min-[960px]:max-w-[1120px] min-[960px]:px-7 min-[960px]:pt-6">
+            <Composer workspace={workspace} {...entry} />
+          </div>
+        )}
+
+        {/* Clears the composer, which is 122px plus whatever the device
+            reserves at its bottom edge: a 1px rule, 10px of padding, a 44px
+            row — the touch targets, not the 42px field, set that height —
+            10px more padding, and the 56px tab bar. It was pb-20 for a tab
+            bar alone.
+
+            The inset is carried through with calc rather than rounded into
+            the constant, because it is 0 on most phones and 34px on the ones
+            with a home indicator; a single number is either short on one or
+            leaves dead space on the other. The 2px over 122 is slack, not
+            arithmetic — the alternative is a list whose last row is two
+            pixels under the bar, which is exactly the kind of thing no gate
+            measures. tests/e2e/composer.spec.ts does.
+
+            Only where the bar actually is: «دنگ و دونگ» has neither a
+            composer nor a tab bar, so it has nothing to clear. */}
         <main
           className={cn(
             "min-w-0 flex-1",
-            workspace && hasTabBar(workspace) && "pb-20 min-[960px]:pb-0",
+            workspace === "personal" &&
+              "pb-[calc(124px+env(safe-area-inset-bottom))] min-[960px]:pb-0",
           )}
         >
           {children}
         </main>
       </div>
-
-      {workspace && <TabBar workspace={workspace} />}
     </div>
   );
 }

@@ -100,7 +100,7 @@ export function Step3({
                     dueDay: suggestion.dueDay,
                   })
                 }
-                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-hairline-strong bg-surface px-3.5 text-[13px] text-ink transition-colors hover:border-lapis hover:bg-lapis-tint hover:text-lapis"
+                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-hairline-strong bg-surface px-3.5 text-[13px] text-ink transition-colors hover:border-action hover:bg-action-tint hover:text-action"
               >
                 <Plus size={14} />
                 {suggestion.title}

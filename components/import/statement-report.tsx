@@ -209,7 +209,7 @@ export function StatementReport({
             <button
               type="button"
               onClick={() => setAllSelected(selected.length !== fresh.length)}
-              className="text-caption font-medium text-lapis hover:underline"
+              className="text-caption font-medium text-action hover:underline"
             >
               {selected.length === fresh.length ? "هیچ‌کدام" : "همه"}
             </button>
@@ -300,7 +300,7 @@ function Tile({
       <dd
         className={
           emphasis
-            ? "mt-0.5 text-[20px] font-semibold text-lapis"
+            ? "mt-0.5 text-[20px] font-semibold text-action"
             : "mt-0.5 text-[20px] font-semibold text-ink"
         }
       >

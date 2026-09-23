@@ -4,11 +4,7 @@ import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 import { Money } from "@/components/money";
 import { faPercent } from "@/lib/format";
 import type { CurrencyCode } from "@/lib/money";
-
-/** Single hue, ordered by share. Separation is by lightness, so the order
- *  survives greyscale and colour-blindness. */
-const RAMP = ["#23459b", "#3e5cb2", "#6280c8", "#93a8dc", "#c2cdeb"];
-const OTHER = "#c9cdd4";
+import { CHART_OTHER, CHART_RAMP as RAMP } from "@/lib/chart-colors";
 
 export type CategorySlice = { id: string | null; name: string; amount: number };
 
@@ -26,7 +22,7 @@ export function CategoryDonut({
   const data = [
     ...top.map((slice, index) => ({ ...slice, fill: RAMP[index] })),
     ...(restTotal > 0
-      ? [{ id: "other", name: "سایر", amount: restTotal, fill: OTHER }]
+      ? [{ id: "other", name: "سایر", amount: restTotal, fill: CHART_OTHER }]
       : []),
   ];
 
@@ -48,7 +44,7 @@ export function CategoryDonut({
                 innerRadius={36}
                 outerRadius={59}
                 paddingAngle={1.6}
-                stroke="#ffffff"
+                stroke="var(--surface)"
                 strokeWidth={1.5}
                 isAnimationActive={false}
               >
@@ -63,7 +59,7 @@ export function CategoryDonut({
             <span className="max-w-[60px] truncate text-caption font-semibold text-ink">
               {largest.name}
             </span>
-            <span className="text-caption font-bold text-lapis">
+            <span className="text-caption font-bold text-action">
               {faPercent(largestShare)}
             </span>
           </div>

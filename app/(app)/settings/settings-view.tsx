@@ -12,6 +12,7 @@ import {
   CaretLeft,
   Coins,
   CreditCard,
+  Palette,
   Plus,
   SignOut,
   SquaresFour,
@@ -27,6 +28,7 @@ import { GuestSignOutSheet, useSignOut } from "@/components/sign-out";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/native-select";
+import { Switch } from "@/components/ui/switch";
 import { Field, FormError } from "@/components/field";
 import { CURRENCIES, type CurrencyCode } from "@/lib/money";
 import {
@@ -42,6 +44,7 @@ import {
   deleteCategory,
   resetRiskAnswers,
   saveCategory,
+  setDefaultWorkspace,
   updateCurrency,
   updateProfile,
 } from "./actions";
@@ -82,7 +85,7 @@ export function SettingsView({
         onClick={() => setSheet("profile")}
         className="flex w-full items-center gap-3 rounded-card border border-hairline bg-surface p-4 text-start hover:border-hairline-strong"
       >
-        <span className="flex size-12 items-center justify-center rounded-full bg-lapis-tint text-[18px] font-semibold text-lapis">
+        <span className="flex size-12 items-center justify-center rounded-full bg-action-tint text-[18px] font-semibold text-action">
           {(profile.full_name ?? "؟").trim().charAt(0)}
         </span>
         <span className="flex min-w-0 flex-1 flex-col">
@@ -118,6 +121,14 @@ export function SettingsView({
         />
       </Group>
 
+      <Group title="شروع">
+        <StartRow current={profile.default_workspace} />
+      </Group>
+
+      <Group title="ظاهر">
+        <Row href="/settings/appearance" icon={<Palette size={20} />} label="تم روشن و تیره" />
+      </Group>
+
       <Group title="پروفایل">
         <Row
           onClick={() => setSheet("profile")}
@@ -129,7 +140,7 @@ export function SettingsView({
 
       <Group title="حساب">
         <div className="flex h-14 items-center gap-3 px-4">
-          <UserCircle size={20} className="text-lapis" />
+          <UserCircle size={20} className="text-action" />
           <span className="flex-1 text-[14px] text-ink">ایمیل</span>
           <span dir="ltr" className="truncate text-caption text-ink-muted">
             {isGuest ? "—" : email}
@@ -206,7 +217,7 @@ function Row({
 }) {
   const body = (
     <>
-      <span className="text-lapis">{icon}</span>
+      <span className="text-action">{icon}</span>
       <span className="flex-1 text-[14px] text-ink">{label}</span>
       {value && <span className="text-caption text-ink-muted">{value}</span>}
       <CaretLeft size={16} className="text-ink-faint" />
@@ -227,6 +238,40 @@ function Row({
   );
 }
 
+/**
+ * «Ask me which section every time.»
+ *
+ * On when nothing is remembered, which is the state a new account starts in
+ * — so the switch reads as a thing you turn off rather than a setting you
+ * have to find and turn on. Turning it off here would have nothing to
+ * remember yet, so it only ever puts the chooser back.
+ */
+function StartRow({ current }: { current: "personal" | "dong" | null }) {
+  const [isPending, startTransition] = useTransition();
+  const asksEveryTime = current === null;
+
+  return (
+    <div className="flex h-14 w-full items-center gap-3 px-4">
+      <span className="text-action">
+        <SquaresFour size={20} />
+      </span>
+      <label htmlFor="ask-workspace" className="flex-1 text-[14px] text-ink">
+        هر بار بپرس کدام بخش
+      </label>
+      <Switch
+        id="ask-workspace"
+        checked={asksEveryTime}
+        disabled={isPending || asksEveryTime}
+        onCheckedChange={() =>
+          startTransition(async () => {
+            await setDefaultWorkspace(null);
+          })
+        }
+      />
+    </div>
+  );
+}
+
 function RiskRow({ label }: { label: string }) {
   const [isPending, startTransition] = useTransition();
   return (
@@ -236,7 +281,7 @@ function RiskRow({ label }: { label: string }) {
       onClick={() => startTransition(() => resetRiskAnswers())}
       className="flex h-14 w-full items-center gap-3 px-4 text-start hover:bg-paper disabled:opacity-50"
     >
-      <Target size={20} className="text-lapis" />
+      <Target size={20} className="text-action" />
       <span className="flex-1 text-[14px] text-ink">
         {isPending ? "دارم آماده می‌کنم…" : "پاسخ دوباره به سؤال‌های ریسک"}
       </span>

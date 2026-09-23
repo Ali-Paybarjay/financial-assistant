@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import imageCompression from "browser-image-compression";
 import { Camera, Images, Receipt } from "@phosphor-icons/react/dist/ssr";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ export function ReceiptTab({
   accounts,
   goals,
   defaultAccountId,
+  initialFile,
   onSaved,
 }: {
   currency: CurrencyCode;
@@ -27,6 +28,11 @@ export function ReceiptTab({
   accounts: AccountRow[];
   goals: GoalRow[];
   defaultAccountId: string | null;
+  /**
+   * A photo the composer's camera button already took. Read once, on mount,
+   * so tapping the camera in the bar does not mean tapping it again in here.
+   */
+  initialFile?: File;
   onSaved: (message: string) => void;
 }) {
   const cameraInput = useRef<HTMLInputElement>(null);
@@ -39,6 +45,15 @@ export function ReceiptTab({
   const [status, setStatus] = useState<string>();
   const [isReading, startReading] = useTransition();
   const [isSaving, startSaving] = useTransition();
+
+  const startedWith = useRef(false);
+  useEffect(() => {
+    if (!initialFile || startedWith.current) return;
+    startedWith.current = true;
+    // Guarded by the ref above: this runs once for the file it was handed,
+    // not again each time the component re-renders while reading it.
+    pick(initialFile);
+  }, [initialFile]);
 
   function pick(file: File | undefined) {
     if (!file) return;
@@ -114,9 +129,6 @@ export function ReceiptTab({
           note: draft.note,
           occurredOn: draft.occurred_on,
           confidence: draft.confidence,
-          needsReview: draft.needs_review.filter(
-            (field) => !draft.resolved.includes(field),
-          ),
         })),
       });
       if ("error" in result) setError(result.error);

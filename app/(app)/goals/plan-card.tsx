@@ -30,7 +30,7 @@ export function PlanCard({
         <h2 className="text-[15px] font-semibold text-ink">برنامه‌ی پس‌انداز</h2>
         <p className="mt-1.5 text-body text-ink-muted">
           نمی‌دانم هر ماه چقدر برایت می‌ماند، پس نمی‌توانم بگویم چقدر کنار بگذاری.{" "}
-          <Link href="/income" className="font-medium text-lapis underline">
+          <Link href="/income" className="font-medium text-action underline">
             درآمد و هزینه‌های ثابتت را وارد کن
           </Link>{" "}
           تا برنامه را بسازم.

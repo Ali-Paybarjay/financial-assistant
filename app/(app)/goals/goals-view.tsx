@@ -170,7 +170,7 @@ export function GoalsView({
                   >
                     <div className="flex items-baseline justify-between gap-3">
                       <span className="flex items-center gap-2 text-[15px] font-medium text-ink">
-                        <Flag size={16} className="text-lapis" />
+                        <Flag size={16} className="text-action" />
                         {goal.title}
                       </span>
                       <span className="flex items-baseline gap-1 text-caption text-ink-muted">
@@ -186,10 +186,10 @@ export function GoalsView({
                       aria-valuemin={0}
                       aria-valuemax={100}
                       aria-label={goal.title}
-                      className="h-2 overflow-hidden rounded-full bg-lapis-tint"
+                      className="h-2 overflow-hidden rounded-full bg-action-tint"
                     >
                       <div
-                        className="h-full rounded-full bg-lapis"
+                        className="h-full rounded-full bg-action"
                         style={{ width: `${row.progress}%` }}
                       />
                     </div>
@@ -525,7 +525,7 @@ function OrderButton({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="flex size-7 items-center justify-center rounded-control border border-hairline text-ink-muted hover:border-hairline-strong hover:text-lapis disabled:opacity-35"
+      className="flex size-7 items-center justify-center rounded-control border border-hairline text-ink-muted hover:border-hairline-strong hover:text-action disabled:opacity-35"
     >
       {children}
     </button>

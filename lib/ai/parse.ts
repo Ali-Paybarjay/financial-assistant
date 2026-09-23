@@ -56,7 +56,7 @@ export async function runParse({
   /** Shown when the model read the input but found nothing to record. */
   emptyMessage: string;
 }): Promise<ParseOutcome> {
-  const allowance = await remainingCalls(timeZone);
+  const allowance = await remainingCalls(timeZone, feature);
   if (allowance.remaining <= 0) {
     await logUsage({ userId, feature, model: MODEL, status: "rejected" });
     return { ok: false, error: limitReachedMessage(allowance) };

@@ -42,3 +42,25 @@ export async function staleGuestIds(days = GUEST_RETENTION_DAYS): Promise<string
   if (error) throw new Error(`could not list stale guests: ${error.message}`);
   return data ?? [];
 }
+
+/**
+ * Whether an account has anything in it.
+ *
+ * Asked before discarding one, and asked with the service role because the
+ * account being examined is not the one whose session is in hand. It is the
+ * last of the guards in front of a delete: an account with a single row in it
+ * is somebody's, whatever its timestamps say.
+ */
+export async function accountIsEmpty(userId: string): Promise<boolean> {
+  const admin = createAdminClient();
+
+  const counts = await Promise.all(
+    (["transactions", "accounts", "goals", "dong_groups"] as const).map((table) =>
+      admin.from(table).select("id", { count: "exact", head: true }).eq("user_id", userId),
+    ),
+  );
+
+  // A count that failed to come back is not a zero. Refusing to answer «empty»
+  // is the safe direction: it costs a stray row, not somebody's ledger.
+  return counts.every((result) => result.error === null && (result.count ?? 1) === 0);
+}

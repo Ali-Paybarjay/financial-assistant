@@ -151,7 +151,7 @@ export function GroupView({
           <Link
             href="/dong"
             aria-label="برگشت به دوره‌ها"
-            className="flex size-9 shrink-0 items-center justify-center rounded-full text-ink-muted hover:bg-lapis-tint hover:text-lapis"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full text-ink-muted hover:bg-action-tint hover:text-action"
           >
             <ArrowRight size={18} />
           </Link>
@@ -222,7 +222,7 @@ export function GroupView({
         <button
           type="button"
           onClick={() => setGroupSheet(true)}
-          className="mb-3 w-full rounded-card border border-dashed border-hairline-strong bg-paper px-4 py-3 text-start text-caption text-ink-muted hover:border-lapis hover:text-lapis"
+          className="mb-3 w-full rounded-card border border-dashed border-hairline-strong bg-paper px-4 py-3 text-start text-caption text-ink-muted hover:border-action hover:text-action"
         >
           برای این دوره حسابی انتخاب نکرده‌ای. اگر انتخاب کنی، هر خریدی که خودت
           پولش را بدهی در حسابداری شخصی‌ات هم ثبت می‌شود.
@@ -476,7 +476,7 @@ function EmptyPanel({
 }) {
   return (
     <div className="flex flex-col items-center gap-2 rounded-card border border-dashed border-hairline-strong bg-surface px-4 py-8 text-center">
-      <span className="flex size-12 items-center justify-center rounded-full bg-lapis-tint text-lapis">
+      <span className="flex size-12 items-center justify-center rounded-full bg-action-tint text-action">
         {icon}
       </span>
       <p className="text-body text-ink">{title}</p>

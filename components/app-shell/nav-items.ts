@@ -3,8 +3,8 @@ import {
   Bank,
   CreditCard,
   Gear,
-  House,
   ListDashes,
+  SquaresFour,
   Target,
   UsersThree,
   Wallet,
@@ -48,8 +48,13 @@ export type WorkspaceNav = {
  */
 export const WORKSPACE_NAV: Record<WorkspaceId, WorkspaceNav> = {
   personal: {
+    /**
+     * «تراکنش‌ها» left this list when «جریان» arrived and came back when it
+     * went. Four items, because five across 375px gives each one 75px —
+     * under the touch target the design commits to.
+     */
     primary: [
-      { href: "/dashboard", label: "داشبورد", icon: House },
+      { href: "/dashboard", label: "داشبورد", icon: SquaresFour },
       { href: "/transactions", label: "تراکنش‌ها", icon: ListDashes },
       { href: "/goals", label: "هدف‌ها", icon: Target },
       { href: "/settings", label: "تنظیمات", icon: Gear },

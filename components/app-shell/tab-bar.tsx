@@ -6,7 +6,13 @@ import { WORKSPACE_NAV } from "./nav-items";
 import type { WorkspaceId } from "@/lib/workspaces";
 import { cn } from "@/lib/utils";
 
-/** Mobile only; from 960px the sidebar replaces it. */
+/**
+ * Mobile only; from 960px the sidebar replaces it.
+ *
+ * Not fixed any more: it renders inside <Composer>, which is the one fixed
+ * strip at the bottom of a phone. Two stacked fixed bars — a composer and a
+ * tab bar — cost about a fifth of a small screen between them.
+ */
 export function TabBar({ workspace }: { workspace: WorkspaceId }) {
   const pathname = usePathname();
   const items = WORKSPACE_NAV[workspace].primary;
@@ -18,9 +24,9 @@ export function TabBar({ workspace }: { workspace: WorkspaceId }) {
   return (
     <nav
       aria-label="ناوبری اصلی"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-hairline bg-surface pb-[env(safe-area-inset-bottom)] min-[960px]:hidden"
+      className="pb-[env(safe-area-inset-bottom)] min-[960px]:hidden"
     >
-      <ul className="mx-auto flex max-w-[480px]">
+      <ul className="mx-auto flex max-w-[480px] justify-between px-1.5">
         {items.map((item) => {
           const active = pathname.startsWith(item.href);
           const Icon = item.icon;
@@ -30,12 +36,12 @@ export function TabBar({ workspace }: { workspace: WorkspaceId }) {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex h-14 flex-col items-center justify-center gap-1",
-                  active ? "text-lapis" : "text-ink-muted",
+                  "flex h-14 flex-1 flex-col items-center justify-center gap-1",
+                  active ? "text-action" : "text-ink-muted",
                 )}
               >
                 <Icon size={22} weight={active ? "fill" : "regular"} />
-                <span className="text-micro font-medium">{item.label}</span>
+                <span className="text-[10px] font-medium">{item.label}</span>
               </Link>
             </li>
           );

@@ -24,10 +24,11 @@ const twMerge = extendTailwindMerge({
   extend: {
     theme: {
       text: [
-        "display-xl",
-        "display-l",
-        "num-l",
+        "figure-lg",
+        "figure-md",
+        "question",
         "title",
+        "section",
         "body",
         "label",
         "caption",

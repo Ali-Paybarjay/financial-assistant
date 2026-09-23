@@ -457,3 +457,97 @@ using (bucket_id = 'receipts' and (storage.foldername(name))[1] = (select auth.u
 ## ۸. قدم بعدی
 
 با تأیید تو، M0 شروع می‌شود: اسکلت Next.js، Tailwind v4 با بلوک `@theme` از handoff، فونت‌های self-host، shadcn با RTL، migrationها و RLS بالا، seed دسته‌ها، و `<Money />` + `confidence-rule.tsx`. پایان M0 با `pnpm typecheck && pnpm lint && pnpm build` تمیز و یک گزارش کوتاه.
+
+---
+
+## ۹. پاکت‌ها و بینش‌ها (بعد از MVP)
+
+داشبورد از «گزارشِ گذشته» به «وضعیتِ حالا و پیش‌بینیِ آینده» رفت. سه چیز تازه، و هیچ‌کدام مدل صدا نمی‌زنند — هر سه ریاضی و قاعده‌اند (قاعده‌ی ۵).
+
+### ۹.۱ Schema تازه
+
+```sql
+-- migration 0019 — سقف دسته‌ای. «از این ماه به بعد»، نه یک ردیف در هر ماه.
+create table public.category_budgets (
+  id             uuid primary key default gen_random_uuid(),
+  user_id        uuid not null references auth.users(id) on delete cascade,
+  category_id    uuid not null references public.categories(id) on delete cascade,
+  amount_minor   bigint not null check (amount_minor > 0),
+  currency       text not null check (char_length(currency) = 3),
+  -- همیشه اول ماه، تا «تازه‌ترین ردیف تا این ماه» یک جواب داشته باشد.
+  effective_from date not null check (date_trunc('month', effective_from) = effective_from),
+  created_at     timestamptz not null default now(),
+  unique (user_id, category_id, effective_from)
+);
+
+-- migration 0020 — فقط «دیده شد». خودِ بینش هیچ‌وقت ذخیره نمی‌شود.
+create table public.insight_dismissals (
+  user_id      uuid not null references auth.users(id) on delete cascade,
+  insight_key  text not null,          -- «rule:scope»، مثل "weekly_delta:2026-W38"
+  dismissed_at timestamptz not null default now(),
+  primary key (user_id, insight_key)
+);
+
+-- migration 0021 — مقصد پیش‌فرضِ «/». نه workspaceِ جاری؛ آن از آدرس می‌آید.
+alter table public.profiles
+  add column default_workspace text check (default_workspace in ('personal','dong'));
+
+-- migration 0024 — تمِ انتخاب‌شده. نسخهٔ ماندگار؛ آنچه استایل‌شیت می‌خواند کوکی است.
+alter table public.profiles
+  add column theme text not null default 'system'
+  check (theme in ('light','dark','system'));
+
+-- migration 0022 — بورد چیدنی می‌شود. نبودِ ردیف یعنی «از شواهد تصمیم بگیر».
+create table public.envelope_preferences (
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  category_id uuid not null references public.categories(id) on delete cascade,
+  -- 'shown'  = کاربر گذاشتش.
+  -- 'hidden' = کاربر برش داشت، و این بر هر دلیلِ دیگری غلبه می‌کند.
+  state       text not null check (state in ('shown','hidden')),
+  updated_at  timestamptz not null default now(),
+  primary key (user_id, category_id)
+);
+```
+
+و یک تابع، کنار `account_balances()` و `goal_progress()` و به همان دلیل (قاعده‌ی ۶ — هیچ جمعی در ستون ذخیره نمی‌شود):
+
+```sql
+public.envelope_status(p_month_start date, p_month_end date)
+  returns table (category_id, name_fa, budget_minor, spent_minor,
+                 remaining_minor, unconfirmed_minor, baseline_minor)
+  language sql stable security invoker set search_path = ''
+```
+
+`baseline_minor` عددی است که کاربر در اونبوردینگ گفته (میانگینِ ماهانه‌ی `variable_expense_baselines` به‌علاوه‌ی قبض‌های ثابتِ همان دسته). **پیشنهاد** است و هیچ‌جا به‌عنوان سقف نوشته نمی‌شود؛ `suggestedCeiling()` در `lib/envelopes.ts` سه ماهِ واقعی را بر آن ترجیح می‌دهد و می‌گوید کدام را نشان می‌دهد.
+
+عضویتِ بورد سه منبع دارد و یک وتو: سقف، یا خرجِ این ماه، یا عددِ اونبوردینگ — مگر اینکه `envelope_preferences.state = 'hidden'` باشد، که بر هر سه غلبه می‌کند.
+
+`security invoker` عمدی است: سیاستِ خواندنِ `categories` تنها سیاست schema است که «ردیف‌های خودت» نیست (دسته‌های سیستمی `user_id` تهی دارند و مال همه‌اند). حقِ invoker این را مجانی می‌دهد؛ حقِ definer باید همان منطق را دوباره می‌نوشت و اولین باری که آن بازنویسی عقب می‌ماند، دسته‌های سفارشیِ بقیه لو می‌رفت.
+
+### ۹.۲ ماژول‌های تازه
+
+| فایل | کار |
+|---|---|
+| `lib/envelopes.ts` | `envelopeState` · `projectedSpend` · `dailyAllowance` · `suggestBudget` — خالص، بدون دیتابیس |
+| `lib/queries/envelopes.ts` | تنها مسیر خواندنِ پاکت‌ها، پشت `server-only` |
+| `lib/insights.ts` | `buildInsights` با هشت قاعده. هیچ ورودی‌ای از دیتابیس نمی‌خواند |
+| `lib/queries/insights.ts` | نیمه‌ی دیتابیسیِ بالایی: dismissalها، هفته‌ی جاری و قبل، قدیمی‌ترین تأییدنشده |
+| `lib/entry/quick-parse.ts` | دروازه‌ی پیش از مدل |
+| `lib/chart-colors.ts` | رمپ نمودارها، یک‌بار — به `--chart-1..5` اشاره می‌کند |
+| `lib/cashflow.ts` | `projectedMonthEnd()` اضافه شد؛ همان تعریفِ واحدِ «آخر ماه چقدر می‌ماند» |
+
+### ۹.۳ صفحه‌ها
+
+- `/dashboard` — بورد پاکت‌ها به‌جای دونات. کارت مانده روی `--color-ink` با پیش‌بینیِ پایان ماه (خط‌چین، چون حدس است) و باند فرود.
+- بینش‌های محاسبه‌شده روی خودِ بورد، بین کارت مانده و گرید پاکت‌ها. اولی باز، بقیه تاشده. **هیچ درخواستی به OpenRouter برای ساختنشان نیست.** (تبِ `/stream` ساخته و بعد حذف شد — بخش ۶ `DECISIONS.md`.)
+- `/transactions` — دونات این‌جا نشست، و با `?category=` سرصفحه‌ی سقف می‌گیرد. تنها جایی که سقف ویرایش می‌شود.
+- `/` — اگر `default_workspace` ست باشد یک‌راست می‌رود؛ `/?choose=1` همیشه سؤال را نشان می‌دهد.
+
+### ۹.۴ ناوبری
+
+تب‌بار داخل نوار نوشتن نشست (یک نوار ثابت، نه دو تا): **پاکت‌ها · تراکنش‌ها · هدف‌ها · تنظیمات**. «تراکنش‌ها» موقتاً بیرون رفته بود تا برای «جریان» جا باز شود؛ با حذف آن تب برگشت. چهار آیتم، چون پنج‌تا در ۳۷۵px به هرکدام ۷۵px می‌دهد — کمتر از هدف تپ.
+
+### ۹.۵ محافظ‌های هزینه
+
+- **دروازه‌ی پیش از مدل**: متنِ بدون عدد، کوتاه‌تر از سه نویسه، یا الگوی ساده‌ی «عدد + نام» بدون فراخوانی مدل به فرم می‌رود.
+- **سقف روزانه به تفکیک مسیر** (`FEATURE_DAILY_LIMITS`): ۶۰ متن / ۲۰ فاکتور / ۵ صورت‌حساب. سقف مهمان (۳) عمداً مشترک ماند.

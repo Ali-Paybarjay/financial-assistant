@@ -58,3 +58,17 @@ export type IncomeSourceForm = z.infer<typeof incomeSourceFormSchema>;
 export type RecurringExpenseForm = z.infer<typeof recurringExpenseFormSchema>;
 export type GoalForm = z.infer<typeof goalFormSchema>;
 export type GoalFundingForm = z.infer<typeof goalFundingFormSchema>;
+
+/**
+ * A ceiling on a category, from the current month onwards.
+ *
+ * There is no `effective_from` here on purpose: a ceiling always starts
+ * applying from the month the user is in. Letting the form pick a past month
+ * would let someone redraw a month they have already read and acted on, and
+ * the one thing a budget has to be is stable once it is behind you.
+ */
+export const categoryBudgetFormSchema = z.object({
+  categoryId: z.string().uuid(),
+  /** "" clears the ceiling: the category goes back to unset. */
+  amount: z.string().trim(),
+});

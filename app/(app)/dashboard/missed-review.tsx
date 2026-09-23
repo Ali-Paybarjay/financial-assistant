@@ -85,7 +85,7 @@ export function MissedReview({
           <div className="rounded-card border border-hairline bg-paper p-4">
             <div className="flex items-baseline justify-between gap-3">
               <span className="flex items-center gap-2 text-[15px] font-medium text-ink">
-                <ArrowsClockwise size={16} className="text-lapis" />
+                <ArrowsClockwise size={16} className="text-action" />
                 {current.title}
               </span>
               <Money minor={current.amount} currency={currency} size="row" />

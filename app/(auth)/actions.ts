@@ -1,9 +1,15 @@
 "use server";
 
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { purgeGuest } from "@/lib/guests";
+import {
+  LINK_INTENT_COOKIE,
+  LINK_INTENT_MAX_AGE,
+  type LinkIntent,
+} from "@/lib/auth-link";
 import {
   forgotPasswordSchema,
   loginSchema,
@@ -59,9 +65,14 @@ function translateAuthError(message: string): string {
 }
 
 /**
- * Where the links in confirmation and reset emails point. Falls back to the
- * domain Vercel injects, so a deployment cannot silently mail out localhost
- * links because someone forgot to set a variable.
+ * Where the links in **emails** point. Falls back to the domain Vercel
+ * injects, so a deployment cannot silently mail out localhost links because
+ * someone forgot to set a variable.
+ *
+ * Emails only. A confirmation link is opened whenever the person gets round
+ * to it — a different day, often a different device — so it has to name a
+ * durable address rather than whichever deployment happened to send it. The
+ * OAuth round trip is the opposite case and uses `requestOrigin()`.
  */
 function appUrl(path: string): string {
   const explicit = process.env.NEXT_PUBLIC_APP_URL;
@@ -138,11 +149,59 @@ export async function resetPassword(raw: unknown): Promise<ActionResult> {
   redirect("/");
 }
 
+/**
+ * The origin this request actually arrived on.
+ *
+ * Only for the OAuth round trip, which comes back inside the same browsing
+ * session and therefore has to come back to the same site. `appUrl()` is
+ * absolute and always names production, which is right for an email opened
+ * three days from now and wrong here: it means signing in with Google on a
+ * preview deployment silently lands you on production, looking at different
+ * code and wondering why nothing changed.
+ *
+ * Trusting a request header to build a redirect is normally how open
+ * redirects happen. It is safe here, and only here, because the header is not
+ * what decides where the user ends up — Supabase will only send them to a URL
+ * on its own redirect allow-list, and refuses to anything else by falling
+ * back to the configured Site URL. The header can pick among permitted
+ * destinations; it cannot add one. If that allow-list is ever emptied or set
+ * to a wildcard, this stops being safe.
+ */
+async function requestOrigin(): Promise<string | null> {
+  const headerList = await headers();
+  // Vercel sets the x-forwarded pair; `host` covers running it anywhere else.
+  const host = headerList.get("x-forwarded-host") ?? headerList.get("host");
+  if (!host) return null;
+  const protocol =
+    headerList.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  return `${protocol}://${host}`;
+}
+
+/**
+ * Written immediately before the browser is handed to Google, read in
+ * /callback. See lib/auth-link.ts for why this is a cookie and not a query
+ * parameter, and why it never carries an id.
+ */
+async function markLinkIntent(intent: LinkIntent): Promise<void> {
+  (await cookies()).set(LINK_INTENT_COOKIE, intent, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: LINK_INTENT_MAX_AGE,
+  });
+}
+
 export async function signInWithGoogle(): Promise<ActionResult> {
   const supabase = await createClient();
+  const origin = await requestOrigin();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
-    options: { redirectTo: appUrl("/callback") },
+    options: {
+      redirectTo: origin
+        ? new URL("/callback", origin).toString()
+        : appUrl("/callback"),
+    },
   });
 
   if (error) return { error: translateAuthError(error.message) };
@@ -218,6 +277,123 @@ export async function upgradeGuestAccount(raw: unknown): Promise<ActionResult> {
 
   revalidatePath("/", "layout");
   return { ok: true };
+}
+
+/**
+ * Keeping a guest's data and attaching Google to it.
+ *
+ * `linkIdentity`, emphatically not `signInWithOAuth`. Signing in with Google
+ * mints a *new* user; the anonymous one — and every transaction, account,
+ * goal and trip on it — is simply left behind. Linking attaches the provider
+ * to the user who is already signed in, so the id never changes and the rows
+ * stay theirs. That is the entire promise this page makes.
+ *
+ * It needs «Manual linking» enabled on the Supabase project. Without it
+ * GoTrue refuses, and the message below says so in a way the user can act on
+ * rather than leaving them on a page whose button does nothing.
+ */
+export async function linkGuestToGoogle(): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+  if (!user.is_anonymous) {
+    return { error: "حسابت از قبل ساخته شده. از تنظیمات اطلاعاتت را ویرایش کن." };
+  }
+
+  const origin = await requestOrigin();
+  const { data, error } = await supabase.auth.linkIdentity({
+    provider: "google",
+    options: {
+      redirectTo: origin
+        ? new URL("/callback", origin).toString()
+        : appUrl("/callback"),
+    },
+  });
+
+  if (error) {
+    // Distinguished on purpose: «not switched on» is a thing the owner of
+    // the project fixes, and reading «try again» instead would send the user
+    // in circles.
+    if (/manual linking|not enabled|disabled/i.test(error.message)) {
+      return {
+        error: "ورود با گوگل برای حساب مهمان هنوز فعال نیست. با ایمیل و رمز حساب بساز.",
+      };
+    }
+    return { error: translateAuthError(error.message) };
+  }
+
+  if (data.url) {
+    // Without this, a Google account that already has an account here comes
+    // back as an anonymous failure and the user is sent to the login page to
+    // guess what went wrong.
+    await markLinkIntent("link");
+    redirect(data.url);
+  }
+  return { error: "ورود با گوگل در دسترس نیست. با ایمیل و رمز حساب بساز." };
+}
+
+/**
+ * The other side of the fork: this Google account is already somebody's here,
+ * and that somebody is them.
+ *
+ * Linking is off the table — GoTrue refuses to attach an identity that another
+ * user owns, and it is right to: merging two ledgers is a decision with no
+ * safe default, since the same salary could end up in the sum twice. So this
+ * signs in with Google properly, landing the user in the account they already
+ * had.
+ *
+ * What it deliberately does **not** do is tear down the guest first. The
+ * obvious order — purge, sign out, then go to Google — destroys the data
+ * before the thing it was traded for has happened, so pressing cancel on
+ * Google's own screen would cost the user everything and gain them nothing.
+ * The guest session is left exactly as it is; /callback takes it down only
+ * once the new session is really in hand. Cancelling here costs nothing.
+ */
+export async function signInToExistingGoogleAccount(): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+  if (!user.is_anonymous) {
+    return { error: "حسابت از قبل ساخته شده. از تنظیمات اطلاعاتت را ویرایش کن." };
+  }
+
+  const origin = await requestOrigin();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: origin
+        ? new URL("/callback", origin).toString()
+        : appUrl("/callback"),
+      // They picked this account at Google seconds ago — that is how we know
+      // it is taken — so the second trip should show them nothing at all.
+      // `prompt: "none"` asks for exactly that: a sign-in with no screen.
+      //
+      // Leaving the parameter off is not the same thing. Google then decides,
+      // and its decision is to open the chooser whenever more than one account
+      // is signed in — which is what the user is complaining about, and it is
+      // not a question they can answer any better the second time.
+      //
+      // When Google genuinely cannot do it silently it refuses with
+      // `interaction_required` rather than failing, and /callback makes the
+      // trip again the ordinary way. So this can only remove a screen, never
+      // cost one.
+      queryParams: { prompt: "none" },
+    },
+  });
+
+  if (error) return { error: translateAuthError(error.message) };
+
+  if (data.url) {
+    await markLinkIntent("switch");
+    redirect(data.url);
+  }
+  return { error: "ورود با گوگل در دسترس نیست. با ایمیل و رمز وارد شو." };
 }
 
 export async function logout(): Promise<never> {

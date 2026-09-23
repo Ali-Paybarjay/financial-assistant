@@ -14,12 +14,18 @@ const eslintConfig = [
   {
     ignores: [
       "node_modules/**",
-      ".next/**",
+      // Any Next build directory, including the NEXT_DIST_DIR a parallel
+      // dev server or build is given so it does not fight the default one.
+      ".next*/**",
       "out/**",
       "build/**",
       "next-env.d.ts",
       // Vendored reference material from the design phase, not project source.
+      // Both folders carry the design tool's own bundled runtime, which is
+      // built output rather than anything written here.
       "design_handoff_financial_assistant/**",
+      "design_handoff_v2/**",
+      "design_handoff_v3/**",
     ],
   },
 ];

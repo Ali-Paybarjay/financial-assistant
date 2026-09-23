@@ -204,9 +204,28 @@ export async function createReceiptUpload(input: {
 }
 
 /**
- * Writes what the user confirmed in the confirm card. Rows keep is_confirmed
- * false when the user accepted a field the model had guessed, so the
- * confidence rule still marks them in the list and in the month's total.
+ * Writes what the user confirmed in the confirm card.
+ *
+ * Confirmed means confirmed. This used to store `is_confirmed` as «was the
+ * model sure about every field», which is a different question from «did the
+ * person approve this» — and it made the app ask twice. The card shows every
+ * guessed field with a dashed rule and says «روی هرکدام بزن تا عوض شود»; the
+ * user reads them, changes what is wrong, and presses «ثبت تراکنش». There is
+ * no further vetting left to ask for, and asking anyway is what produced a
+ * stream that said «مطمئن نیستم» about a row its owner had just approved.
+ *
+ * `confirmTransaction` below is the same act performed later, and it has
+ * always written `is_confirmed: true, needs_review: []`. Doing it at entry
+ * has to mean the same thing, or the two disagree about what a confirmation
+ * is.
+ *
+ * Provenance is not lost: `source` and `ai_confidence` still record that the
+ * row came from a model. What is gone is the claim that the figure is
+ * unsettled, which stopped being true the moment the user approved it.
+ *
+ * Statement import is deliberately not changed — see its own action. Ticking
+ * forty lines from a bank file is a different act from reading one card, and
+ * those rows keep their guesses marked.
  */
 export async function saveParsedTransactions(input: {
   transactions: {
@@ -216,8 +235,12 @@ export async function saveParsedTransactions(input: {
     merchant: string | null;
     note: string | null;
     occurredOn: string;
+    /**
+     * What the model reported about its own certainty. Kept as provenance —
+     * which fields it was unsure of is no longer stored, because the user has
+     * just been shown them and has approved them.
+     */
     confidence: number;
-    needsReview: string[];
   }[];
   source: "text" | "receipt";
   mediaAssetId?: string;
@@ -248,8 +271,8 @@ export async function saveParsedTransactions(input: {
     source: input.source,
     media_asset_id: input.mediaAssetId ?? null,
     ai_confidence: transaction.confidence,
-    is_confirmed: transaction.needsReview.length === 0,
-    needs_review: transaction.needsReview,
+    is_confirmed: true,
+    needs_review: [],
   }));
 
   if (rows.some((row) => row.amount <= 0)) return { error: GENERIC_ERROR };

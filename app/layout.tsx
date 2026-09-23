@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { themeFromCookie } from "@/lib/theme-server";
+import { ThemeProvider, ThemeScript } from "@/components/theme/theme-provider";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
@@ -21,7 +23,13 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f1f3f6",
+  // One per theme, so the browser chrome around the page matches the page.
+  // The values are --paper in each theme; they are literals because a
+  // viewport export cannot read a stylesheet.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#edecf2" }, // theme-ok
+    { media: "(prefers-color-scheme: dark)", color: "#101120" }, // theme-ok
+  ],
   width: "device-width",
   initialScale: 1,
   // The amount field is 16px so iOS will not zoom on focus; this stops a
@@ -30,12 +38,18 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const theme = await themeFromCookie();
+
   return (
-    <html lang="fa" dir="rtl">
+    // suppressHydrationWarning because <ThemeScript> rewrites data-theme
+    // before React hydrates: on a first visit with no cookie there is nothing
+    // for the server to have known, and the attribute legitimately differs.
+    <html lang="fa" dir="rtl" data-theme={theme} suppressHydrationWarning>
       <head>
+        <ThemeScript initial={theme} />
         {/* Self-hosted, and only the two faces used above the fold are
             preloaded. Google Fonts is unreachable on sanctioned networks. */}
         <link
@@ -54,7 +68,9 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <Providers>{children}</Providers>
+        <ThemeProvider initial={theme}>
+          <Providers>{children}</Providers>
+        </ThemeProvider>
       </body>
     </html>
   );

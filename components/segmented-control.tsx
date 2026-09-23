@@ -36,7 +36,7 @@ export function SegmentedControl<T extends string>({
             onClick={() => onChange(segment.value)}
             className={cn(
               "flex h-10 flex-1 items-center justify-center gap-1.5 rounded-control text-[13px] font-medium transition-colors",
-              active ? "bg-surface text-ink shadow-float" : "text-ink-muted",
+              active ? "bg-surface text-ink shadow-lift" : "text-ink-muted",
             )}
           >
             {segment.icon}

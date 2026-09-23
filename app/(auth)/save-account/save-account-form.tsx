@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FormError } from "@/components/field";
 import { PASSWORD_MIN_LENGTH_FA, type SignupInput, signupSchema } from "@/lib/validation/auth";
-import { upgradeGuestAccount } from "../actions";
+import { SignOutButton } from "@/components/sign-out";
+import { linkGuestToGoogle, upgradeGuestAccount } from "../actions";
 
 /**
  * Same three fields as signup, and deliberately not the same page. Signup reads
@@ -17,10 +18,11 @@ import { upgradeGuestAccount } from "../actions";
  * that is what it actually does — the user id never changes, so the rows the
  * guest created stay theirs.
  */
-export function SaveAccountForm() {
-  const [formError, setFormError] = useState<string>();
+export function SaveAccountForm({ returnError }: { returnError?: string }) {
+  const [formError, setFormError] = useState<string | undefined>(returnError);
   const [sentTo, setSentTo] = useState<string>();
   const [isPending, startTransition] = useTransition();
+  const [isGooglePending, startGoogleTransition] = useTransition();
 
   const {
     register,
@@ -43,10 +45,10 @@ export function SaveAccountForm() {
   if (sentTo) {
     return (
       <div className="flex flex-col gap-4">
-        <div className="flex size-12 items-center justify-center rounded-full bg-lapis-tint">
-          <EnvelopeSimple size={24} className="text-lapis" />
+        <div className="flex size-12 items-center justify-center rounded-full bg-action-tint">
+          <EnvelopeSimple size={24} className="text-action" />
         </div>
-        <h1 className="font-display text-display-l font-bold text-ink">ایمیلت را باز کن</h1>
+        <h1 className="font-display text-question font-bold text-ink">ایمیلت را باز کن</h1>
         <p className="text-body text-ink-muted">
           یک لینک تأیید به{" "}
           <span dir="ltr" className="font-medium text-ink">
@@ -71,13 +73,19 @@ export function SaveAccountForm() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="font-display text-display-l font-bold text-ink">
-          اطلاعاتت را نگه دار
-        </h1>
-        <p className="mt-1 text-body text-ink-muted">
-          یک ایمیل و رمز بگذار تا حساب مهمانت دائمی شود.
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="font-display text-question font-bold text-ink">
+            اطلاعاتت را نگه دار
+          </h1>
+          <p className="mt-1 text-body text-ink-muted">
+            یک ایمیل و رمز بگذار تا حساب مهمانت دائمی شود.
+          </p>
+        </div>
+        {/* Someone who came here to keep their data may decide instead to
+            drop it. Leaving should not require going back into the app first
+            to find a way out. The guest confirmation still applies. */}
+        <SignOutButton className="-mt-1" />
       </div>
 
       <p className="flex items-start gap-2 rounded-card bg-positive-tint px-3 py-2.5 text-caption text-positive">
@@ -130,9 +138,39 @@ export function SaveAccountForm() {
         </Button>
       </form>
 
+      <div className="flex items-center gap-3">
+        <span className="h-px flex-1 bg-hairline" />
+        <span className="text-caption text-ink-muted">یا</span>
+        <span className="h-px flex-1 bg-hairline" />
+      </div>
+
+      {/* Links Google to the account that is already signed in rather than
+          signing in with it. The difference is the whole page: signing in
+          would mint a new user and leave every row this guest has entered
+          behind on the old one. */}
+      <form
+        action={() => {
+          setFormError(undefined);
+          startGoogleTransition(async () => {
+            const result = await linkGuestToGoogle();
+            if (result && "error" in result) setFormError(result.error);
+          });
+        }}
+      >
+        <Button
+          type="submit"
+          variant="outline"
+          size="lg"
+          className="w-full"
+          disabled={isGooglePending || isPending}
+        >
+          {isGooglePending ? "دارم می‌برمت به گوگل…" : "ادامه با گوگل"}
+        </Button>
+      </form>
+
       <Link
         href="/"
-        className="flex items-center justify-center gap-1 text-caption text-ink-muted hover:text-lapis"
+        className="flex items-center justify-center gap-1 text-caption text-ink-muted hover:text-action"
       >
         <CaretRight size={14} />
         فعلاً نه، برگرد به نرم‌افزار

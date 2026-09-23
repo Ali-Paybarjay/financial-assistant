@@ -48,7 +48,7 @@ export function AccountsView({
 
       {accounts.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-card border border-dashed border-hairline-strong bg-surface px-4 py-8 text-center">
-          <span className="flex size-12 items-center justify-center rounded-full bg-lapis-tint text-lapis">
+          <span className="flex size-12 items-center justify-center rounded-full bg-action-tint text-action">
             <Bank size={24} />
           </span>
           <p className="text-body text-ink">هنوز حسابی تعریف نکرده‌ای.</p>
@@ -126,7 +126,7 @@ export function AccountsView({
       <p className="mt-4 rounded-control border border-dashed border-hairline-strong bg-paper px-3 py-2.5 text-caption text-ink-muted">
         موجودی هیچ‌وقت جایی ذخیره نمی‌شود: همان عددی که نوشتی، به‌علاوه‌ی هرچه از آن
         تاریخ به بعد در{" "}
-        <Link href="/transactions" className="font-medium text-lapis hover:underline">
+        <Link href="/transactions" className="font-medium text-action hover:underline">
           تراکنش‌ها
         </Link>{" "}
         به این حساب خورده. پس اگر تراکنشی را پاک یا اصلاح کنی، موجودی همان لحظه درست

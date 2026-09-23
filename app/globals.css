@@ -2,6 +2,29 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* ---------------------------------------------------------------------------
+   «دفتر و مداد» — ink and pencil, now in two themes.
+
+   The organising idea is unchanged: this screen is a ledger in which some
+   lines are inked and some are still in pencil.
+
+     solid   = settled. It happened, or the user confirmed it.
+     dashed  = provisional. The model guessed it, or it has not happened yet.
+
+   What is new is that every value below is a CSS variable set on <html>, and
+   a dark set overrides it. No role changes meaning between the themes: the
+   pencil stays brass, money in stays green, over-budget stays red, and the
+   dashed rule still says «not yet». Only the ground moves.
+
+   Theme resolution:
+     html[data-theme="light"]   → always light
+     html[data-theme="dark"]    → always dark
+     html[data-theme="system"]  → follows prefers-color-scheme (the default)
+
+   `data-theme` is written before first paint by <ThemeScript>, so there is no
+   white flash on a dark phone.
+   --------------------------------------------------------------------------- */
+
 @font-face {
   font-family: Vazirmatn;
   src: url("/fonts/Vazirmatn-Regular.woff2") format("woff2");
@@ -39,106 +62,232 @@
   font-display: swap;
 }
 
-/* ---------------------------------------------------------------------------
-   Design tokens. Source of truth: design_handoff_financial_assistant/
-   PLAN-design-tokens.md. Nothing below this block invents a colour.
-   --------------------------------------------------------------------------- */
+/* --------------------------------------------------------------- light --- */
 
-@theme {
+:root {
+  --surface: #ffffff;
+  --paper: #edecf2;
+
+  --ink: #191a2e;
+  --ink-muted: #585c74;
+  --ink-faint: #646881;
+
+  --hairline: #e4e3ec;
+  --hairline-strong: #8a89a1;
+
+  /* نیل — Persian indigo. Not the royal blue every finance app reaches for:
+     darker, violet-cast, and it reads as ink, which is the whole idea. */
+  --action: #302c73;
+  --action-pressed: #221e57;
+  --action-tint: #ecebf6;
+  /* The edge of a tinted surface — one step past the tint, so a card on the
+     sheet has a boundary without a shadow. */
+  --action-tint-edge: #dcd9ee;
+
+  --positive: #0f6b44;
+  --positive-tint: #e6f2ec;
+  --negative: #a62a21;
+  --negative-tint: #fbeae8;
+
+  /* Pencil. Warm ochre: a guess is not bad news, it is unfinished news. */
+  --guess: #8c5b14;
+  --guess-text: #6f4810;
+  --guess-tint: #fbf3e2;
+  --guess-border: #e6d3ad;
+
+  --shadow-lift-value: 0 1px 2px rgb(25 26 46 / 0.05), 0 12px 28px -18px rgb(25 26 46 / 0.35);
+  --shadow-fab-value: 0 10px 26px -12px rgb(48 44 115 / 0.75);
+
+  /* One hue, stepped by lightness, so a chart's order survives greyscale. */
+  --chart-1: #302c73;
+  --chart-2: #474391;
+  --chart-3: #6461ab;
+  --chart-4: #8886c5;
+  --chart-5: #b3b1dd;
+  --chart-other: #c9c8d3;
+
+  --selection: #d9d7ee;
+  color-scheme: light;
+}
+
+/* ---------------------------------------------------------------- dark --- */
+
+html[data-theme="dark"] {
+  --surface: #191a2b;
+  --paper: #101120;
+
+  --ink: #e9e9ee;
+  --ink-muted: #9a9db3;
+  --ink-faint: #7a7d94;
+
+  --hairline: #262838;
+  --hairline-strong: #43465c;
+
+  /* The accent lightens so it still reads as an accent on a dark ground; the
+     tint darkens so a tinted surface sits ABOVE the sheet, not below it. */
+  --action: #a3a0e8;
+  --action-pressed: #c9c6f2;
+  --action-tint: #232145;
+  --action-tint-edge: #38346e;
+
+  --positive: #5ddca2;
+  --positive-tint: #16281f;
+  --negative: #ff8b7e;
+  --negative-tint: #2a1a1a;
+
+  --guess: #d9a44b;
+  --guess-text: #f0d9ab;
+  --guess-tint: #2a2318;
+  --guess-border: #4a3c1f;
+
+  /* On a dark ground, elevation is an edge plus ambient darkness — never a
+     stack of heavy shadows. */
+  --shadow-lift-value: 0 1px 0 rgb(255 255 255 / 0.04), 0 18px 40px -24px rgb(0 0 0 / 0.9);
+  --shadow-fab-value: 0 10px 26px -12px rgb(0 0 0 / 0.8);
+
+  --chart-1: #a3a0e8;
+  --chart-2: #8b88d6;
+  --chart-3: #736fc2;
+  --chart-4: #5b57a6;
+  --chart-5: #454186;
+  --chart-other: #3b3d52;
+
+  --selection: #38346e;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-theme="system"] {
+    --surface: #191a2b;
+    --paper: #101120;
+
+    --ink: #e9e9ee;
+    --ink-muted: #9a9db3;
+    --ink-faint: #7a7d94;
+
+    --hairline: #262838;
+    --hairline-strong: #43465c;
+
+    --action: #a3a0e8;
+    --action-pressed: #c9c6f2;
+    --action-tint: #232145;
+    --action-tint-edge: #38346e;
+
+    --positive: #5ddca2;
+    --positive-tint: #16281f;
+    --negative: #ff8b7e;
+    --negative-tint: #2a1a1a;
+
+    --guess: #d9a44b;
+    --guess-text: #f0d9ab;
+    --guess-tint: #2a2318;
+    --guess-border: #4a3c1f;
+
+    --shadow-lift-value: 0 1px 0 rgb(255 255 255 / 0.04), 0 18px 40px -24px rgb(0 0 0 / 0.9);
+    --shadow-fab-value: 0 10px 26px -12px rgb(0 0 0 / 0.8);
+
+    --chart-1: #a3a0e8;
+    --chart-2: #8b88d6;
+    --chart-3: #736fc2;
+    --chart-4: #5b57a6;
+    --chart-5: #454186;
+    --chart-other: #3b3d52;
+
+    --selection: #38346e;
+    color-scheme: dark;
+  }
+}
+
+/* ----------------------------------------------------- tailwind theme --- */
+/* `inline` so every utility reads the variable at use time — that is what
+   makes one class (bg-surface) mean two colours in two themes. */
+
+@theme inline {
   --font-sans: Vazirmatn, system-ui, sans-serif;
   --font-display: Estedad, Vazirmatn, sans-serif;
 
-  --color-paper: #f1f3f6;
-  --color-surface: #ffffff;
-  --color-ink: #14181f;
-  --color-ink-muted: #5c6573;
-  --color-ink-faint: #8b93a1;
-  --color-hairline: #e2e6ec;
-  --color-hairline-strong: #c4ccd8;
+  --color-surface: var(--surface);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-hairline: var(--hairline);
+  --color-hairline-strong: var(--hairline-strong);
+  --color-action: var(--action);
+  --color-action-pressed: var(--action-pressed);
+  --color-action-tint: var(--action-tint);
+  --color-action-tint-edge: var(--action-tint-edge);
+  --color-positive: var(--positive);
+  --color-positive-tint: var(--positive-tint);
+  --color-negative: var(--negative);
+  --color-negative-tint: var(--negative-tint);
+  --color-guess: var(--guess);
+  --color-guess-text: var(--guess-text);
+  --color-guess-tint: var(--guess-tint);
+  --color-guess-border: var(--guess-border);
 
-  --color-lapis: #23459b;
-  --color-lapis-pressed: #16307a;
-  --color-lapis-tint: #edf1fa;
-
-  --color-positive: #0e6b4f;
-  --color-positive-tint: #e7f2ee;
-  --color-negative: #ad2e24;
-  --color-negative-tint: #fbebe9;
-
-  --color-guess: #8a5a00;
-  --color-guess-text: #6e4700;
-  --color-guess-tint: #fdf4de;
-  --color-guess-border: #efdfb4;
-
-  --radius-card: 14px;
+  --radius-card: 16px;
   --radius-control: 10px;
+  --radius-well: 12px;
 
-  --shadow-float: 0 1px 2px rgb(20 24 31 / 0.04), 0 8px 24px -14px rgb(20 24 31 / 0.16);
-  --shadow-fab: 0 8px 24px -10px rgb(35 69 155 / 0.7);
+  --shadow-lift: var(--shadow-lift-value);
+  --shadow-fab: var(--shadow-fab-value);
 
-  --text-display-xl: 40px;
-  --text-display-xl--line-height: 44px;
-  --text-display-l: 28px;
-  --text-display-l--line-height: 34px;
-  --text-num-l: 24px;
-  --text-num-l--line-height: 28px;
+  /* Two voices. Vazirmatn reports; Estedad speaks — and Estedad is allowed on
+     screen at most twice: the one figure that answers the page's question,
+     and the one line that asks it. */
+  --text-figure-lg: 22px;
+  --text-figure-lg--line-height: 26px;
+  --text-figure-md: 16px;
+  --text-figure-md--line-height: 20px;
+  --text-question: 26px;
+  --text-question--line-height: 34px;
   --text-title: 19px;
   --text-title--line-height: 26px;
+  --text-section: 15px;
+  --text-section--line-height: 22px;
   --text-body: 15px;
   --text-body--line-height: 24px;
   --text-label: 13px;
   --text-label--line-height: 18px;
   --text-caption: 12px;
-  --text-caption--line-height: 16px;
+  --text-caption--line-height: 17px;
   --text-micro: 11px;
   --text-micro--line-height: 14px;
 }
 
-/* ---------------------------------------------------------------------------
-   shadcn's semantic layer, pointed at the tokens above rather than its default
-   neutral palette, so installed components inherit this design system instead
-   of importing a second one. Light mode only — dark mode is out of scope for
-   the MVP, so there is no .dark block to drift out of sync.
-   --------------------------------------------------------------------------- */
+/* -------------------------------------------------- shadcn's semantics --- */
 
-:root {
-  --background: var(--color-paper);
-  --foreground: var(--color-ink);
-  --card: var(--color-surface);
-  --card-foreground: var(--color-ink);
-  --popover: var(--color-surface);
-  --popover-foreground: var(--color-ink);
-  --primary: var(--color-lapis);
-  --primary-foreground: #ffffff;
-  --secondary: var(--color-lapis-tint);
-  --secondary-foreground: var(--color-lapis);
-  --muted: var(--color-paper);
-  --muted-foreground: var(--color-ink-muted);
-  --accent: var(--color-lapis-tint);
-  --accent-foreground: var(--color-lapis);
-  --destructive: var(--color-negative);
-  --border: var(--color-hairline);
-  --input: var(--color-hairline-strong);
-  --ring: var(--color-lapis);
-
-  --chart-1: #23459b;
-  --chart-2: #3e5cb2;
-  --chart-3: #6280c8;
-  --chart-4: #93a8dc;
-  --chart-5: #c2cdeb;
-  /* The "سایر" bucket. Grey, so it never reads as a real category. */
-  --chart-other: #c9cdd4;
-
+:root,
+html[data-theme="dark"] {
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--action);
+  --primary-foreground: var(--surface);
+  --secondary: var(--action-tint);
+  --secondary-foreground: var(--action);
+  --muted: var(--paper);
+  --muted-foreground: var(--ink-muted);
+  --accent: var(--action-tint);
+  --accent-foreground: var(--action);
+  --destructive: var(--negative);
+  --border: var(--hairline);
+  --input: var(--hairline-strong);
+  --ring: var(--action);
   --radius: 10px;
 
-  --sidebar: var(--color-surface);
-  --sidebar-foreground: var(--color-ink);
-  --sidebar-primary: var(--color-lapis);
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: var(--color-lapis-tint);
-  --sidebar-accent-foreground: var(--color-lapis);
-  --sidebar-border: var(--color-hairline);
-  --sidebar-ring: var(--color-lapis);
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--action);
+  --sidebar-primary-foreground: var(--surface);
+  --sidebar-accent: var(--action-tint);
+  --sidebar-accent-foreground: var(--action);
+  --sidebar-border: var(--hairline);
+  --sidebar-ring: var(--action);
 }
 
 @theme inline {
@@ -186,31 +335,112 @@
   }
 
   html {
-    background: var(--color-paper);
+    background: var(--paper);
   }
 
   body {
-    background: var(--color-paper);
-    color: var(--color-ink);
+    background: var(--paper);
+    color: var(--ink);
     font-family: var(--font-sans);
     font-size: var(--text-body);
     line-height: var(--text-body--line-height);
     -webkit-font-smoothing: antialiased;
   }
+
+  /* So a number typed into a field lines up with the same number rendered
+     beside it — see <Money>, which owns every figure the product displays. */
+  input,
+  textarea,
+  select {
+    font-family: inherit;
+  }
 }
 
-:focus-visible {
-  outline: 2px solid var(--color-lapis);
-  outline-offset: 2px;
+/* Inside @layer base on purpose: outside a layer these would outrank every
+   Tailwind utility, and a control that draws its own focus state could not
+   turn this one off. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--action);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--selection);
+  }
 }
 
-::selection {
-  background: #d6e0f5;
+/* ---------------------------------------------------------------------------
+   The rule grammar. Solid means settled, dashed means not yet. Utilities
+   rather than one-off classes, because the same two states appear on a field,
+   a row, a total, a month and a budget.
+   --------------------------------------------------------------------------- */
+
+/* A value the model produced that nobody has checked. The word «حدس زدم» is
+   always rendered alongside, so colour is never the only carrier. */
+.rule-guess {
+  border-bottom: 2px dashed var(--guess);
+  padding-bottom: 2px;
 }
 
-/* The signature element: a 2px rule under any model-produced value.
-   Dashed brass = guessed, solid ink = confirmed. The settle animation runs
-   once when a guess is accepted. */
+/* The same value once the user has accepted it. */
+.rule-settled {
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: 2px;
+}
+
+/* The month as a runway: the part already lived is inked, the part still to
+   come is in pencil. Painted rather than bordered so the remaining segment
+   can flex to whatever is left of the month. The row inherits the document's
+   RTL direction, so the lived days start at the right. */
+.runway {
+  display: flex;
+  height: 3px;
+  align-items: stretch;
+  gap: 3px;
+}
+
+.runway-gone {
+  border-radius: 2px;
+  background: var(--ink);
+}
+
+.runway-left {
+  flex: 1;
+  border-radius: 2px;
+  background: repeating-linear-gradient(
+    to left,
+    var(--ink-faint) 0 3px,
+    transparent 3px 7px
+  );
+}
+
+/* On a tinted card the runway is drawn in the accent rather than in ink: on
+   --action-tint, ink-on-tint is heavier than the figure above it. */
+.runway-on-tint .runway-gone {
+  background: var(--action);
+}
+
+.runway-on-tint .runway-left {
+  background: repeating-linear-gradient(
+    to left,
+    var(--hairline-strong) 0 3px,
+    transparent 3px 7px
+  );
+}
+
+/* A budget whose spend still contains unconfirmed rows: the bar itself is
+   provisional, so it is striped rather than solid. */
+.bar-unconfirmed {
+  background: repeating-linear-gradient(
+    to left,
+    var(--action) 0 4px,
+    var(--action-tint-edge) 4px 8px
+  );
+}
+
+/* Plays once, when a guess is accepted — the only motion in the product that
+   is not answering a tap. */
 @keyframes confidence-settle {
   from {
     opacity: 0;

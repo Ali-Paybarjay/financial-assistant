@@ -6,9 +6,14 @@ import { ALPHA_EMAIL as EMAIL, PASSWORD } from "./credentials";
  * «۴۵ دلار خرید سوپرمارکت و ۱۲ دلار قهوه» and two transactions with the right
  * categories appear in the confirm card.
  *
- * This spec makes a real model call, so it is deliberately short.
+ * It used to open the floating button and pick the «متن» tab first. Both are
+ * gone: the composer is the text field, on every page, and there is nothing
+ * to open. The second test changed with it — a sentence carrying no number
+ * never reaches the model at all now, because lib/entry/quick-parse.ts stops
+ * it and opens the form instead. See DECISIONS.md.
+ *
+ * The first test makes a real model call, so it is deliberately short.
  */
-
 
 async function login(page: Page) {
   await page.goto("/login");
@@ -19,22 +24,17 @@ async function login(page: Page) {
   await page.waitForURL(/\/($|onboarding)/);
 }
 
-async function openTextTab(page: Page) {
-  await page.getByRole("button", { name: "ثبت هزینه" }).first().click();
-  await page.getByRole("tab", { name: "متن" }).click();
-}
+/** The composer's field, which is in the shell rather than on any one page. */
+const composer = (page: Page) => page.getByLabel("چه خریدی؟");
 
 test("free text becomes two transactions in the confirm card", async ({ page }) => {
   test.setTimeout(90_000);
 
   await login(page);
   await page.goto("/dashboard");
-  await openTextTab(page);
 
-  await page
-    .getByPlaceholder(/امروز ۴۵ دلار/)
-    .fill("امروز ۴۵ دلار خرید از سوپرمارکت و ۱۲ دلار قهوه");
-  await page.getByRole("button", { name: "بخوانش" }).click();
+  await composer(page).fill("امروز ۴۵ دلار خرید از سوپرمارکت و ۱۲ دلار قهوه");
+  await page.getByRole("button", { name: "ثبت", exact: true }).click();
 
   await expect(page.getByText("کارت تأیید")).toBeVisible({ timeout: 45_000 });
 
@@ -53,19 +53,128 @@ test("free text becomes two transactions in the confirm card", async ({ page }) 
   await expect(page.getByText("رستوران و کافه").first()).toBeVisible();
 });
 
-test("a sentence with no amount is refused rather than guessed", async ({ page }) => {
+test("a sentence with no amount never reaches the model", async ({ page }) => {
+  test.setTimeout(60_000);
+
+  await login(page);
+  await page.goto("/dashboard");
+
+  // If anything asks the model to read this, the test fails: the whole point
+  // of the gate is that text with no number in it costs nothing.
+  let asked = false;
+  await page.route("**/api/parse/text", async (route) => {
+    asked = true;
+    await route.abort();
+  });
+
+  await composer(page).fill("امروز رفتم خرید کردم");
+  await page.getByRole("button", { name: "ثبت", exact: true }).click();
+
+  // The form opens instead, ready for the amount — which is the one field
+  // this app never infers.
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByLabel("مبلغ")).toBeVisible();
+  expect(asked).toBe(false);
+});
+
+test("«بنزین ۶۰» reaches the model and comes back with a category", async ({
+  page,
+}) => {
   test.setTimeout(90_000);
 
   await login(page);
   await page.goto("/dashboard");
-  await openTextTab(page);
 
-  await page.getByPlaceholder(/امروز ۴۵ دلار/).fill("امروز رفتم خرید کردم");
-  await page.getByRole("button", { name: "بخوانش" }).click();
-
-  // The amount is the one field that is never inferred.
-  await expect(page.getByText(/مبلغی در متن پیدا نکردم/)).toBeVisible({
-    timeout: 45_000,
+  // The case that sent this back for rework: short, ordinary, and shaped like
+  // «amount + a word». The first gate stopped it and opened a form with the
+  // amount filled and the category empty — the same work as recording it by
+  // hand. The figure was never the hard part; the category is.
+  let asked = false;
+  await page.route("**/api/parse/text", async (route) => {
+    asked = true;
+    await route.continue();
   });
-  await expect(page.getByText("کارت تأیید")).toBeHidden();
+
+  await composer(page).fill("بنزین ۶۰");
+  await page.getByRole("button", { name: "ثبت", exact: true }).click();
+
+  await expect(page.getByText("کارت تأیید")).toBeVisible({ timeout: 45_000 });
+  expect(asked, "the gate swallowed it instead of asking the model").toBe(true);
+
+  // A category the user never typed, which is the whole point of the call.
+  await expect(page.getByText(/حمل‌ونقل|خودرو و سوخت/).first()).toBeVisible();
+
+  // And nothing is written until it is confirmed.
+  await expect(page.getByText("تا تأیید نکنی ذخیره نمی‌شود")).toBeVisible();
+});
+
+test("a row the user confirmed is not then reported as unconfirmed", async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+
+  await login(page);
+  await page.goto("/dashboard");
+
+  // An amount nothing else on the account uses, because the model does not
+  // always return a merchant — «بنزین ۶۰» comes back with a category and no
+  // name at all — so the figure is the only reliable handle on the row.
+  const amount = "63.47";
+
+  // The card shows every guessed field, says «روی هرکدام بزن تا عوض شود», and
+  // then the user presses «ثبت». That is the confirmation, so the stream must
+  // not turn round and say «مطمئن نیستم» about the same row — which is the
+  // app asking the same question twice.
+  await composer(page).fill(`بنزین ${amount}`);
+  await page.getByRole("button", { name: "ثبت", exact: true }).click();
+  await expect(page.getByText("کارت تأیید")).toBeVisible({ timeout: 45_000 });
+  await page.getByRole("button", { name: /^ثبت( یک)? تراکنش$/ }).click();
+  await expect(page.getByText(/ثبت شد\./)).toBeVisible({ timeout: 30_000 });
+
+  // The ledger is where a saved row is described now that the stream is
+  // gone. A confirmed row carries no «حدس زدم» marking; the fixture account's
+  // older statement rows still do, and are meant to — ticking forty lines off
+  // a bank file is not the same act as reading one card.
+  await page.goto("/transactions");
+  await page.waitForLoadState("networkidle");
+  const mine = page.getByRole("button").filter({ hasText: amount }).first();
+  await expect(mine).toBeVisible();
+  await expect(mine).not.toContainText("تأییدنشده");
+  await expect(mine).not.toContainText("حدس زدم");
+
+  // Put the account back: the row this wrote is removed.
+  await mine.click();
+  await page.getByRole("button", { name: "حذف" }).click();
+  await expect(page.getByText("برگردان")).toBeVisible();
+});
+
+test("the success message closes itself", async ({ page }) => {
+  test.setTimeout(120_000);
+
+  await login(page);
+  await page.goto("/dashboard");
+
+  // «۵۰» is an amount with nothing said about it, so the gate opens the form
+  // rather than spending a model call — this test is about what happens
+  // after saving, not about parsing.
+  const amount = "41.83";
+  await composer(page).fill(amount);
+  await page.getByRole("button", { name: "ثبت", exact: true }).click();
+
+  const sheet = page.getByRole("dialog");
+  await expect(sheet).toBeVisible();
+  await sheet.getByLabel("مبلغ").fill(amount);
+  await sheet.getByRole("button", { name: /^(ثبت|ذخیره)/ }).first().click();
+
+  // It says what happened…
+  await expect(page.getByText(/ثبت شد\./)).toBeVisible({ timeout: 30_000 });
+  // …and then gets out of the way on its own. No tap on ✕ required.
+  await expect(sheet).toBeHidden({ timeout: 10_000 });
+
+  // Put the account back.
+  await page.goto("/transactions");
+  await page.waitForLoadState("networkidle");
+  await page.getByRole("button").filter({ hasText: amount }).first().click();
+  await page.getByRole("button", { name: "حذف" }).click();
+  await expect(page.getByText("برگردان")).toBeVisible();
 });

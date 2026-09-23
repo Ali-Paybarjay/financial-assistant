@@ -14,8 +14,11 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/",
     display: "standalone",
     orientation: "portrait",
-    background_color: "#f1f3f6",
-    theme_color: "#f1f3f6",
+    // --paper in the light theme. A manifest is static JSON with no media
+    // query, so it names one of the two; the <meta name="theme-color"> pair
+    // in app/layout.tsx is what actually follows the theme at runtime.
+    background_color: "#edecf2", // theme-ok
+    theme_color: "#edecf2", // theme-ok
     dir: "rtl",
     lang: "fa",
     categories: ["finance", "productivity"],

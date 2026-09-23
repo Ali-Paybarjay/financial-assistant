@@ -2,6 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import { THEME_COOKIE, isTheme, type Theme } from "@/lib/theme";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -156,4 +158,62 @@ export async function deleteAccount(confirmation: string): Promise<SettingsResul
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");
+}
+
+/**
+ * Where «/» should land next time.
+ *
+ * Passing null puts the chooser back. This is the *destination of one route*,
+ * not the current workspace — see the comment in lib/workspaces.ts, which is
+ * the thing this is most likely to be mistaken for.
+ */
+export async function setDefaultWorkspace(
+  workspace: "personal" | "dong" | null,
+): Promise<SettingsResult> {
+  const viewer = await requireViewer();
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ default_workspace: workspace })
+    .eq("id", viewer.userId);
+
+  if (error) return { error: "ذخیره نشد. دوباره بزن." };
+
+  revalidatePath("/");
+  revalidatePath("/settings");
+  return { ok: true };
+}
+
+/**
+ *
+ * Writes the cookie (so the next server render is already right) and the
+ * profile (so a second device agrees). The cookie is the one the stylesheet
+ * depends on; the profile write is allowed to fail without breaking the UI,
+ * because the theme has already been applied on the client.
+ */
+export async function saveTheme(theme: Theme): Promise<{ error?: string }> {
+  if (!isTheme(theme)) return { error: "این تم را نمی‌شناسم." };
+
+  (await cookies()).set(THEME_COOKIE, theme, {
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+    sameSite: "lax",
+  });
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return {};
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ theme })
+    .eq("id", user.id);
+
+  if (error) return { error: "تم روی این دستگاه عوض شد ولی ذخیره نشد." };
+
+  revalidatePath("/", "layout");
+  return {};
 }
