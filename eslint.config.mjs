@@ -25,6 +25,7 @@ const eslintConfig = [
       // built output rather than anything written here.
       "design_handoff_financial_assistant/**",
       "design_handoff_v2/**",
+      "design_handoff_v3/**",
     ],
   },
 ];

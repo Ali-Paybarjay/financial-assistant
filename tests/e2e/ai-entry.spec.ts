@@ -154,3 +154,34 @@ test("a row the user confirmed is not then reported as unconfirmed", async ({
   await page.getByRole("button", { name: "حذف" }).click();
   await expect(page.getByText("برگردان")).toBeVisible();
 });
+
+test("the success message closes itself", async ({ page }) => {
+  test.setTimeout(120_000);
+
+  await login(page);
+  await page.goto("/dashboard");
+
+  // «۵۰» is an amount with nothing said about it, so the gate opens the form
+  // rather than spending a model call — this test is about what happens
+  // after saving, not about parsing.
+  const amount = "41.83";
+  await composer(page).fill(amount);
+  await page.getByRole("button", { name: "ثبت", exact: true }).click();
+
+  const sheet = page.getByRole("dialog");
+  await expect(sheet).toBeVisible();
+  await sheet.getByLabel("مبلغ").fill(amount);
+  await sheet.getByRole("button", { name: /^(ثبت|ذخیره)/ }).first().click();
+
+  // It says what happened…
+  await expect(page.getByText(/ثبت شد\./)).toBeVisible({ timeout: 30_000 });
+  // …and then gets out of the way on its own. No tap on ✕ required.
+  await expect(sheet).toBeHidden({ timeout: 10_000 });
+
+  // Put the account back.
+  await page.goto("/transactions");
+  await page.waitForLoadState("networkidle");
+  await page.getByRole("button").filter({ hasText: amount }).first().click();
+  await page.getByRole("button", { name: "حذف" }).click();
+  await expect(page.getByText("برگردان")).toBeVisible();
+});

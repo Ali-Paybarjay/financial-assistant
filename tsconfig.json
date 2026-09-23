@@ -23,5 +23,10 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "design_handoff_financial_assistant",
+    "design_handoff_v2",
+    "design_handoff_v3"
+  ]
 }

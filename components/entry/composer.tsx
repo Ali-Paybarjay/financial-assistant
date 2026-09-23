@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowUp, Camera, Spinner } from "@phosphor-icons/react/dist/ssr";
 import { BottomSheet } from "@/components/bottom-sheet";
@@ -245,6 +245,9 @@ const MANUAL_REASON: Record<string, string> = {
   "too-short": "خیلی کوتاه بود. این‌جا کاملش کن.",
 };
 
+/** Long enough to read the line once; short enough to stay out of the way. */
+const SAVED_VISIBLE_MS = 2200;
+
 type SheetState =
   | null
   /** The gate decided this needed no model; the form opens part-filled. */
@@ -286,8 +289,29 @@ function ComposerSheet({
   const [error, setError] = useState<string>();
   const [isSaving, startSaving] = useTransition();
 
+  // close() is redefined every render; the effect wants the latest one
+  // without taking it as a dependency and restarting the timer each time.
+  const closeRef = useRef<() => void>(() => {});
+
   const open = state !== null;
   const rows = drafts ?? (state?.kind === "confirm" ? state.drafts : null);
+
+  /**
+   * The success message closes itself.
+   *
+   * It says one thing, offers nothing to do, and is the last step of an
+   * action the user already finished — so making them dismiss it charges a
+   * tap for reading a receipt. Long enough to read «ثبت شد. ۱٬۲۰۰ برایت
+   * مانده.» once, short enough not to sit in the way of the next entry.
+   *
+   * The ✕ still works, and the timer is cleared when it is used, so an early
+   * close cannot fire a second one under whatever opened next.
+   */
+  useEffect(() => {
+    if (!saved) return;
+    const timer = setTimeout(() => closeRef.current(), SAVED_VISIBLE_MS);
+    return () => clearTimeout(timer);
+  }, [saved]);
 
   function close() {
     setDrafts(null);
@@ -295,6 +319,7 @@ function ComposerSheet({
     setError(undefined);
     onClose();
   }
+  closeRef.current = close;
 
   function save() {
     if (!rows) return;
