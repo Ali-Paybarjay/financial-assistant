@@ -370,11 +370,13 @@ export async function signInToExistingGoogleAccount(): Promise<ActionResult> {
       redirectTo: origin
         ? new URL("/callback", origin).toString()
         : appUrl("/callback"),
-      // They have just been told one of their Google accounts is already
-      // registered here. Which one is a question only they can answer, so
-      // Google is asked to let them choose rather than silently reusing
-      // whichever it signed them in with last.
-      queryParams: { prompt: "select_account" },
+      // No `prompt: "select_account"`. They picked this account at Google
+      // seconds ago — that is how we know it is taken — so forcing the
+      // chooser open again asks them to answer a question they have just
+      // answered. Google's own default already does the right thing here:
+      // with one account signed in it goes straight through, and with
+      // several it shows the chooser anyway, which is the only case where
+      // the question is real.
     },
   });
 
