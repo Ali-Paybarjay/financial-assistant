@@ -29,10 +29,43 @@ export type LinkIntent =
   /** Attach Google to this guest, keeping every row they have entered. */
   | "link"
   /** Leave this guest behind and sign in to the account Google already has. */
-  | "switch";
+  | "switch"
+  /** The same trip, after Google said it could not be made without a screen. */
+  | "switch-retry";
+
+const INTENTS: LinkIntent[] = ["link", "switch", "switch-retry"];
 
 export function readLinkIntent(value: string | undefined): LinkIntent | null {
-  return value === "link" || value === "switch" ? value : null;
+  return INTENTS.find((intent) => intent === value) ?? null;
+}
+
+/** Both legs of «sign me into the account I already have» are one trip. */
+export function isSwitch(intent: LinkIntent | null): boolean {
+  return intent === "switch" || intent === "switch-retry";
+}
+
+/**
+ * Google saying «not without showing the user something».
+ *
+ * `prompt=none` asks for a sign-in with no screen at all, which is the right
+ * request the second time round: the account was chosen at Google seconds
+ * earlier, and opening the chooser again asks a question that has just been
+ * answered. When Google cannot honour it — no session, or several accounts it
+ * will not choose between — it refuses with one of these instead of failing,
+ * and the trip is simply made again the ordinary way.
+ *
+ * Measured against the live endpoint rather than taken from the spec: Google
+ * answers `interaction_required`, and GoTrue passes it through to us unchanged
+ * as `?error=`. The rest are the neighbouring refusals from the same family,
+ * matched because here they mean the same thing.
+ */
+export function needsGoogleScreen(error: string | null): boolean {
+  return (
+    error === "interaction_required" ||
+    error === "login_required" ||
+    error === "consent_required" ||
+    error === "account_selection_required"
+  );
 }
 
 /**

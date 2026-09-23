@@ -370,13 +370,20 @@ export async function signInToExistingGoogleAccount(): Promise<ActionResult> {
       redirectTo: origin
         ? new URL("/callback", origin).toString()
         : appUrl("/callback"),
-      // No `prompt: "select_account"`. They picked this account at Google
-      // seconds ago — that is how we know it is taken — so forcing the
-      // chooser open again asks them to answer a question they have just
-      // answered. Google's own default already does the right thing here:
-      // with one account signed in it goes straight through, and with
-      // several it shows the chooser anyway, which is the only case where
-      // the question is real.
+      // They picked this account at Google seconds ago — that is how we know
+      // it is taken — so the second trip should show them nothing at all.
+      // `prompt: "none"` asks for exactly that: a sign-in with no screen.
+      //
+      // Leaving the parameter off is not the same thing. Google then decides,
+      // and its decision is to open the chooser whenever more than one account
+      // is signed in — which is what the user is complaining about, and it is
+      // not a question they can answer any better the second time.
+      //
+      // When Google genuinely cannot do it silently it refuses with
+      // `interaction_required` rather than failing, and /callback makes the
+      // trip again the ordinary way. So this can only remove a screen, never
+      // cost one.
+      queryParams: { prompt: "none" },
     },
   });
 

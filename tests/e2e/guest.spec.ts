@@ -369,3 +369,59 @@ test("a switch that does not complete leaves the guest exactly where it was", as
   await page.getByRole("button", { name: "خروج و حذف" }).click();
   await page.waitForURL(/\/login/);
 });
+
+/**
+ * The second trip to Google, and the screen that should not be on it.
+ *
+ * Pressing «وارد حساب قبلی‌ام شو» asks Google for a sign-in with no UI at all
+ * (`prompt=none`), because the account was chosen at Google seconds earlier
+ * and the chooser has no question left to ask. Google may refuse — no session,
+ * or several accounts it will not pick between — and then the trip is simply
+ * made again without the parameter.
+ *
+ * Driven through the route rather than the browser: the interesting behaviour
+ * is entirely in the redirects, and this way it costs no anonymous sign-in,
+ * which is the scarce thing in this file.
+ */
+test.describe("the silent second trip", () => {
+  const REFUSED = "/callback?error=interaction_required&error_description=";
+
+  test("a refusal is retried with the screen, not reported to the user", async ({ request }) => {
+    const response = await request.get(REFUSED, {
+      headers: { Cookie: "link_intent=switch" },
+      maxRedirects: 0,
+    });
+
+    const location = response.headers()["location"] ?? "";
+    expect(location, "should go back to Google rather than to a page").toContain(
+      "/auth/v1/authorize",
+    );
+    // Without the parameter this time: Google said it needs to ask, so let it.
+    expect(location).not.toContain("prompt=none");
+    // And the trip has to be remembered, or the code comes back to a callback
+    // that no longer knows what it was for.
+    expect(response.headers()["set-cookie"] ?? "").toContain("link_intent=switch-retry");
+  });
+
+  test("a refusal on the retry stops, rather than going round again", async ({ request }) => {
+    // The second leg already dropped `prompt=none`. If it still says a screen
+    // is needed, asking again would say it again — forever.
+    const response = await request.get(REFUSED, {
+      headers: { Cookie: "link_intent=switch-retry" },
+      maxRedirects: 0,
+    });
+
+    expect(response.headers()["location"] ?? "").toContain("/account-exists?error=google_failed");
+  });
+
+  test("cancelling at Google is not an error", async ({ request }) => {
+    const response = await request.get("/callback?error=access_denied", {
+      headers: { Cookie: "link_intent=switch" },
+      maxRedirects: 0,
+    });
+
+    const location = response.headers()["location"] ?? "";
+    expect(location).toContain("/account-exists");
+    expect(location, "nothing went wrong, so nothing should be said").not.toContain("error=");
+  });
+});

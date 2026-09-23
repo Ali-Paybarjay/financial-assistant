@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { isIdentityTaken } from "@/lib/auth-link";
+import {
+  isIdentityTaken,
+  isSwitch,
+  needsGoogleScreen,
+  readLinkIntent,
+} from "@/lib/auth-link";
 
 /**
  * The single condition that decides whether a guest is told «you already have
@@ -33,5 +38,46 @@ describe("isIdentityTaken", () => {
     expect(isIdentityTaken(null, "A user with this email address has already been registered")).toBe(
       false,
     );
+  });
+});
+
+/**
+ * The cookie is the only thing that survives a trip to Google, so what it can
+ * say and what it means are worth pinning down.
+ */
+describe("link intents", () => {
+  it("reads the three it knows and refuses anything else", () => {
+    expect(readLinkIntent("link")).toBe("link");
+    expect(readLinkIntent("switch")).toBe("switch");
+    expect(readLinkIntent("switch-retry")).toBe("switch-retry");
+    expect(readLinkIntent("google")).toBeNull();
+    expect(readLinkIntent(undefined)).toBeNull();
+  });
+
+  it("treats both legs of the switch as the same trip", () => {
+    // Everything past the retry decision — which guest is being left, where
+    // the user lands — must not care which leg got there.
+    expect(isSwitch("switch")).toBe(true);
+    expect(isSwitch("switch-retry")).toBe(true);
+    expect(isSwitch("link")).toBe(false);
+    expect(isSwitch(null)).toBe(false);
+  });
+});
+
+describe("needsGoogleScreen", () => {
+  it("recognises Google declining to sign in silently", () => {
+    // What the live endpoint actually answers to `prompt=none` with no
+    // session, measured rather than assumed.
+    expect(needsGoogleScreen("interaction_required")).toBe(true);
+    expect(needsGoogleScreen("login_required")).toBe(true);
+    expect(needsGoogleScreen("consent_required")).toBe(true);
+    expect(needsGoogleScreen("account_selection_required")).toBe(true);
+  });
+
+  it("does not retry the refusals that mean something else", () => {
+    // Pressing cancel must not be answered by sending them back to Google.
+    expect(needsGoogleScreen("access_denied")).toBe(false);
+    expect(needsGoogleScreen("server_error")).toBe(false);
+    expect(needsGoogleScreen(null)).toBe(false);
   });
 });

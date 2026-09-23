@@ -2,7 +2,15 @@ import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { purgeGuest } from "@/lib/guests";
-import { LINK_INTENT_COOKIE, isIdentityTaken, readLinkIntent } from "@/lib/auth-link";
+import {
+  LINK_INTENT_COOKIE,
+  LINK_INTENT_MAX_AGE,
+  type LinkIntent,
+  isIdentityTaken,
+  isSwitch,
+  needsGoogleScreen,
+  readLinkIntent,
+} from "@/lib/auth-link";
 
 /**
  * Where every round trip comes back to: email confirmation links, password
@@ -32,6 +40,19 @@ export async function GET(request: NextRequest) {
     return response;
   }
 
+  /** Back out to Google for another leg, carrying the intent with us. */
+  function leave(url: string, next: LinkIntent) {
+    const response = NextResponse.redirect(url);
+    response.cookies.set(LINK_INTENT_COOKIE, next, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: LINK_INTENT_MAX_AGE,
+    });
+    return response;
+  }
+
   // The provider's own refusals, which come back as query parameters rather
   // than as a code. Read before `code`, or every one of them reads as a link
   // that expired.
@@ -44,12 +65,32 @@ export async function GET(request: NextRequest) {
       // trying to create is one they already have.
       return land("/account-exists");
     }
+
+    // The silent attempt could not be made silently. Not an error, and not
+    // something to tell the user about — just go again the ordinary way, and
+    // let Google ask whatever it needs to ask.
+    //
+    // Only from "switch", never from "switch-retry": the second leg has
+    // already dropped `prompt=none`, so if it comes back here saying a screen
+    // is needed, going again would say it again, forever.
+    if (intent === "switch" && needsGoogleScreen(failure)) {
+      const supabase = await createClient();
+      const { data } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${origin}/callback` },
+      });
+      if (data?.url) return leave(data.url, "switch-retry");
+      return land("/account-exists?error=google_failed");
+    }
+
     if (failure === "access_denied") {
       // They pressed cancel at Google. Nothing is wrong, so nothing should be
       // reported as wrong — and nothing has been taken down either, which is
       // the whole reason the guest is still standing at this point.
+      if (isSwitch(intent)) return land("/account-exists");
       return land(intent ? "/save-account" : "/login?error=cancelled");
     }
+    if (isSwitch(intent)) return land("/account-exists?error=google_failed");
     return land(intent ? "/save-account?error=google_failed" : "/login?error=google_failed");
   }
 
@@ -73,7 +114,7 @@ export async function GET(request: NextRequest) {
   // There is no need for it either — a successful exchange overwrites the
   // session it finds.
   let leaving: string | null = null;
-  if (intent === "switch") {
+  if (isSwitch(intent)) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -86,7 +127,7 @@ export async function GET(request: NextRequest) {
     // A guest is still a guest when this fails, session and rows intact, so
     // put them back on the screen they were deciding on rather than at a login
     // page they are already past.
-    if (intent === "switch") return land("/account-exists?error=google_failed");
+    if (isSwitch(intent)) return land("/account-exists?error=google_failed");
     if (intent === "link") return land("/save-account?error=google_failed");
     return land("/login?error=expired_link");
   }
@@ -105,7 +146,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  if (intent === "switch") {
+  if (isSwitch(intent)) {
     return land("/");
   }
 
