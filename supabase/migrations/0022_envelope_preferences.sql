@@ -39,7 +39,7 @@ create policy envelope_preferences_all on public.envelope_preferences for all to
 -- Same contract as before, plus two things.
 --
 -- `baseline_minor` is what the user said in onboarding — the monthly estimate
--- from `variable_expense_baselines`, plus any fixed bills that post to this
+-- from `variable_expense_baselines`, plus their monthly fixed bills in this
 -- category. It is a *suggestion* and nothing writes it as a ceiling: an
 -- estimate of «what I spend» is not a decision about «what I want to spend»,
 -- and the app does not make that decision on someone's behalf any more than
@@ -87,8 +87,14 @@ as $$
       and t.occurred_on between p_month_start and p_month_end
     group by t.category_id
   ),
-  -- What they told us in onboarding: the variable estimate, plus the monthly
-  -- value of any fixed bill filed under the same category.
+  -- What they told us in onboarding: the variable estimate, plus any fixed
+  -- bill filed under the same category.
+  --
+  -- Monthly bills only, and not a twelfth of the yearly ones. A ceiling is a
+  -- month's allowance, and a yearly insurance premium does not arrive in
+  -- twelfths — it arrives once, in a month that would then blow a ceiling
+  -- built from its average. Suggesting nothing there is better than
+  -- suggesting a figure that is guaranteed to be wrong twice a year.
   declared as (
     select category_id, sum(amount)::bigint as amount from (
       select veb.category_id, veb.monthly_estimate as amount
