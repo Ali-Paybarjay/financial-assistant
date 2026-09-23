@@ -19,6 +19,8 @@ export type EnvelopeRow = {
   /** null when there is no ceiling; negative when the ceiling is passed. */
   remaining_minor: Minor | null;
   unconfirmed_minor: Minor;
+  /** What onboarding says this costs per month, if anything. A suggestion. */
+  baseline_minor: Minor | null;
 };
 
 export type EnvelopeState = "under" | "tight" | "over" | "unset";
@@ -112,4 +114,34 @@ export function suggestBudget(
 
   const step = ROUND_TO_MAJOR * 10 ** minorExponent(currency);
   return Math.ceil(median / step) * step;
+}
+
+/** Where a proposed ceiling came from, because the two are not equally good. */
+export type CeilingSuggestion = {
+  amount: Minor;
+  /** «observed» is three months of real spending; «declared» is onboarding. */
+  source: "observed" | "declared";
+};
+
+/**
+ * What to propose as this envelope's ceiling, and where it came from.
+ *
+ * Lived months win over a figure someone typed during signup, for the same
+ * reason `monthlySurplus` prefers observed over declared: one is what
+ * happened, the other is what they guessed would happen before they had
+ * started keeping books. Both beat an empty field, and the card says which it
+ * is showing — «میانهٔ ۳ ماه» and «در ثبت‌نام گفتی» are different claims and
+ * should not be dressed as the same one.
+ */
+export function suggestedCeiling(
+  envelope: Pick<EnvelopeRow, "baseline_minor">,
+  observedMedian: Minor | null | undefined,
+): CeilingSuggestion | null {
+  if (observedMedian != null && observedMedian > 0) {
+    return { amount: observedMedian, source: "observed" };
+  }
+  if (envelope.baseline_minor != null && envelope.baseline_minor > 0) {
+    return { amount: envelope.baseline_minor, source: "declared" };
+  }
+  return null;
 }

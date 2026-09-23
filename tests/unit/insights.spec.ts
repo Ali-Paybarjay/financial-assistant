@@ -37,6 +37,7 @@ function envelope(over: Partial<EnvelopeRow> = {}): EnvelopeRow {
     spent_minor: 0,
     remaining_minor: 100_000,
     unconfirmed_minor: 0,
+    baseline_minor: null,
     ...over,
   };
 }

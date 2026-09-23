@@ -9,7 +9,7 @@ import { Field, FormError } from "@/components/field";
 import { Money } from "@/components/money";
 import { toMajor, toMinor, type CurrencyCode, type Minor } from "@/lib/money";
 import { setCategoryBudget } from "@/app/(app)/dashboard/budget-actions";
-import type { EnvelopeRow } from "@/lib/envelopes";
+import { suggestedCeiling, type EnvelopeRow } from "@/lib/envelopes";
 
 /**
  * Setting the ceiling on one envelope.
@@ -24,14 +24,15 @@ import type { EnvelopeRow } from "@/lib/envelopes";
  */
 export function BudgetSheet({
   envelope,
-  suggestion,
+  observedMedian,
   currency,
   open,
   onOpenChange,
 }: {
   /** The envelope being given a ceiling, or null when the sheet is closed. */
   envelope: EnvelopeRow | null;
-  suggestion: Minor | null;
+  /** Three months of real spending, where there are three months of it. */
+  observedMedian: Minor | null;
   currency: CurrencyCode;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -51,6 +52,8 @@ export function BudgetSheet({
   }, [open, envelope, currency]);
 
   if (!envelope) return null;
+
+  const suggestion = suggestedCeiling(envelope, observedMedian);
 
   const typed = safeMinor(amount, currency);
   const over = typed !== null && typed > 0 ? envelope.spent_minor - typed : null;
@@ -86,9 +89,9 @@ export function BudgetSheet({
           label="سقف ماهانه"
           htmlFor="budget-amount"
           hint={
-            suggestion !== null
+            suggestion
               ? undefined
-              : "هنوز دو ماه سابقه نداری، پس پیشنهادی ندارم — خودت بگو."
+              : "هنوز سابقه‌ای ندارم که ازش پیشنهاد بسازم — خودت بگو."
           }
         >
           <AmountInput
@@ -102,13 +105,14 @@ export function BudgetSheet({
           />
         </Field>
 
-        {suggestion !== null && (
+        {suggestion && (
           <button
             type="button"
-            onClick={() => setAmount(String(toMajor(suggestion, currency)))}
+            onClick={() => setAmount(String(toMajor(suggestion.amount, currency)))}
             className="w-fit rounded-full bg-lapis-tint px-3 py-1.5 text-caption font-semibold text-lapis"
           >
-            میانهٔ ۳ ماه: <Money minor={suggestion} currency={currency} />
+            {suggestion.source === "observed" ? "میانهٔ ۳ ماه" : "در ثبت‌نام گفتی"}:{" "}
+            <Money minor={suggestion.amount} currency={currency} />
           </button>
         )}
 

@@ -1,14 +1,15 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { EnvelopeCard, UnsetEnvelopeCard } from "@/components/dashboard/envelope-card";
 import { BudgetSheet } from "@/components/dashboard/budget-sheet";
 import { BudgetInvite } from "@/components/dashboard/budget-invite";
+import { EnvelopePicker } from "@/components/dashboard/envelope-picker";
 import { dismissInsight } from "@/app/(app)/stream/actions";
 import { envelopeState, type EnvelopeRow } from "@/lib/envelopes";
 import type { CurrencyCode, Minor } from "@/lib/money";
+import type { CategoryRow } from "@/lib/supabase/database.types";
 
 /**
  * The board, and the sheet that gives an envelope its ceiling.
@@ -25,6 +26,7 @@ export function EnvelopeBoard({
   currency,
   daysLeft,
   invite,
+  available,
 }: {
   envelopes: EnvelopeRow[];
   /** categoryId -> the median of the last three months, where there is one. */
@@ -37,10 +39,13 @@ export function EnvelopeBoard({
    * remembers them saying no. null once any ceiling exists, or once they have.
    */
   invite: { candidates: EnvelopeRow[]; key: string } | null;
+  /** Expense categories not on the board, for the picker. */
+  available: CategoryRow[];
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState<EnvelopeRow | null>(null);
   const [inviteClosed, setInviteClosed] = useState(false);
+  const [picking, setPicking] = useState(false);
   const [, startDismissing] = useTransition();
 
   // `envelope_status()` already sorts the unset ones last; this splits them
@@ -53,11 +58,13 @@ export function EnvelopeBoard({
   );
 
   return (
-    <section className="flex flex-col gap-3">
+    // Named, so it is a landmark someone can jump to rather than an
+    // anonymous <section> that assistive technology skips over entirely.
+    <section aria-labelledby="envelope-board" className="flex flex-col gap-3">
       {invite && !inviteClosed && (
         <BudgetInvite
           candidates={invite.candidates}
-          suggestions={suggestions}
+          observedMedians={suggestions}
           currency={currency}
           onSetBudget={setEditing}
           onDismiss={() => {
@@ -74,10 +81,16 @@ export function EnvelopeBoard({
       )}
 
       <div className="flex items-baseline justify-between gap-2">
-        <h2 className="text-title font-semibold text-ink">پاکت‌های این ماه</h2>
-        <Link href="/settings" className="text-caption font-medium text-lapis">
-          سقف‌ها
-        </Link>
+        <h2 id="envelope-board" className="text-title font-semibold text-ink">
+          پاکت‌های این ماه
+        </h2>
+        <button
+          type="button"
+          onClick={() => setPicking(true)}
+          className="text-caption font-semibold text-lapis hover:underline"
+        >
+          + پاکت
+        </button>
       </div>
 
       {withBudget.length > 0 && (
@@ -101,15 +114,22 @@ export function EnvelopeBoard({
         <UnsetEnvelopeCard
           key={envelope.category_id}
           envelope={envelope}
-          suggestion={suggestions[envelope.category_id] ?? null}
+          observedMedian={suggestions[envelope.category_id] ?? null}
           currency={currency}
+          href={`/transactions?category=${slugById[envelope.category_id] ?? ""}`}
           onSetBudget={() => setEditing(envelope)}
         />
       ))}
 
+      <EnvelopePicker
+        available={available}
+        open={picking}
+        onOpenChange={setPicking}
+      />
+
       <BudgetSheet
         envelope={editing}
-        suggestion={editing ? (suggestions[editing.category_id] ?? null) : null}
+        observedMedian={editing ? (suggestions[editing.category_id] ?? null) : null}
         currency={currency}
         open={editing !== null}
         onOpenChange={(open) => {

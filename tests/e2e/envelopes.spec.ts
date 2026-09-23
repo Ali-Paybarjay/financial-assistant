@@ -74,3 +74,56 @@ test("a ceiling says what it does before it is saved, then draws the envelope", 
   await expect(editor).toBeHidden();
   await expect(page.getByText("سقف نداری")).toBeVisible();
 });
+
+test("a packet can be added from the list, invented, and taken off for good", async ({
+  page,
+}) => {
+  test.setTimeout(150_000);
+
+  await login(page);
+  await page.goto("/dashboard");
+
+  const board = page.getByRole("region").filter({ hasText: "پاکت‌های این ماه" });
+  const named = (name: string) =>
+    page.getByRole("link").filter({ hasText: name }).first();
+
+  // ---- add one from the list ---------------------------------------------
+  await page.getByRole("button", { name: "+ پاکت" }).click();
+  const picker = page.getByRole("dialog");
+  // The chips are list items; the «+» beside each one is an icon, not text.
+  const first = picker.getByRole("listitem").first().getByRole("button");
+  const addedName = (await first.innerText()).trim();
+  expect(addedName.length).toBeGreaterThan(0);
+  await first.click();
+  await expect(picker).toBeHidden();
+  await expect(board).toContainText(addedName);
+
+  // ---- invent one with a name of your own --------------------------------
+  const invented = `پاکت تست ${Date.now().toString().slice(-5)}`;
+  await page.getByRole("button", { name: "+ پاکت" }).click();
+  await page.getByLabel("یا یک پاکت با نام خودت").fill(invented);
+  await page.getByRole("button", { name: "بساز و بگذار روی بورد" }).click();
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await expect(board).toContainText(invented);
+
+  // ---- and take both off, which has to beat every reason to show them -----
+  for (const name of [invented, addedName]) {
+    await page.goto("/dashboard");
+    await named(name).click();
+    await page.waitForURL(/\/transactions\?category=/);
+    await page.getByRole("button", { name: "حذف از بورد" }).click();
+    await page.waitForURL(/\/dashboard/);
+    await expect(board).not.toContainText(name);
+  }
+
+  // Taking a packet off the board hides the card; the category it was made
+  // from is still a real category, so the invented one is deleted here or it
+  // accumulates on the fixture account one per run.
+  await page.goto("/settings");
+  await page.getByRole("button", { name: "دسته‌ها" }).click();
+  const categories = page.getByRole("dialog");
+  await categories.getByRole("button", { name: `حذف ${invented}` }).click();
+  await expect(
+    categories.getByRole("button", { name: `حذف ${invented}` }),
+  ).toBeHidden();
+});

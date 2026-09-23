@@ -48,6 +48,7 @@ export function DashboardView({
   suggestions,
   slugById,
   invite,
+  availableCategories,
   forecast,
   insightCount,
   totals,
@@ -76,6 +77,8 @@ export function DashboardView({
   slugById: Record<string, string>;
   /** Offered only while no ceiling exists anywhere, and not once waved away. */
   invite: { candidates: EnvelopeRow[]; key: string } | null;
+  /** Expense categories not on the board, for the «+ پاکت» picker. */
+  availableCategories: CategoryRow[];
   /** Where the month lands at the current rate. null for a month already over. */
   forecast: Minor | null;
   /** How many things the stream has to say, for the one-line pointer to it. */
@@ -241,6 +244,7 @@ export function DashboardView({
               currency={currency}
               daysLeft={daysLeft}
               invite={invite}
+              available={availableCategories}
             />
 
             {/* The yellow banner this replaces said there was something to

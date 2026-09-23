@@ -72,7 +72,12 @@ export function Composer({
     // fields filled in, which is faster and free.
     const quick = quickParse(typed);
     if (quick.kind === "manual") {
-      setSheet({ kind: "manual", amount: quick.amount, merchant: quick.merchant });
+      setSheet({
+        kind: "manual",
+        reason: quick.reason,
+        amount: quick.amount,
+        merchant: quick.merchant,
+      });
       setText("");
       return;
     }
@@ -227,10 +232,28 @@ export function Composer({
   );
 }
 
+/**
+ * What the composer says when it opens the form rather than reading the text.
+ *
+ * Each one names the missing piece, because «a form appeared» on its own
+ * reads as the model having failed rather than as there being nothing to
+ * read.
+ */
+const MANUAL_REASON: Record<string, string> = {
+  "no-amount": "مبلغی ننوشتی. عددش را بگذار تا ثبت کنم.",
+  "amount-only": "مبلغ را گرفتم. چی خریدی؟ دسته‌اش را انتخاب کن.",
+  "too-short": "خیلی کوتاه بود. این‌جا کاملش کن.",
+};
+
 type SheetState =
   | null
   /** The gate decided this needed no model; the form opens part-filled. */
-  | { kind: "manual"; amount?: string; merchant?: string }
+  | {
+      kind: "manual";
+      reason: "too-short" | "no-amount" | "amount-only";
+      amount?: string;
+      merchant?: string;
+    }
   /** The model read it; the user confirms before anything is written. */
   | { kind: "confirm"; source: string; drafts: DraftTransaction[] }
   | { kind: "receipt"; file: File };
@@ -321,17 +344,24 @@ function ComposerSheet({
           onSaved={setSaved}
         />
       ) : state?.kind === "manual" ? (
-        <ManualForm
-          currency={currency}
-          categories={categories}
-          accounts={accounts}
-          goals={goals}
-          defaultAccountId={defaultAccountId}
-          today={today}
-          initialAmount={state.amount}
-          initialMerchant={state.merchant}
-          onSaved={setSaved}
-        />
+        <div className="flex flex-col gap-3">
+          {/* Why the form opened instead of the app just doing it. Without
+              this the fast path looks like the model failing. */}
+          <p className="rounded-control bg-paper px-3 py-2.5 text-caption text-ink-muted">
+            {MANUAL_REASON[state.reason]}
+          </p>
+            <ManualForm
+            currency={currency}
+            categories={categories}
+            accounts={accounts}
+            goals={goals}
+            defaultAccountId={defaultAccountId}
+            today={today}
+            initialAmount={state.amount}
+            initialMerchant={state.merchant}
+            onSaved={setSaved}
+          />
+        </div>
       ) : rows ? (
         <div className="flex flex-col gap-3">
           {state?.kind === "confirm" && (

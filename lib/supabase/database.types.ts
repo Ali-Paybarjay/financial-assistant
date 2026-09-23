@@ -203,6 +203,22 @@ export type EnvelopeStatusRow = {
   remaining_minor: number | null;
   /** How much of spent_minor is still an unconfirmed guess. */
   unconfirmed_minor: number;
+  /**
+   * What the user said in onboarding this category costs per month. A
+   * suggestion for the ceiling, never written as one — see migration 0022.
+   */
+  baseline_minor: number | null;
+};
+
+/**
+ * Whether a category is on the board because the user put it there, or off it
+ * because they took it off. No row means «decide from the evidence».
+ */
+export type EnvelopePreferenceRow = {
+  user_id: string;
+  category_id: string;
+  state: "shown" | "hidden";
+  updated_at: string;
 };
 
 export type IncomeSourceRow = {
@@ -537,6 +553,7 @@ export type Database = {
       dong_payments: Table<DongPaymentRow, "kind">;
       category_budgets: Table<CategoryBudgetRow>;
       insight_dismissals: Table<InsightDismissalRow, "dismissed_at">;
+      envelope_preferences: Table<EnvelopePreferenceRow, "updated_at">;
     };
     Views: Record<never, never>;
     Functions: {

@@ -164,6 +164,7 @@ export default async function DashboardPage({
         spent_minor: 0,
         remaining_minor: null,
         unconfirmed_minor: 0,
+        baseline_minor: null,
       },
     ];
   });
@@ -175,6 +176,22 @@ export default async function DashboardPage({
             spentCandidates.length > 0 ? spentCandidates : fallbackCandidates,
           key: inviteKey,
         };
+
+  // What the picker can offer: every expense category that is not already a
+  // card. Includes the user's own, so a packet they invented last month is
+  // offerable again if they took it off.
+  const onBoard = new Set(envelopes.map((row) => row.category_id));
+  const availableCategories = categories.filter(
+    (category) =>
+      category.kind === "expense" &&
+      !onBoard.has(category.id) &&
+      // «دنگ و دونگ» is the mirror category a trigger writes into when a trip
+      // expense is paid from the user's own account. Nobody decides to spend
+      // into it, so a ceiling on it would be a budget for other people's
+      // arithmetic — and rule 11 keeps the two sides out of each other's
+      // screens. It is still a real category in the ledger.
+      category.slug !== "dong",
+  );
 
   // A tap on an envelope opens the ledger filtered to it, and the ledger
   // filters by slug rather than by id.
@@ -196,6 +213,7 @@ export default async function DashboardPage({
       suggestions={Object.fromEntries(suggestions)}
       slugById={slugById}
       invite={invite}
+      availableCategories={availableCategories}
       forecast={forecast}
       insightCount={insights.length}
       totals={{

@@ -2,7 +2,7 @@
 
 import { Envelope } from "@phosphor-icons/react/dist/ssr";
 import { Money } from "@/components/money";
-import type { EnvelopeRow } from "@/lib/envelopes";
+import { suggestedCeiling, type EnvelopeRow } from "@/lib/envelopes";
 import type { CurrencyCode, Minor } from "@/lib/money";
 
 /**
@@ -24,14 +24,15 @@ import type { CurrencyCode, Minor } from "@/lib/money";
  */
 export function BudgetInvite({
   candidates,
-  suggestions,
+  observedMedians,
   currency,
   onSetBudget,
   onDismiss,
 }: {
   /** The three categories worth asking about first. */
   candidates: EnvelopeRow[];
-  suggestions: Record<string, Minor>;
+  /** categoryId -> three months of real spending, where there is any. */
+  observedMedians: Record<string, Minor>;
   currency: CurrencyCode;
   onSetBudget: (envelope: EnvelopeRow) => void;
   onDismiss: () => void;
@@ -54,7 +55,12 @@ export function BudgetInvite({
       </div>
 
       <ul className="mt-3 flex flex-col gap-2">
-        {candidates.map((envelope) => (
+        {candidates.map((envelope) => {
+          const suggestion = suggestedCeiling(
+            envelope,
+            observedMedians[envelope.category_id],
+          );
+          return (
           <li
             key={envelope.category_id}
             className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-control bg-paper px-3 py-2"
@@ -63,16 +69,21 @@ export function BudgetInvite({
               <span className="block truncate text-[14px] font-medium text-ink">
                 {envelope.name_fa}
               </span>
-              {envelope.spent_minor > 0 && (
+              {(envelope.spent_minor > 0 || suggestion) && (
                 <span className="block text-caption text-ink-muted">
-                  این ماه <Money minor={envelope.spent_minor} currency={currency} />
-                  {suggestions[envelope.category_id] !== undefined && (
+                  {envelope.spent_minor > 0 && (
                     <>
-                      {" · "}پیشنهاد{" "}
-                      <Money
-                        minor={suggestions[envelope.category_id]}
-                        currency={currency}
-                      />
+                      این ماه{" "}
+                      <Money minor={envelope.spent_minor} currency={currency} />
+                    </>
+                  )}
+                  {suggestion && (
+                    <>
+                      {envelope.spent_minor > 0 && " · "}
+                      {suggestion.source === "observed"
+                        ? "میانهٔ ۳ ماه "
+                        : "در ثبت‌نام گفتی "}
+                      <Money minor={suggestion.amount} currency={currency} />
                     </>
                   )}
                 </span>
@@ -86,7 +97,8 @@ export function BudgetInvite({
               سقف بگذار
             </button>
           </li>
-        ))}
+          );
+        })}
       </ul>
 
       <button

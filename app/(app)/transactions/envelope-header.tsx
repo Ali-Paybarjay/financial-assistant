@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Money } from "@/components/money";
 import { BudgetSheet } from "@/components/dashboard/budget-sheet";
+import { setEnvelopeOnBoard } from "@/app/(app)/dashboard/budget-actions";
 import { faNumber } from "@/lib/format";
 import {
   dailyAllowance,
@@ -26,20 +28,45 @@ import { cn } from "@/lib/utils";
  */
 export function EnvelopeHeader({
   envelope,
-  suggestion,
+  observedMedian,
   currency,
   daysGone,
   daysLeft,
   rowCount,
 }: {
   envelope: EnvelopeRow;
-  suggestion: Minor | null;
+  /** Three months of real spending, where there are three months of it. */
+  observedMedian: Minor | null;
   currency: CurrencyCode;
   daysGone: number;
   daysLeft: number;
   rowCount: number;
 }) {
+  const router = useRouter();
   const [editing, setEditing] = useState(false);
+  const [isRemoving, startRemoving] = useTransition();
+
+  /**
+   * Off the board, and it stays off. The spending is untouched — it is still
+   * in this list and still in the month's total; what goes is the card.
+   */
+  function removeFromBoard() {
+    startRemoving(async () => {
+      await setEnvelopeOnBoard(envelope.category_id, false);
+      router.push("/dashboard");
+    });
+  }
+
+  const removeButton = (
+    <button
+      type="button"
+      onClick={removeFromBoard}
+      disabled={isRemoving}
+      className="text-caption font-medium text-ink-muted hover:text-negative hover:underline disabled:opacity-50"
+    >
+      {isRemoving ? "دارم برمی‌دارم…" : "حذف از بورد"}
+    </button>
+  );
   const { budget_minor: budget, spent_minor: spent } = envelope;
   const state = envelopeState(budget, spent);
   const perDay = dailyAllowance(budget, spent, daysLeft);
@@ -51,7 +78,7 @@ export function EnvelopeHeader({
   const sheet = (
     <BudgetSheet
       envelope={editing ? envelope : null}
-      suggestion={suggestion}
+      observedMedian={observedMedian}
       currency={currency}
       open={editing}
       onOpenChange={setEditing}
@@ -73,9 +100,12 @@ export function EnvelopeHeader({
             سقف بگذار
           </button>
         </div>
-        <p className="mt-1 text-caption text-ink-muted">
-          این ماه <Money minor={spent} currency={currency} /> خرج این دسته شده.
-        </p>
+        <div className="mt-1 flex items-end justify-between gap-3">
+          <p className="text-caption text-ink-muted">
+            این ماه <Money minor={spent} currency={currency} /> خرج این دسته شده.
+          </p>
+          {removeButton}
+        </div>
         {sheet}
       </section>
     );
@@ -166,9 +196,12 @@ export function EnvelopeHeader({
         )}
       </p>
 
-      <p className="mt-3 border-t border-hairline pt-3 text-caption font-semibold text-ink-muted">
-        {faNumber(rowCount)} ردیف در این پاکت
-      </p>
+      <div className="mt-3 flex items-center justify-between gap-3 border-t border-hairline pt-3">
+        <p className="text-caption font-semibold text-ink-muted">
+          {faNumber(rowCount)} ردیف در این پاکت
+        </p>
+        {removeButton}
+      </div>
 
       {sheet}
     </section>

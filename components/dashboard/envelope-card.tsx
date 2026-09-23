@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { Warning } from "@phosphor-icons/react/dist/ssr";
 import { Money } from "@/components/money";
-import { dailyAllowance, envelopeState, type EnvelopeRow } from "@/lib/envelopes";
+import {
+  dailyAllowance,
+  envelopeState,
+  suggestedCeiling,
+  type EnvelopeRow,
+} from "@/lib/envelopes";
 import type { CurrencyCode } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
@@ -154,30 +159,49 @@ const STATE_LABEL: Record<string, string> = {
  */
 export function UnsetEnvelopeCard({
   envelope,
-  suggestion,
+  observedMedian,
   currency,
+  href,
   onSetBudget,
 }: {
   envelope: EnvelopeRow;
   /** The median of the last three months, when there are enough of them. */
-  suggestion: number | null;
+  observedMedian: number | null;
   currency: CurrencyCode;
+  /**
+   * The ledger, filtered to this category — and the only route to taking the
+   * packet off the board. Without it a card someone had just added was a dead
+   * end: no ceiling meant no link, and no link meant no way back out.
+   */
+  href: string;
   onSetBudget: () => void;
 }) {
+  const suggestion = suggestedCeiling(envelope, observedMedian);
   return (
     // Wraps rather than truncates: at 375px a fixed button beside a fixed
     // title left «خوراک و سوپرمارکت — س…», which names neither the category
     // nor what is being asked about it.
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-card border border-dashed border-hairline-strong p-3">
       <span className="min-w-0 flex-1 basis-[60%]">
-        <span className="block text-body font-semibold text-ink">
+        <Link
+          href={href}
+          className="block text-body font-semibold text-ink hover:text-lapis hover:underline"
+        >
           {envelope.name_fa} — سقف نداری
-        </span>
+        </Link>
         <span className="mt-0.5 block text-caption text-ink-muted">
-          این ماه <Money minor={envelope.spent_minor} currency={currency} />
-          {suggestion !== null && (
+          {envelope.spent_minor > 0 && (
             <>
-              {" · "}میانهٔ ۳ ماه <Money minor={suggestion} currency={currency} />
+              این ماه <Money minor={envelope.spent_minor} currency={currency} />
+            </>
+          )}
+          {suggestion && (
+            <>
+              {envelope.spent_minor > 0 && " · "}
+              {/* Named rather than merged: «three months of your spending» and
+                  «the figure you typed at signup» are different claims. */}
+              {suggestion.source === "observed" ? "میانهٔ ۳ ماه " : "در ثبت‌نام گفتی "}
+              <Money minor={suggestion.amount} currency={currency} />
             </>
           )}
         </span>

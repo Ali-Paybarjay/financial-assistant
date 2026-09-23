@@ -240,7 +240,7 @@ export function TransactionsView({
       {envelope && (
         <EnvelopeHeader
           envelope={envelope}
-          suggestion={envelopeSuggestion}
+          observedMedian={envelopeSuggestion}
           currency={currency}
           daysGone={daysGone}
           daysLeft={daysLeft}

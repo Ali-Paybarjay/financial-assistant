@@ -76,3 +76,34 @@ test("a sentence with no amount never reaches the model", async ({ page }) => {
   await expect(page.getByLabel("مبلغ")).toBeVisible();
   expect(asked).toBe(false);
 });
+
+test("«بنزین ۶۰» reaches the model and comes back with a category", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+
+  await login(page);
+  await page.goto("/dashboard");
+
+  // The case that sent this back for rework: short, ordinary, and shaped like
+  // «amount + a word». The first gate stopped it and opened a form with the
+  // amount filled and the category empty — the same work as recording it by
+  // hand. The figure was never the hard part; the category is.
+  let asked = false;
+  await page.route("**/api/parse/text", async (route) => {
+    asked = true;
+    await route.continue();
+  });
+
+  await composer(page).fill("بنزین ۶۰");
+  await page.getByRole("button", { name: "ثبت", exact: true }).click();
+
+  await expect(page.getByText("کارت تأیید")).toBeVisible({ timeout: 45_000 });
+  expect(asked, "the gate swallowed it instead of asking the model").toBe(true);
+
+  // A category the user never typed, which is the whole point of the call.
+  await expect(page.getByText(/حمل‌ونقل|خودرو و سوخت/).first()).toBeVisible();
+
+  // And nothing is written until it is confirmed.
+  await expect(page.getByText("تا تأیید نکنی ذخیره نمی‌شود")).toBeVisible();
+});

@@ -4,6 +4,7 @@ import {
   envelopeState,
   projectedSpend,
   suggestBudget,
+  suggestedCeiling,
 } from "@/lib/envelopes";
 
 describe("envelopeState", () => {
@@ -104,5 +105,36 @@ describe("suggestBudget", () => {
     expect(suggestBudget([4_983_210, 4_983_260], "IRT")).toBe(4_983_250);
     // The same median in a cents currency rounds by 5_000, not by 50.
     expect(suggestBudget([40_100, 40_200], "USD")).toBe(45_000);
+  });
+});
+
+describe("suggestedCeiling", () => {
+  const declared = { baseline_minor: 40_000 };
+
+  it("prefers what happened over what was guessed at signup", () => {
+    // Same reason monthlySurplus prefers observed over declared: one is a
+    // month that happened, the other is a month nobody had lived yet.
+    expect(suggestedCeiling(declared, 55_000)).toEqual({
+      amount: 55_000,
+      source: "observed",
+    });
+  });
+
+  it("falls back to the onboarding figure when there is no history", () => {
+    expect(suggestedCeiling(declared, null)).toEqual({
+      amount: 40_000,
+      source: "declared",
+    });
+    expect(suggestedCeiling(declared, undefined)).toEqual({
+      amount: 40_000,
+      source: "declared",
+    });
+  });
+
+  it("proposes nothing rather than proposing zero", () => {
+    // An empty field says «you decide». A ceiling of zero says the app
+    // decided, and decided something absurd.
+    expect(suggestedCeiling({ baseline_minor: null }, null)).toBeNull();
+    expect(suggestedCeiling({ baseline_minor: 0 }, 0)).toBeNull();
   });
 });
