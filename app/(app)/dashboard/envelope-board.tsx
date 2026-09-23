@@ -93,8 +93,11 @@ export function EnvelopeBoard({
         </button>
       </div>
 
-      {withBudget.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 min-[960px]:grid-cols-3">
+      {/* One grid. The unset cards take col-span-2 themselves and sort last,
+          so they run full width under the real ones without a second
+          container to keep in step. */}
+      {(withBudget.length > 0 || unset.length > 0) && (
+        <div className="grid grid-cols-2 gap-2.5 min-[960px]:grid-cols-3">
           {withBudget.map((envelope) => (
             <EnvelopeCard
               key={envelope.category_id}
@@ -104,22 +107,18 @@ export function EnvelopeBoard({
               href={`/transactions?category=${slugById[envelope.category_id] ?? ""}`}
             />
           ))}
+          {unset.map((envelope) => (
+            <UnsetEnvelopeCard
+              key={envelope.category_id}
+              envelope={envelope}
+              observedMedian={suggestions[envelope.category_id] ?? null}
+              currency={currency}
+              href={`/transactions?category=${slugById[envelope.category_id] ?? ""}`}
+              onSetBudget={() => setEditing(envelope)}
+            />
+          ))}
         </div>
       )}
-
-      {/* Full width and last, because an envelope with no ceiling is an open
-          decision rather than an envelope, and sitting it in the grid beside
-          the real ones would say otherwise. */}
-      {unset.map((envelope) => (
-        <UnsetEnvelopeCard
-          key={envelope.category_id}
-          envelope={envelope}
-          observedMedian={suggestions[envelope.category_id] ?? null}
-          currency={currency}
-          href={`/transactions?category=${slugById[envelope.category_id] ?? ""}`}
-          onSetBudget={() => setEditing(envelope)}
-        />
-      ))}
 
       <EnvelopePicker
         available={available}
