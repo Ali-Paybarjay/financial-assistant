@@ -107,3 +107,50 @@ test("«بنزین ۶۰» reaches the model and comes back with a category", asy
   // And nothing is written until it is confirmed.
   await expect(page.getByText("تا تأیید نکنی ذخیره نمی‌شود")).toBeVisible();
 });
+
+test("a row the user confirmed is not then reported as unconfirmed", async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+
+  await login(page);
+  await page.goto("/dashboard");
+
+  // An amount nothing else on the account uses, because the model does not
+  // always return a merchant — «بنزین ۶۰» comes back with a category and no
+  // name at all — so the figure is the only reliable handle on the row.
+  const amount = "63.47";
+
+  // The card shows every guessed field, says «روی هرکدام بزن تا عوض شود», and
+  // then the user presses «ثبت». That is the confirmation, so the stream must
+  // not turn round and say «مطمئن نیستم» about the same row — which is the
+  // app asking the same question twice.
+  await composer(page).fill(`بنزین ${amount}`);
+  await page.getByRole("button", { name: "ثبت", exact: true }).click();
+  await expect(page.getByText("کارت تأیید")).toBeVisible({ timeout: 45_000 });
+  await page.getByRole("button", { name: /^ثبت( یک)? تراکنش$/ }).click();
+  await expect(page.getByText(/ثبت شد\./)).toBeVisible({ timeout: 30_000 });
+
+  await page.goto("/stream");
+  await page.waitForLoadState("networkidle");
+
+  // Scoped to this row on purpose. The fixture account carries older
+  // unconfirmed rows from statement imports, and those are *meant* to stay
+  // doubted — ticking forty lines off a bank file is not the same act as
+  // reading one card. What must not happen is this row joining them.
+  const mine = page.locator("article").filter({ hasText: amount });
+  await expect(mine.first()).toBeVisible();
+  await expect(mine.first()).toContainText("ثبت شد");
+  await expect(mine.filter({ hasText: "مطمئن نیستم" })).toHaveCount(0);
+
+  // Put the account back: the row this wrote is removed.
+  await page.goto("/transactions");
+  await page.waitForLoadState("networkidle");
+  await page
+    .getByRole("button")
+    .filter({ hasText: amount })
+    .first()
+    .click();
+  await page.getByRole("button", { name: "حذف" }).click();
+  await expect(page.getByText("برگردان")).toBeVisible();
+});

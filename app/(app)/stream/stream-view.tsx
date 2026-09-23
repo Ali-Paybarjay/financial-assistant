@@ -163,7 +163,13 @@ export function StreamView({
               >
                 <CheckCircle size={17} className="mt-0.5 shrink-0 text-positive" />
                 <p className="flex-1 text-body text-ink">
-                  ثبت شد — <Money minor={row.amount} currency={currency} />
+                  {/* What it was, not only which envelope it landed in. The
+                      stream is read to find out what happened, and «£60 در
+                      حمل‌ونقل» does not say whether that was petrol, a train
+                      ticket or a taxi — the one word the user would recognise
+                      is the one they typed. */}
+                  ثبت شد — {row.merchant ? `${row.merchant} ` : ""}
+                  <Money minor={row.amount} currency={currency} />
                   {row.category_id && categoryById.get(row.category_id) && (
                     <> در «{categoryById.get(row.category_id)?.name_fa}»</>
                   )}

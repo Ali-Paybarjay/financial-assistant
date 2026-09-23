@@ -129,9 +129,6 @@ export function ReceiptTab({
           note: draft.note,
           occurredOn: draft.occurred_on,
           confidence: draft.confidence,
-          needsReview: draft.needs_review.filter(
-            (field) => !draft.resolved.includes(field),
-          ),
         })),
       });
       if ("error" in result) setError(result.error);
