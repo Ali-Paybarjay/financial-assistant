@@ -20,17 +20,49 @@ export const step1Schema = z.object({
   fullName: z.string().trim().min(2, "نامت را بنویس").max(80),
   countryCode: z.enum(COUNTRIES.map((c) => c.code)),
   baseCurrency: currency,
+  // Optional, since the flow stopped insisting on anything but the name. An
+  // unanswered field arrives as null, never as NaN — the form schema below
+  // maps it before anything is sent, because NaN has no JSON spelling.
   birthYear: z
-    .number()
+    .number({ error: "سال تولد را با رقم بنویس، مثل 1990" })
     .int()
     .min(1930, "سال تولد را درست وارد کن")
     // The 13-year floor depends on the current year, so it lives here rather
     // than in a CHECK constraint, which Postgres requires to be immutable.
-    .max(currentYear - 13, "باید دست‌کم ۱۳ سال داشته باشی"),
-  employmentStatus: z.enum(EMPLOYMENT_OPTIONS.map((o) => o.value)),
+    .max(currentYear - 13, "باید دست‌کم ۱۳ سال داشته باشی")
+    .nullable(),
+  employmentStatus: z.enum(EMPLOYMENT_OPTIONS.map((o) => o.value)).nullable(),
   // Read from the browser, not asked. "This month" is computed in it.
   timezone: z.string().min(1),
 });
+
+/**
+ * What the two profile forms — step 1 and the sheet in settings — bind to.
+ * The same rules as above, but the DOM hands over strings, and "" is what an
+ * untouched optional field looks like; this turns it into the null the server
+ * schema expects before the rules run.
+ */
+const blankToNull = (value: unknown) =>
+  value === "" || value === undefined ? null : value;
+const blankToNullNumber = (value: unknown) =>
+  typeof value === "string"
+    ? value.trim() === ""
+      ? null
+      : Number(value)
+    : (value ?? null);
+
+export const step1FormSchema = step1Schema.omit({ timezone: true }).extend({
+  birthYear: z.preprocess(blankToNullNumber, step1Schema.shape.birthYear),
+  employmentStatus: z.preprocess(blankToNull, step1Schema.shape.employmentStatus),
+});
+
+/** Settings changes the currency elsewhere, behind a warning of its own. */
+export const profileFormSchema = step1FormSchema.omit({ baseCurrency: true });
+
+export type Step1FormInput = z.input<typeof step1FormSchema>;
+export type Step1FormOutput = z.output<typeof step1FormSchema>;
+export type ProfileFormInput = z.input<typeof profileFormSchema>;
+export type ProfileFormOutput = z.output<typeof profileFormSchema>;
 
 export const incomeSourceSchema = z.object({
   title: z.string().trim().min(1, "عنوان را بنویس").max(80),

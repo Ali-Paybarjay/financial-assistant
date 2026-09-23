@@ -7,7 +7,11 @@ export type StepMeta = {
   kicker: string;
   title: string;
   subtitle?: string;
-  /** Steps 4–7 may be postponed; 1–3 carry the numbers the dashboard needs. */
+  /**
+   * Every step after the name may be postponed. The name is the one answer
+   * the app cannot address anyone without; everything else can be filled in
+   * from settings, which says what is still empty.
+   */
   skippable: boolean;
 };
 
@@ -16,7 +20,7 @@ export const STEPS: StepMeta[] = [
     step: 1,
     kicker: "آشنایی",
     title: "بگو کی هستی و کجا زندگی می‌کنی",
-    subtitle: "ارز و تاریخ را بر همین اساس تنظیم می‌کنم.",
+    subtitle: "فقط نامت لازم است. ارز و تاریخ را از روی کشورت تنظیم می‌کنم.",
     skippable: false,
   },
   {
@@ -24,14 +28,14 @@ export const STEPS: StepMeta[] = [
     kicker: "درآمد",
     title: "ماهی چقدر درآمد داری؟",
     subtitle: "بدون این عدد نمی‌توانم بگویم چقدر برایت می‌ماند.",
-    skippable: false,
+    skippable: true,
   },
   {
     step: 3,
     kicker: "هزینه‌های ثابت",
     title: "هر ماه چه چیزهایی حتماً از حسابت می‌رود؟",
     subtitle: "اینها را اول هر ماه خودکار ثبت می‌کنم تا تو درگیرشان نباشی.",
-    skippable: false,
+    skippable: true,
   },
   {
     step: 4,

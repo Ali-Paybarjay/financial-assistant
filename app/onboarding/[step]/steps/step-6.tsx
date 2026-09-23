@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/field";
-import { StepShell, SaveReassurance } from "@/components/onboarding/step-shell";
+import { StepShell } from "@/components/onboarding/step-shell";
 import { OptionCard } from "@/components/onboarding/option-card";
 import { SkipButton } from "@/components/onboarding/skip-button";
 import { RISK_QUESTIONS, type StepMeta } from "@/lib/onboarding/config";
@@ -67,7 +67,6 @@ export function Step6({ meta }: { meta: StepMeta }) {
               سؤال قبلی
             </Button>
           )}
-          <SaveReassurance />
         </>
       }
     >

@@ -7,6 +7,8 @@ type FieldProps = {
   hint?: string;
   /** Sits beside the label, for «حدس زدم» on a control we filled in ourselves. */
   note?: React.ReactNode;
+  /** Says so beside the label, for the answers onboarding stopped insisting on. */
+  optional?: boolean;
   children: React.ReactNode;
   className?: string;
 };
@@ -17,6 +19,7 @@ export function Field({
   error,
   hint,
   note,
+  optional,
   children,
   className,
 }: FieldProps) {
@@ -29,6 +32,7 @@ export function Field({
         {note && (
           <span className="text-caption font-medium text-guess">· {note}</span>
         )}
+        {optional && <span className="text-caption text-ink-faint">· اختیاری</span>}
       </div>
       {children}
       {hint && !error && <p className="text-caption text-ink-muted">{hint}</p>}

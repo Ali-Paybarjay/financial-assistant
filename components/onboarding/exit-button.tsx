@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { SignOut } from "@phosphor-icons/react/dist/ssr";
+import { SignOut, X } from "@phosphor-icons/react/dist/ssr";
 import { Button } from "@/components/ui/button";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { useIsGuest } from "@/components/guest/guest-provider";
+import { useOnboardingCompleted } from "@/components/onboarding/onboarding-provider";
 import { useSignOut } from "@/components/sign-out";
 
 /**
@@ -18,11 +19,27 @@ import { useSignOut } from "@/components/sign-out";
  * really does delete their answers, because there is no email on the account to
  * sign back in with, so this is the last useful moment to offer them a way to
  * keep what they have entered.
+ *
+ * Someone who is already in the app and came back from settings to fill in a
+ * gap gets neither sheet: nothing is at stake, so the way out is just the way
+ * back.
  */
 export function ExitButton() {
   const [open, setOpen] = useState(false);
   const isGuest = useIsGuest();
+  const completed = useOnboardingCompleted();
   const { signOut, isPending } = useSignOut();
+
+  if (completed) {
+    return (
+      <Button asChild variant="ghost" size="sm" className="h-10">
+        <Link href="/settings">
+          <X size={16} />
+          بستن
+        </Link>
+      </Button>
+    );
+  }
 
   return (
     <>

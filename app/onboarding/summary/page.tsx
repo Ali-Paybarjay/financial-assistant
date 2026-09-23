@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { requireViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Money } from "@/components/money";
@@ -9,7 +8,6 @@ import { FinishButton } from "./finish-button";
 
 export default async function SummaryPage() {
   const viewer = await requireViewer();
-  if (viewer.profile.onboarding_completed_at) redirect("/");
 
   const supabase = await createClient();
   const [{ data: sources }, { data: recurring }, { data: baselines }, { data: goals }] =
@@ -23,6 +21,12 @@ export default async function SummaryPage() {
   const incomePerMonth = monthlyIncome(sources ?? []);
   const fixedPerMonth = monthlyFixed(recurring ?? []);
   const variablePerMonth = monthlyVariable(baselines ?? []);
+
+  // Income can be skipped now, and a skipped income is not a zero income. A
+  // «what's left» built on it would be minus the rent, and the warning under
+  // it would tell someone they are overspending because they left a field
+  // blank — so that half of the screen waits until there is a number.
+  const incomeKnown = (sources ?? []).length > 0;
 
   // The same function the savings plan is built on, not a second subtraction
   // that happens to agree today. This screen is where the user first meets
@@ -54,7 +58,11 @@ export default async function SummaryPage() {
 
       <div className="mt-8 flex flex-col gap-3">
         <SummaryRow label="درآمد ماهانه">
-          <Money minor={incomePerMonth} currency={viewer.currency} size="kpi" />
+          {incomeKnown ? (
+            <Money minor={incomePerMonth} currency={viewer.currency} size="kpi" />
+          ) : (
+            <span className="text-label text-ink-faint">هنوز نگفته‌ای</span>
+          )}
         </SummaryRow>
         <SummaryRow label="هزینه‌های ثابت ماهانه">
           <Money minor={fixedPerMonth} currency={viewer.currency} size="kpi" />
@@ -65,18 +73,27 @@ export default async function SummaryPage() {
         <SummaryRow label="هزینه‌های متغیر — تخمین خودت">
           <Money minor={variablePerMonth} currency={viewer.currency} size="kpi" />
         </SummaryRow>
-        <SummaryRow label="آخر ماه برایت می‌ماند">
-          <Money
-            minor={leftover}
-            currency={viewer.currency}
-            size="kpi"
-            tone="auto"
-            signed
-          />
-        </SummaryRow>
+        {incomeKnown && (
+          <SummaryRow label="آخر ماه برایت می‌ماند">
+            <Money
+              minor={leftover}
+              currency={viewer.currency}
+              size="kpi"
+              tone="auto"
+              signed
+            />
+          </SummaryRow>
+        )}
       </div>
 
-      {leftover < 0 && (
+      {!incomeKnown && (
+        <p className="mt-3 rounded-control border border-guess-border bg-guess-tint px-3 py-2.5 text-caption font-medium text-guess-text">
+          درآمدت را هنوز نگفته‌ای، پس نمی‌توانم بگویم آخر ماه چقدر برایت می‌ماند. هر
+          وقت خواستی، از تنظیمات اضافه‌اش کن.
+        </p>
+      )}
+
+      {incomeKnown && leftover < 0 && (
         <p className="mt-3 rounded-control border border-guess-border bg-guess-tint px-3 py-2.5 text-caption font-medium text-guess-text">
           هزینه‌هایت از درآمدت بیشتر است. اگر عددی را اشتباه زده‌ای، از تنظیمات درستش
           کن.

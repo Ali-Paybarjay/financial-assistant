@@ -9,23 +9,19 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireViewer } from "@/lib/auth";
 import { CURRENCIES } from "@/lib/money";
-import { COUNTRIES, EMPLOYMENT_OPTIONS } from "@/lib/onboarding/config";
+import { step1Schema } from "@/lib/validation/onboarding";
 
 export type SettingsResult = { error: string } | { ok: true };
 
 const GENERIC_ERROR = "ذخیره نشد. دوباره بزن؛ اگر باز هم نشد، صفحه را تازه کن.";
 
-const currentYear = new Date().getFullYear();
-
-const profileSchema = z.object({
-  fullName: z.string().trim().min(2, "نامت را بنویس").max(80),
-  countryCode: z.enum(COUNTRIES.map((country) => country.code)),
-  birthYear: z
-    .number()
-    .int()
-    .min(1930, "سال تولد را درست وارد کن")
-    .max(currentYear - 13, "باید دست‌کم ۱۳ سال داشته باشی"),
-  employmentStatus: z.enum(EMPLOYMENT_OPTIONS.map((option) => option.value)),
+// The same rules as onboarding's first step, so the two forms cannot drift:
+// what may be left blank there may be left blank here.
+const profileSchema = step1Schema.pick({
+  fullName: true,
+  countryCode: true,
+  birthYear: true,
+  employmentStatus: true,
 });
 
 export async function updateProfile(raw: unknown): Promise<SettingsResult> {

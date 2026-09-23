@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/native-select";
 import { Field, FormError } from "@/components/field";
-import { StepShell, SaveReassurance } from "@/components/onboarding/step-shell";
+import { StepShell } from "@/components/onboarding/step-shell";
+import { useOnboardingCompleted } from "@/components/onboarding/onboarding-provider";
 import { CURRENCIES } from "@/lib/money";
 import {
   COUNTRIES,
@@ -21,14 +22,13 @@ import {
   isSupportedCountry,
   type CountryCode,
 } from "@/lib/onboarding/geo";
-import { step1Schema, type Step1Input } from "@/lib/validation/onboarding";
+import {
+  step1FormSchema,
+  type Step1FormInput,
+  type Step1FormOutput,
+} from "@/lib/validation/onboarding";
 import type { ProfileRow } from "@/lib/supabase/database.types";
 import { saveStep1 } from "../../actions";
-
-/** The timezone is read from the browser at submit time, so it is not part of
- *  what the form itself validates. The server still checks the full schema. */
-const clientSchema = step1Schema.omit({ timezone: true });
-type ClientInput = Omit<Step1Input, "timezone">;
 
 export type Step1Prefill = {
   /** The name on the account they signed in with, if the provider sent one. */
@@ -37,6 +37,14 @@ export type Step1Prefill = {
   countryCode: CountryCode | null;
 };
 
+/**
+ * The only step with a required answer, and the only one whose way out has to
+ * go through the form: the app cannot address someone it has no name for, so
+ * «بقیه را بعداً» saves this screen first and then opens the app.
+ *
+ * The timezone is read from the browser at submit time, so it is not part of
+ * what the form itself validates. The server still checks the full schema.
+ */
 export function Step1({
   meta,
   profile,
@@ -48,6 +56,7 @@ export function Step1({
 }) {
   const [formError, setFormError] = useState<string>();
   const [isPending, startTransition] = useTransition();
+  const completed = useOnboardingCompleted();
 
   // country_code is written only by this step, so its presence is the one
   // reliable sign that the user has answered rather than been guessed at.
@@ -63,17 +72,18 @@ export function Step1({
     handleSubmit,
     setValue,
     formState: { errors },
-  } = useForm<ClientInput>({
-    resolver: zodResolver(clientSchema),
+  } = useForm<Step1FormInput, unknown, Step1FormOutput>({
+    resolver: zodResolver(step1FormSchema),
     defaultValues: {
       fullName: profile.full_name?.trim() || prefill.fullName || "",
       countryCode: initialCountry,
       baseCurrency: savedCountry
-        ? ((profile.base_currency as ClientInput["baseCurrency"]) ?? "CAD")
+        ? ((profile.base_currency as Step1FormInput["baseCurrency"]) ?? "CAD")
         : currencyForCountry(initialCountry),
-      birthYear: profile.birth_year ?? undefined,
-      employmentStatus:
-        (profile.employment_status as ClientInput["employmentStatus"]) ?? "employed",
+      // The DOM hands these over as strings, and "" is what an untouched
+      // optional field looks like; the form schema turns it into null.
+      birthYear: profile.birth_year ?? "",
+      employmentStatus: profile.employment_status ?? "",
     },
   });
 
@@ -88,34 +98,50 @@ export function Step1({
     setValue("baseCurrency", currencyForCountry(guess));
   }, [savedCountry, setValue]);
 
-  function onSubmit(values: ClientInput) {
+  function submit(values: Step1FormOutput, finish: boolean) {
     setFormError(undefined);
     startTransition(async () => {
-      const result = await saveStep1({
-        ...values,
-        // The browser knows the timezone; asking the user for it would be a
-        // question with no good answer.
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      });
+      const result = await saveStep1(
+        {
+          ...values,
+          // The browser knows the timezone; asking the user for it would be a
+          // question with no good answer.
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        },
+        { finish },
+      );
       if (result && "error" in result) setFormError(result.error);
     });
   }
 
+  // The way out from the very first screen. It goes through the same
+  // validation as «ادامه», not around it — a missing name is the one thing it
+  // must not let past. Someone back from settings already has the header's
+  // way back and does not need a second one.
+  const postpone = completed ? null : (
+    <Button
+      type="button"
+      variant="ghost"
+      disabled={isPending}
+      onClick={handleSubmit((values) => submit(values, true))}
+    >
+      بقیه را بعداً کامل می‌کنم
+    </Button>
+  );
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate>
+    <form onSubmit={handleSubmit((values) => submit(values, false))} noValidate>
       <StepShell
         step={meta.step}
         kicker={meta.kicker}
         title={meta.title}
         subtitle={meta.subtitle}
         footer={
-          <>
-            <Button type="submit" size="lg" disabled={isPending}>
-              {isPending ? "دارم ذخیره می‌کنم…" : "ادامه"}
-            </Button>
-            <SaveReassurance />
-          </>
+          <Button type="submit" size="lg" disabled={isPending}>
+            {isPending ? "دارم ذخیره می‌کنم…" : "ادامه"}
+          </Button>
         }
+        postpone={postpone}
       >
         <div className="flex flex-col gap-4">
           <FormError>{formError}</FormError>
@@ -171,23 +197,30 @@ export function Step1({
             </NativeSelect>
           </Field>
 
-          <Field label="سال تولد" htmlFor="birthYear" error={errors.birthYear?.message}>
+          <Field
+            label="سال تولد"
+            htmlFor="birthYear"
+            optional
+            error={errors.birthYear?.message}
+          >
             <Input
               id="birthYear"
               dir="ltr"
               inputMode="numeric"
               placeholder="1990"
               className="tabular-nums"
-              {...register("birthYear", { valueAsNumber: true })}
+              {...register("birthYear")}
             />
           </Field>
 
           <Field
             label="وضعیت اشتغال"
             htmlFor="employmentStatus"
+            optional
             error={errors.employmentStatus?.message}
           >
             <NativeSelect id="employmentStatus" {...register("employmentStatus")}>
+              <option value="">بعداً می‌گویم</option>
               {EMPLOYMENT_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}

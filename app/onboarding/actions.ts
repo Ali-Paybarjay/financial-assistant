@@ -40,7 +40,15 @@ function goNext(step: number): never {
   redirect(step >= TOTAL_STEPS ? "/onboarding/summary" : `/onboarding/${step + 1}`);
 }
 
-export async function saveStep1(raw: unknown): Promise<StepResult> {
+/**
+ * The one step nothing can be skipped past, because it carries the name. With
+ * `finish` it is also the way out of the flow from the very first screen:
+ * save what is here, open the app, leave the rest to settings.
+ */
+export async function saveStep1(
+  raw: unknown,
+  options: { finish?: boolean } = {},
+): Promise<StepResult> {
   const parsed = step1Schema.safeParse(raw);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? GENERIC_ERROR };
 
@@ -57,11 +65,21 @@ export async function saveStep1(raw: unknown): Promise<StepResult> {
       employment_status: parsed.data.employmentStatus,
       timezone: parsed.data.timezone,
       onboarding_step: Math.max(1, viewer.profile.onboarding_step),
+      // A date already set is kept: someone back from settings to fill in a
+      // gap is not signing up a second time.
+      ...(options.finish && !viewer.profile.onboarding_completed_at
+        ? { onboarding_completed_at: new Date().toISOString() }
+        : {}),
     })
     .eq("id", viewer.userId);
 
   if (error) return { error: GENERIC_ERROR };
   revalidatePath("/onboarding", "layout");
+
+  if (options.finish) {
+    revalidatePath("/", "layout");
+    redirect("/");
+  }
   goNext(1);
 }
 
@@ -261,10 +279,33 @@ export async function saveStep7(raw: unknown): Promise<StepResult> {
   redirect("/onboarding/summary");
 }
 
-/** Steps 4–7 only. Moves the pointer forward without writing any answers. */
+/** Every step after the name. Moves the pointer forward without writing any answers. */
 export async function skipStep(step: number): Promise<never> {
   await markStepDone(step);
   goNext(step);
+}
+
+/**
+ * Into the app now, with the rest left for settings. Offered on every step
+ * after the name.
+ *
+ * The pointer stays where it is: that, and the rows that are not there, are
+ * how settings knows what to ask for. A date already set is kept, so a return
+ * visit to fill something in does not read as a second signup.
+ */
+export async function postponeOnboarding(): Promise<never> {
+  const viewer = await requireViewer();
+
+  if (!viewer.profile.onboarding_completed_at) {
+    const supabase = await createClient();
+    await supabase
+      .from("profiles")
+      .update({ onboarding_completed_at: new Date().toISOString() })
+      .eq("id", viewer.userId);
+  }
+
+  revalidatePath("/", "layout");
+  redirect("/");
 }
 
 export async function finishOnboarding(): Promise<never> {
@@ -275,7 +316,8 @@ export async function finishOnboarding(): Promise<never> {
     .from("profiles")
     .update({
       onboarding_step: TOTAL_STEPS,
-      onboarding_completed_at: new Date().toISOString(),
+      onboarding_completed_at:
+        viewer.profile.onboarding_completed_at ?? new Date().toISOString(),
     })
     .eq("id", viewer.userId);
 

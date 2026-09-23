@@ -79,3 +79,47 @@ test("a step offers a way out of the flow, and taking it ends the session", asyn
   await page.goto("/onboarding/2");
   await page.waitForURL(/\/login/);
 });
+
+/**
+ * The name is the only thing the flow insists on. Everything after it can be
+ * left for later, and «later» has to actually exist: a card in settings that
+ * knows what is empty and sends you to it.
+ *
+ * Runs as a fresh guest rather than as the beta account, whose whole job in
+ * this file is to never have finished onboarding. Signing the guest out at
+ * the end deletes it, which is what the login screen promises a guest anyway.
+ */
+test("only the name is required; the rest waits in settings", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByRole("button", { name: "ورود به‌عنوان مهمان" }).click();
+  await page.waitForURL(/\/onboarding\/1/);
+  await page.getByRole("button", { name: "باشه، شروع می‌کنم" }).click();
+
+  // The way out is on the first screen — but not past a missing name.
+  const postpone = page.getByRole("button", { name: "بقیه را بعداً کامل می‌کنم" });
+  await postpone.click();
+  await expect(page.getByText("نامت را بنویس")).toBeVisible();
+  await expect(page).toHaveURL(/\/onboarding\/1/);
+
+  await page.getByLabel("نام").fill("مهمان عجول");
+  await postpone.click();
+  // Straight into the app, not on to step 2.
+  await page.waitForURL((url) => url.pathname === "/");
+
+  // Settings says what is still empty and offers the way back in.
+  await page.goto("/settings");
+  await expect(page.getByText("تصویر مالی‌ات هنوز کامل نیست")).toBeVisible();
+  await page.getByRole("link", { name: "تکمیل اطلاعات" }).click();
+  await page.waitForURL(/\/onboarding\/\d/);
+  await expect(page.getByRole("progressbar")).toBeVisible();
+
+  // Leaving is now «back to settings», not «sign out»: nothing is at stake.
+  await expect(page.getByRole("button", { name: "خروج", exact: true })).toHaveCount(0);
+  await page.getByRole("link", { name: "بستن" }).click();
+  await page.waitForURL(/\/settings/);
+
+  // Clean up by signing out, which for a guest is deletion.
+  await page.getByRole("button", { name: "خروج و حذف اطلاعات" }).click();
+  await page.getByRole("button", { name: "خروج و حذف" }).click();
+  await page.waitForURL(/\/login/);
+});

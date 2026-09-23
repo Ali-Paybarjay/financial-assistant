@@ -23,11 +23,15 @@ export default async function OnboardingStepPage({
   if (!meta) notFound();
 
   const viewer = await requireViewer();
-  if (viewer.profile.onboarding_completed_at) redirect("/");
 
-  // A user can revisit any step they have reached, but not skip ahead of it.
-  const furthest = Math.min(viewer.profile.onboarding_step + 1, TOTAL_STEPS);
-  if (step > furthest) redirect(`/onboarding/${furthest}`);
+  // A user can revisit any step they have reached, but not skip ahead of it —
+  // while the flow is still the way in. Once they are in the app it is a form
+  // they come back to from settings, which sends them to whichever step is
+  // empty, so the gate stands down.
+  if (!viewer.profile.onboarding_completed_at) {
+    const furthest = Math.min(viewer.profile.onboarding_step + 1, TOTAL_STEPS);
+    if (step > furthest) redirect(`/onboarding/${furthest}`);
+  }
 
   const supabase = await createClient();
 
