@@ -491,6 +491,17 @@ create table public.insight_dismissals (
 -- migration 0021 — مقصد پیش‌فرضِ «/». نه workspaceِ جاری؛ آن از آدرس می‌آید.
 alter table public.profiles
   add column default_workspace text check (default_workspace in ('personal','dong'));
+
+-- migration 0022 — بورد چیدنی می‌شود. نبودِ ردیف یعنی «از شواهد تصمیم بگیر».
+create table public.envelope_preferences (
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  category_id uuid not null references public.categories(id) on delete cascade,
+  -- 'shown'  = کاربر گذاشتش.
+  -- 'hidden' = کاربر برش داشت، و این بر هر دلیلِ دیگری غلبه می‌کند.
+  state       text not null check (state in ('shown','hidden')),
+  updated_at  timestamptz not null default now(),
+  primary key (user_id, category_id)
+);
 ```
 
 و یک تابع، کنار `account_balances()` و `goal_progress()` و به همان دلیل (قاعده‌ی ۶ — هیچ جمعی در ستون ذخیره نمی‌شود):
@@ -498,9 +509,13 @@ alter table public.profiles
 ```sql
 public.envelope_status(p_month_start date, p_month_end date)
   returns table (category_id, name_fa, budget_minor, spent_minor,
-                 remaining_minor, unconfirmed_minor)
+                 remaining_minor, unconfirmed_minor, baseline_minor)
   language sql stable security invoker set search_path = ''
 ```
+
+`baseline_minor` عددی است که کاربر در اونبوردینگ گفته (میانگینِ ماهانه‌ی `variable_expense_baselines` به‌علاوه‌ی قبض‌های ثابتِ همان دسته). **پیشنهاد** است و هیچ‌جا به‌عنوان سقف نوشته نمی‌شود؛ `suggestedCeiling()` در `lib/envelopes.ts` سه ماهِ واقعی را بر آن ترجیح می‌دهد و می‌گوید کدام را نشان می‌دهد.
+
+عضویتِ بورد سه منبع دارد و یک وتو: سقف، یا خرجِ این ماه، یا عددِ اونبوردینگ — مگر اینکه `envelope_preferences.state = 'hidden'` باشد، که بر هر سه غلبه می‌کند.
 
 `security invoker` عمدی است: سیاستِ خواندنِ `categories` تنها سیاست schema است که «ردیف‌های خودت» نیست (دسته‌های سیستمی `user_id` تهی دارند و مال همه‌اند). حقِ invoker این را مجانی می‌دهد؛ حقِ definer باید همان منطق را دوباره می‌نوشت و اولین باری که آن بازنویسی عقب می‌ماند، دسته‌های سفارشیِ بقیه لو می‌رفت.
 
