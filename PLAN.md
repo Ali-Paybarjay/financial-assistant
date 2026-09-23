@@ -492,6 +492,11 @@ create table public.insight_dismissals (
 alter table public.profiles
   add column default_workspace text check (default_workspace in ('personal','dong'));
 
+-- migration 0024 — تمِ انتخاب‌شده. نسخهٔ ماندگار؛ آنچه استایل‌شیت می‌خواند کوکی است.
+alter table public.profiles
+  add column theme text not null default 'system'
+  check (theme in ('light','dark','system'));
+
 -- migration 0022 — بورد چیدنی می‌شود. نبودِ ردیف یعنی «از شواهد تصمیم بگیر».
 create table public.envelope_preferences (
   user_id     uuid not null references auth.users(id) on delete cascade,
