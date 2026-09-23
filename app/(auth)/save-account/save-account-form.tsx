@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FormError } from "@/components/field";
 import { PASSWORD_MIN_LENGTH_FA, type SignupInput, signupSchema } from "@/lib/validation/auth";
+import { SignOutButton } from "@/components/sign-out";
 import { linkGuestToGoogle, upgradeGuestAccount } from "../actions";
 
 /**
@@ -17,8 +18,8 @@ import { linkGuestToGoogle, upgradeGuestAccount } from "../actions";
  * that is what it actually does — the user id never changes, so the rows the
  * guest created stay theirs.
  */
-export function SaveAccountForm() {
-  const [formError, setFormError] = useState<string>();
+export function SaveAccountForm({ returnError }: { returnError?: string }) {
+  const [formError, setFormError] = useState<string | undefined>(returnError);
   const [sentTo, setSentTo] = useState<string>();
   const [isPending, startTransition] = useTransition();
   const [isGooglePending, startGoogleTransition] = useTransition();
@@ -72,13 +73,19 @@ export function SaveAccountForm() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="font-display text-question font-bold text-ink">
-          اطلاعاتت را نگه دار
-        </h1>
-        <p className="mt-1 text-body text-ink-muted">
-          یک ایمیل و رمز بگذار تا حساب مهمانت دائمی شود.
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="font-display text-question font-bold text-ink">
+            اطلاعاتت را نگه دار
+          </h1>
+          <p className="mt-1 text-body text-ink-muted">
+            یک ایمیل و رمز بگذار تا حساب مهمانت دائمی شود.
+          </p>
+        </div>
+        {/* Someone who came here to keep their data may decide instead to
+            drop it. Leaving should not require going back into the app first
+            to find a way out. The guest confirmation still applies. */}
+        <SignOutButton className="-mt-1" />
       </div>
 
       <p className="flex items-start gap-2 rounded-card bg-positive-tint px-3 py-2.5 text-caption text-positive">

@@ -249,3 +249,83 @@ test("a guest is warned that leaving is permanent, and can back out", async ({ p
   await page.goto("/dashboard");
   await page.waitForURL(/\/login/);
 });
+
+/**
+ * The way out of the page that exists to keep your data.
+ *
+ * Someone who opened «حساب بساز» and changed their mind used to have to go
+ * back into the app to find a way out. Adding the button is the easy half; the
+ * half that can break silently is the confirmation, because the sheet is shown
+ * on a context value and this page is outside the layout that provides it. A
+ * default of «not a guest» would sign them out and purge on the first tap, on
+ * the one screen where the person is certainly a guest.
+ */
+test("leaving from the save-account page still asks first", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByRole("button", { name: "ورود به‌عنوان مهمان" }).click();
+  await page.waitForURL(/\/onboarding\//);
+
+  await page.goto("/save-account");
+  await page.getByRole("button", { name: "خروج", exact: true }).click();
+
+  await expect(page.getByText("با خروج، همه‌چیز پاک می‌شود")).toBeVisible();
+  await page.getByRole("button", { name: "بیخیال" }).click();
+  await expect(page).toHaveURL(/\/save-account/);
+
+  // And it does leave when told to, so the button is not merely decorative.
+  await page.getByRole("button", { name: "خروج", exact: true }).click();
+  await page.getByRole("button", { name: "خروج و حذف" }).click();
+  await page.waitForURL(/\/login/);
+});
+
+/**
+ * The fork nobody designs for: the guest signs in with Google and that Google
+ * account is already theirs, from a day they had forgotten about.
+ *
+ * Supabase refuses to link an identity another user owns, and the refusal
+ * arrives as an ordinary OAuth error — indistinguishable, at the callback,
+ * from a sign-in that simply failed, unless something says which journey this
+ * was. That something is a cookie, and this is what it decides.
+ */
+test("a Google account that already exists is offered back, not reported as an error", async ({
+  page,
+  context,
+}) => {
+  const conflict =
+    "/callback?error=server_error&error_code=identity_already_exists" +
+    "&error_description=Identity+is+already+linked+to+another+user";
+
+  // Without the breadcrumb this is just a sign-in that failed, and belongs on
+  // the login page with the rest of them. Checked first, so the test cannot
+  // pass by routing everything to the same place.
+  await page.goto(conflict);
+  await expect(page).toHaveURL(/\/login/);
+  await expect(page.getByText("ورود با گوگل تمام نشد")).toBeVisible();
+
+  await page.getByRole("button", { name: "ورود به‌عنوان مهمان" }).click();
+  await page.waitForURL(/\/onboarding\//);
+
+  await context.addCookies([
+    { name: "link_intent", value: "link", url: "http://localhost:3100", httpOnly: true },
+  ]);
+  await page.goto(conflict);
+
+  await expect(page).toHaveURL(/\/account-exists/);
+  await expect(
+    page.getByRole("heading", { name: "با این حساب گوگل قبلاً ثبت‌نام کرده‌ای" }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "وارد حساب قبلی‌ام شو" })).toBeVisible();
+
+  // The cookie is spent, so the next sign-in cannot be misrouted by it.
+  expect(
+    (await context.cookies()).find((cookie) => cookie.name === "link_intent")?.value,
+  ).toBeFalsy();
+
+  // The other door keeps everything, and is the one a guest with rows wants.
+  await page.getByRole("link", { name: /نگه دار|برگرد/ }).click();
+  await page.waitForURL(/\/save-account/);
+
+  await page.getByRole("button", { name: "خروج", exact: true }).click();
+  await page.getByRole("button", { name: "خروج و حذف" }).click();
+  await page.waitForURL(/\/login/);
+});

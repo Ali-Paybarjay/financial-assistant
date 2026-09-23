@@ -1,10 +1,15 @@
 "use server";
 
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { purgeGuest } from "@/lib/guests";
+import {
+  LINK_INTENT_COOKIE,
+  LINK_INTENT_MAX_AGE,
+  type LinkIntent,
+} from "@/lib/auth-link";
 import {
   forgotPasswordSchema,
   loginSchema,
@@ -172,6 +177,21 @@ async function requestOrigin(): Promise<string | null> {
   return `${protocol}://${host}`;
 }
 
+/**
+ * Written immediately before the browser is handed to Google, read in
+ * /callback. See lib/auth-link.ts for why this is a cookie and not a query
+ * parameter, and why it never carries an id.
+ */
+async function markLinkIntent(intent: LinkIntent): Promise<void> {
+  (await cookies()).set(LINK_INTENT_COOKIE, intent, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: LINK_INTENT_MAX_AGE,
+  });
+}
+
 export async function signInWithGoogle(): Promise<ActionResult> {
   const supabase = await createClient();
   const origin = await requestOrigin();
@@ -305,8 +325,66 @@ export async function linkGuestToGoogle(): Promise<ActionResult> {
     return { error: translateAuthError(error.message) };
   }
 
-  if (data.url) redirect(data.url);
+  if (data.url) {
+    // Without this, a Google account that already has an account here comes
+    // back as an anonymous failure and the user is sent to the login page to
+    // guess what went wrong.
+    await markLinkIntent("link");
+    redirect(data.url);
+  }
   return { error: "ورود با گوگل در دسترس نیست. با ایمیل و رمز حساب بساز." };
+}
+
+/**
+ * The other side of the fork: this Google account is already somebody's here,
+ * and that somebody is them.
+ *
+ * Linking is off the table — GoTrue refuses to attach an identity that another
+ * user owns, and it is right to: merging two ledgers is a decision with no
+ * safe default, since the same salary could end up in the sum twice. So this
+ * signs in with Google properly, landing the user in the account they already
+ * had.
+ *
+ * What it deliberately does **not** do is tear down the guest first. The
+ * obvious order — purge, sign out, then go to Google — destroys the data
+ * before the thing it was traded for has happened, so pressing cancel on
+ * Google's own screen would cost the user everything and gain them nothing.
+ * The guest session is left exactly as it is; /callback takes it down only
+ * once the new session is really in hand. Cancelling here costs nothing.
+ */
+export async function signInToExistingGoogleAccount(): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+  if (!user.is_anonymous) {
+    return { error: "حسابت از قبل ساخته شده. از تنظیمات اطلاعاتت را ویرایش کن." };
+  }
+
+  const origin = await requestOrigin();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: origin
+        ? new URL("/callback", origin).toString()
+        : appUrl("/callback"),
+      // They have just been told one of their Google accounts is already
+      // registered here. Which one is a question only they can answer, so
+      // Google is asked to let them choose rather than silently reusing
+      // whichever it signed them in with last.
+      queryParams: { prompt: "select_account" },
+    },
+  });
+
+  if (error) return { error: translateAuthError(error.message) };
+
+  if (data.url) {
+    await markLinkIntent("switch");
+    redirect(data.url);
+  }
+  return { error: "ورود با گوگل در دسترس نیست. با ایمیل و رمز وارد شو." };
 }
 
 export async function logout(): Promise<never> {
