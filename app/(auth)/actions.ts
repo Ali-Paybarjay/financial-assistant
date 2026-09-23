@@ -1,5 +1,6 @@
 "use server";
 
+import { EMAIL_AUTH_ENABLED, EMAIL_AUTH_OFF_MESSAGE } from "@/lib/auth-methods";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -95,6 +96,10 @@ export async function login(raw: unknown): Promise<ActionResult> {
 }
 
 export async function signup(raw: unknown): Promise<ActionResult> {
+  // Off at the source, not only in the UI: a sign-up is a confirmation
+  // email, and nothing can deliver one yet. See lib/auth-methods.ts.
+  if (!EMAIL_AUTH_ENABLED) return { error: EMAIL_AUTH_OFF_MESSAGE };
+
   const parsed = signupSchema.safeParse(raw);
   if (!parsed.success) return { error: "فرم را کامل پر کن." };
 
@@ -118,6 +123,8 @@ export async function signup(raw: unknown): Promise<ActionResult> {
 }
 
 export async function requestPasswordReset(raw: unknown): Promise<ActionResult> {
+  if (!EMAIL_AUTH_ENABLED) return { error: EMAIL_AUTH_OFF_MESSAGE };
+
   const parsed = forgotPasswordSchema.safeParse(raw);
   if (!parsed.success) return { error: "ایمیلت را بنویس." };
 
@@ -246,6 +253,12 @@ export async function continueAsGuest(): Promise<ActionResult> {
  * recoverable the moment they confirm.
  */
 export async function upgradeGuestAccount(raw: unknown): Promise<ActionResult> {
+  // The address would sit unconfirmed forever, and the guest would stay a
+  // guest while believing otherwise. Google is the way to keep the data.
+  if (!EMAIL_AUTH_ENABLED) {
+    return { error: "فعلاً فقط با گوگل می‌شود حساب مهمان را دائمی کرد." };
+  }
+
   const parsed = signupSchema.safeParse(raw);
   if (!parsed.success) return { error: "فرم را کامل پر کن." };
 
@@ -319,7 +332,9 @@ export async function linkGuestToGoogle(): Promise<ActionResult> {
     // in circles.
     if (/manual linking|not enabled|disabled/i.test(error.message)) {
       return {
-        error: "ورود با گوگل برای حساب مهمان هنوز فعال نیست. با ایمیل و رمز حساب بساز.",
+        error: EMAIL_AUTH_ENABLED
+          ? "ورود با گوگل برای حساب مهمان هنوز فعال نیست. با ایمیل و رمز حساب بساز."
+          : "ورود با گوگل برای حساب مهمان هنوز فعال نیست. کمی بعد دوباره بزن.",
       };
     }
     return { error: translateAuthError(error.message) };

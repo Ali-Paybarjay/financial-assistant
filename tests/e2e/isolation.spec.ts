@@ -170,7 +170,7 @@ test.describe("a second user is sealed off from the first", () => {
     const titles = (goals ?? []).map((row) => row.title as string).filter(Boolean);
     test.skip(titles.length === 0, "alpha has no goal to look for");
 
-    await page.goto("/login");
+    await page.goto("/login?method=password");
     await page.getByLabel("ایمیل").fill(BETA_EMAIL);
     await page.getByLabel("رمز").fill(PASSWORD);
     await page.getByRole("button", { name: "ورود", exact: true }).click();
