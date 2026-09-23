@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FormError } from "@/components/field";
 import { PASSWORD_MIN_LENGTH_FA, type SignupInput, signupSchema } from "@/lib/validation/auth";
-import { upgradeGuestAccount } from "../actions";
+import { linkGuestToGoogle, upgradeGuestAccount } from "../actions";
 
 /**
  * Same three fields as signup, and deliberately not the same page. Signup reads
@@ -21,6 +21,7 @@ export function SaveAccountForm() {
   const [formError, setFormError] = useState<string>();
   const [sentTo, setSentTo] = useState<string>();
   const [isPending, startTransition] = useTransition();
+  const [isGooglePending, startGoogleTransition] = useTransition();
 
   const {
     register,
@@ -127,6 +128,36 @@ export function SaveAccountForm() {
 
         <Button type="submit" size="lg" disabled={isPending}>
           {isPending ? "دارم حسابت را می‌سازم…" : "ساخت حساب"}
+        </Button>
+      </form>
+
+      <div className="flex items-center gap-3">
+        <span className="h-px flex-1 bg-hairline" />
+        <span className="text-caption text-ink-muted">یا</span>
+        <span className="h-px flex-1 bg-hairline" />
+      </div>
+
+      {/* Links Google to the account that is already signed in rather than
+          signing in with it. The difference is the whole page: signing in
+          would mint a new user and leave every row this guest has entered
+          behind on the old one. */}
+      <form
+        action={() => {
+          setFormError(undefined);
+          startGoogleTransition(async () => {
+            const result = await linkGuestToGoogle();
+            if (result && "error" in result) setFormError(result.error);
+          });
+        }}
+      >
+        <Button
+          type="submit"
+          variant="outline"
+          size="lg"
+          className="w-full"
+          disabled={isGooglePending || isPending}
+        >
+          {isGooglePending ? "دارم می‌برمت به گوگل…" : "ادامه با گوگل"}
         </Button>
       </form>
 

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { useIsGuest } from "@/components/guest/guest-provider";
 import { logout } from "@/app/(auth)/actions";
+import { cn } from "@/lib/utils";
 
 /**
  * Signing out, written once for the three places that offer it: the hub, the
@@ -82,6 +83,50 @@ export function GuestSignOutSheet({
         </div>
       </div>
     </BottomSheet>
+  );
+}
+
+/**
+ * The way out, from anywhere.
+ *
+ * It used to be in exactly two places — the hub and a row near the bottom of
+ * settings — which meant leaving took a trip to a particular page from
+ * wherever you happened to be. The shell is on every signed-in screen, so
+ * this sits in it: beside the workspace switch on a phone, and in the
+ * sidebar's footer on a desktop.
+ *
+ * A guest still gets the confirmation, and still gets it here: making the
+ * exit easier to reach must not make it easier to lose everything by
+ * accident.
+ */
+export function SignOutButton({ className }: { className?: string }) {
+  const isGuest = useIsGuest();
+  const [confirming, setConfirming] = useState(false);
+  const { signOut, isPending } = useSignOut();
+
+  return (
+    <>
+      <button
+        type="button"
+        aria-label="خروج"
+        title="خروج"
+        disabled={isPending}
+        onClick={() => (isGuest ? setConfirming(true) : signOut())}
+        className={cn(
+          "flex size-9 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-action-tint hover:text-action disabled:opacity-50",
+          className,
+        )}
+      >
+        <SignOut size={18} />
+      </button>
+
+      <GuestSignOutSheet
+        open={confirming}
+        onOpenChange={(next) => !next && setConfirming(false)}
+        isPending={isPending}
+        onConfirm={signOut}
+      />
+    </>
   );
 }
 

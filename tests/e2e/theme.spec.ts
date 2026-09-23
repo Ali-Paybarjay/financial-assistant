@@ -103,3 +103,28 @@ for (const theme of ["light", "dark"] as const) {
     expect(broken.join("\n")).toBe("");
   });
 }
+
+/**
+ * Leaving used to mean going somewhere first — the hub, or a row near the
+ * bottom of settings. The shell is on every signed-in screen, so the way out
+ * is now wherever the user is.
+ */
+test("the way out is on every page", async ({ page }) => {
+  test.setTimeout(150_000);
+  await login(page);
+
+  for (const route of ROUTES) {
+    await page.goto(route);
+    await page.waitForLoadState("networkidle");
+    await expect(
+      page.getByRole("button", { name: "خروج" }).first(),
+      `${route} offers no way out`,
+    ).toBeVisible();
+  }
+
+  // Including the trip side, which has no tab bar and no settings page of
+  // its own — the place it was hardest to leave from.
+  await page.goto("/dong");
+  await page.waitForLoadState("networkidle");
+  await expect(page.getByRole("button", { name: "خروج" }).first()).toBeVisible();
+});

@@ -259,6 +259,56 @@ export async function upgradeGuestAccount(raw: unknown): Promise<ActionResult> {
   return { ok: true };
 }
 
+/**
+ * Keeping a guest's data and attaching Google to it.
+ *
+ * `linkIdentity`, emphatically not `signInWithOAuth`. Signing in with Google
+ * mints a *new* user; the anonymous one — and every transaction, account,
+ * goal and trip on it — is simply left behind. Linking attaches the provider
+ * to the user who is already signed in, so the id never changes and the rows
+ * stay theirs. That is the entire promise this page makes.
+ *
+ * It needs «Manual linking» enabled on the Supabase project. Without it
+ * GoTrue refuses, and the message below says so in a way the user can act on
+ * rather than leaving them on a page whose button does nothing.
+ */
+export async function linkGuestToGoogle(): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+  if (!user.is_anonymous) {
+    return { error: "حسابت از قبل ساخته شده. از تنظیمات اطلاعاتت را ویرایش کن." };
+  }
+
+  const origin = await requestOrigin();
+  const { data, error } = await supabase.auth.linkIdentity({
+    provider: "google",
+    options: {
+      redirectTo: origin
+        ? new URL("/callback", origin).toString()
+        : appUrl("/callback"),
+    },
+  });
+
+  if (error) {
+    // Distinguished on purpose: «not switched on» is a thing the owner of
+    // the project fixes, and reading «try again» instead would send the user
+    // in circles.
+    if (/manual linking|not enabled|disabled/i.test(error.message)) {
+      return {
+        error: "ورود با گوگل برای حساب مهمان هنوز فعال نیست. با ایمیل و رمز حساب بساز.",
+      };
+    }
+    return { error: translateAuthError(error.message) };
+  }
+
+  if (data.url) redirect(data.url);
+  return { error: "ورود با گوگل در دسترس نیست. با ایمیل و رمز حساب بساز." };
+}
+
 export async function logout(): Promise<never> {
   const supabase = await createClient();
   const {

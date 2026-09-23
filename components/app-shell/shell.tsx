@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { Sidebar } from "./sidebar";
 import { WorkspaceSwitch } from "./workspace-switch";
 import { Composer } from "@/components/entry/composer";
+import { SignOutButton } from "@/components/sign-out";
 import { GuestBanner } from "@/components/guest/guest-banner";
 import { workspaceForPath } from "@/lib/workspaces";
 import type { CurrencyCode } from "@/lib/money";
@@ -63,8 +64,10 @@ export function AppShell({
         {/* The phone's version of the sidebar's header. Sticky, because
             «کجا هستم» is a question that comes back halfway down a list. */}
         {workspace && (
-          <div className="sticky top-0 z-20 border-b border-hairline bg-surface/95 px-4 py-2 backdrop-blur min-[960px]:hidden">
-            <WorkspaceSwitch workspace={workspace} />
+          <div className="sticky top-0 z-20 flex items-center gap-2 border-b border-hairline bg-surface/95 px-4 py-2 backdrop-blur min-[960px]:hidden">
+            <WorkspaceSwitch workspace={workspace} className="min-w-0 flex-1" />
+            {/* Reachable from every screen rather than only from settings. */}
+            <SignOutButton />
           </div>
         )}
 
