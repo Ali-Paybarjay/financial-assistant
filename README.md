@@ -81,6 +81,7 @@ NEXT_PUBLIC_APP_URL  ←  VERCEL_PROJECT_PRODUCTION_URL  ←  http://localhost:3
 | `pnpm typecheck` | `tsc --noEmit` |
 | `pnpm lint` | ESLint |
 | `pnpm check:rtl` | جست‌وجوی کلاس‌های جهت‌دار فیزیکی (`ml-`, `right-`, …) که در RTL باگ می‌سازند |
+| `pnpm check:theme` | جست‌وجوی رنگِ درجا — هکسی که با تم عوض نمی‌شود و فقط شب معلوم می‌شود |
 | `pnpm test` | تست‌های واحد |
 | `pnpm test:e2e` | تست E2E |
 | `pnpm test:smoke` | باز کردن تک‌تک صفحه‌ها در مرورگر — فقط اینکه بالا می‌آیند |

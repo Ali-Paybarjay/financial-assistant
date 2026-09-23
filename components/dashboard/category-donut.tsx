@@ -44,7 +44,7 @@ export function CategoryDonut({
                 innerRadius={36}
                 outerRadius={59}
                 paddingAngle={1.6}
-                stroke="#ffffff"
+                stroke="var(--surface)"
                 strokeWidth={1.5}
                 isAnimationActive={false}
               >

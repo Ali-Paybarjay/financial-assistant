@@ -27,8 +27,8 @@ export const viewport: Viewport = {
   // The values are --paper in each theme; they are literals because a
   // viewport export cannot read a stylesheet.
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#edecf2" },
-    { media: "(prefers-color-scheme: dark)", color: "#101120" },
+    { media: "(prefers-color-scheme: light)", color: "#edecf2" }, // theme-ok
+    { media: "(prefers-color-scheme: dark)", color: "#101120" }, // theme-ok
   ],
   width: "device-width",
   initialScale: 1,

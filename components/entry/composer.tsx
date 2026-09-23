@@ -190,9 +190,10 @@ export function Composer({
             onClick={submit}
             disabled={isReading || text.trim().length === 0}
             className={cn(
-              // text-surface, not text-white: on --action this is near-white
-              // in the light theme and near-black in the dark one, where the
-              // accent lightens and white on it stops being readable.
+              // text-surface rather than a fixed light colour: on --action
+              // this is near-white in the light theme and near-black in the
+              // dark one, where the accent lightens and a fixed light
+              // foreground stops being readable.
               "flex size-11 shrink-0 items-center justify-center rounded-full text-surface transition-colors",
               "bg-action hover:bg-action/90 active:bg-action-pressed",
               "disabled:bg-hairline-strong disabled:text-surface",

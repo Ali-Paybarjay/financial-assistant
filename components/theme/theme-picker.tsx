@@ -102,16 +102,20 @@ function ThemePreview({ theme }: { theme: Theme }) {
         className="flex h-16 w-13 shrink-0 overflow-hidden rounded-lg border border-hairline"
         style={{ width: 52 }}
       >
-        <span className="w-1/2" style={{ background: "#ffffff" }} />
-        <span className="w-1/2" style={{ background: "#101120" }} />
+        {/* Literal on purpose: a swatch has to show the theme it names
+            while the reader is looking at the other one. theme-ok */}
+        <span className="w-1/2" style={{ background: "#ffffff" }} /> {/* theme-ok */}
+        <span className="w-1/2" style={{ background: "#101120" }} /> {/* theme-ok */}
       </span>
     );
   }
 
+  // Both palettes spelled out, for the same reason as the split swatch
+  // above: this is a picture of a theme, not a surface in one.
   const palette =
     theme === "dark"
-      ? { bg: "#101120", edge: "#38346e", block: "#21223a", row: "#191a2b", action: "#a3a0e8" }
-      : { bg: "#ffffff", edge: "#d7d5e0", block: "#191a2e", row: "#edecf2", action: "#302c73" };
+      ? { bg: "#101120", edge: "#38346e", block: "#21223a", row: "#191a2b", action: "#a3a0e8" } // theme-ok
+      : { bg: "#ffffff", edge: "#d7d5e0", block: "#191a2e", row: "#edecf2", action: "#302c73" }; // theme-ok
 
   return (
     <span
