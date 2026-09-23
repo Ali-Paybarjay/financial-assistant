@@ -325,7 +325,7 @@ export function RecurringSheet({
         <label className="flex items-center gap-2.5 rounded-control border border-hairline bg-paper p-3">
           <input
             type="checkbox"
-            className="size-4 accent-lapis"
+            className="size-4 accent-action"
             {...register("autoPost")}
           />
           <span className="text-caption text-ink">

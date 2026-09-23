@@ -54,7 +54,7 @@ export const WORKSPACE_NAV: Record<WorkspaceId, WorkspaceNav> = {
      * under the touch target the design commits to.
      */
     primary: [
-      { href: "/dashboard", label: "پاکت‌ها", icon: SquaresFour },
+      { href: "/dashboard", label: "داشبورد", icon: SquaresFour },
       { href: "/transactions", label: "تراکنش‌ها", icon: ListDashes },
       { href: "/goals", label: "هدف‌ها", icon: Target },
       { href: "/settings", label: "تنظیمات", icon: Gear },

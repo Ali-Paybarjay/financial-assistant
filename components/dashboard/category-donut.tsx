@@ -59,7 +59,7 @@ export function CategoryDonut({
             <span className="max-w-[60px] truncate text-caption font-semibold text-ink">
               {largest.name}
             </span>
-            <span className="text-caption font-bold text-lapis">
+            <span className="text-caption font-bold text-action">
               {faPercent(largestShare)}
             </span>
           </div>

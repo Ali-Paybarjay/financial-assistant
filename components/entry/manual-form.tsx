@@ -149,8 +149,8 @@ export function ManualForm({
                     className={cn(
                       "h-9 rounded-full border px-3 text-[13px] transition-colors",
                       selected
-                        ? "border-lapis bg-lapis text-white"
-                        : "border-hairline-strong bg-surface text-ink-muted hover:border-lapis hover:text-lapis",
+                        ? "border-action bg-action text-surface"
+                        : "border-hairline-strong bg-surface text-ink-muted hover:border-action hover:text-action",
                     )}
                   >
                     {category.name_fa}

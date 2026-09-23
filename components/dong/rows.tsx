@@ -24,7 +24,7 @@ export function MemberName({
       {member.is_fund && <Vault size={13} className="text-ink-faint" aria-hidden />}
       {member.name}
       {member.is_me && (
-        <span className="rounded-full bg-lapis-tint px-1.5 text-micro font-medium text-lapis">
+        <span className="rounded-full bg-action-tint px-1.5 text-micro font-medium text-action">
           تو
         </span>
       )}

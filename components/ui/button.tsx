@@ -12,13 +12,13 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-lapis text-white hover:bg-lapis/90 active:bg-lapis-pressed",
+        default: "bg-action text-surface hover:bg-action/90 active:bg-action-pressed",
         outline:
-          "border-hairline-strong bg-surface text-ink hover:border-lapis hover:bg-lapis-tint hover:text-lapis",
-        ghost: "text-ink-muted hover:bg-lapis-tint hover:text-lapis",
+          "border-hairline-strong bg-surface text-ink hover:border-action hover:bg-action-tint hover:text-action",
+        ghost: "text-ink-muted hover:bg-action-tint hover:text-action",
         destructive:
-          "bg-negative-tint text-negative hover:bg-negative hover:text-white",
-        link: "text-lapis underline-offset-4 hover:underline",
+          "bg-negative-tint text-negative hover:bg-negative hover:text-surface",
+        link: "text-action underline-offset-4 hover:underline",
       },
       size: {
         /** Primary call to action. */

@@ -125,7 +125,7 @@ export function DashboardView({
         type="button"
         aria-label="ماه قبل"
         onClick={() => goToMonth(-1)}
-        className="flex size-7 items-center justify-center rounded-full text-ink-muted hover:text-lapis"
+        className="flex size-7 items-center justify-center rounded-full text-ink-muted hover:text-action"
       >
         <CaretRight size={14} />
       </button>
@@ -137,7 +137,7 @@ export function DashboardView({
         aria-label="ماه بعد"
         disabled={isCurrentMonth}
         onClick={() => goToMonth(1)}
-        className="flex size-7 items-center justify-center rounded-full text-ink-muted hover:text-lapis disabled:text-hairline-strong disabled:hover:text-hairline-strong"
+        className="flex size-7 items-center justify-center rounded-full text-ink-muted hover:text-action disabled:text-hairline-strong disabled:hover:text-hairline-strong"
       >
         <CaretLeft size={14} />
       </button>
@@ -155,7 +155,7 @@ export function DashboardView({
           to sit beside it is gone: recording a purchase is the composer's
           job now, on every page rather than this one. */}
       <h1 className="sr-only text-title font-semibold text-ink min-[960px]:not-sr-only min-[960px]:pb-4">
-        پاکت‌ها
+        داشبورد
       </h1>
 
       {/* One of the two doors to the ledger, now that it has left the tab
@@ -181,22 +181,23 @@ export function DashboardView({
 
       <div className="flex flex-col gap-3 px-4 pt-3 min-[960px]:px-0">
         <div className="flex items-center justify-between">
-          <span className="flex size-9 items-center justify-center rounded-full bg-lapis-tint text-[15px] font-semibold text-lapis min-[960px]:hidden">
+          <span className="flex size-9 items-center justify-center rounded-full bg-action-tint text-[15px] font-semibold text-action min-[960px]:hidden">
             {name.trim().charAt(0) || "؟"}
           </span>
           {monthSelector}
         </div>
 
         {isEmpty ? (
-          <section className="rounded-card bg-ink p-4 text-white">
-            <p className="text-label text-white/70">ماندهٔ {formatMonthFa(month)}</p>
+          <section className="rounded-card border border-action-tint-edge bg-action-tint p-4">
+            <p className="text-caption text-ink-muted">ماندهٔ {formatMonthFa(month)}</p>
             <Money
               minor={balance}
               currency={currency}
               size="hero"
-              className="mt-1 block text-positive-on-ink"
+              tone="auto"
+              className="mt-0.5 block"
             />
-            <p className="mt-1 text-caption text-white/70">
+            <p className="mt-1 text-caption text-ink-muted">
               هنوز هیچ هزینه‌ای ثبت نشده — این عدد همان درآمدی است که در ثبت‌نام گفتی.
             </p>
           </section>
@@ -261,7 +262,7 @@ export function DashboardView({
                 <section className="rounded-card border border-hairline bg-surface p-4">
                   <div className="mb-3 flex items-baseline justify-between gap-2">
                     <h2 className="text-[15px] font-semibold text-ink">هدف‌ها</h2>
-                    <Link href="/goals" className="text-caption font-medium text-lapis">
+                    <Link href="/goals" className="text-caption font-medium text-action">
                       برنامه
                     </Link>
                   </div>
@@ -296,10 +297,10 @@ export function DashboardView({
                             aria-valuemin={0}
                             aria-valuemax={100}
                             aria-label={`${goal.title} — ${faPercent(progress)}`}
-                            className="h-2 overflow-hidden rounded-full bg-lapis-tint"
+                            className="h-2 overflow-hidden rounded-full bg-action-tint"
                           >
                             <div
-                              className="h-full rounded-full bg-lapis"
+                              className="h-full rounded-full bg-action"
                               style={{ width: `${progress}%` }}
                             />
                           </div>
@@ -331,7 +332,7 @@ export function DashboardView({
                   <h2 className="text-[15px] font-semibold text-ink">تراکنش‌های اخیر</h2>
                   <Link
                     href="/transactions"
-                    className="text-caption font-medium text-lapis"
+                    className="text-caption font-medium text-action"
                   >
                     همه
                   </Link>

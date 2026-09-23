@@ -59,7 +59,7 @@ export function InsightList({
             "rounded-card px-3.5 py-3",
             insight.tone === "warn"
               ? "border border-guess-border bg-guess-tint"
-              : "bg-lapis-tint",
+              : "bg-action-tint",
           )}
         >
           <div className="flex items-start justify-between gap-2">
@@ -84,7 +84,7 @@ export function InsightList({
           {insight.action && (
             <Link
               href={insight.action.href}
-              className="mt-2.5 inline-flex h-8 items-center rounded-full bg-surface px-3.5 text-caption font-semibold text-lapis"
+              className="mt-2.5 inline-flex h-8 items-center rounded-full bg-surface px-3.5 text-caption font-semibold text-action"
             >
               {insight.action.label}
             </Link>

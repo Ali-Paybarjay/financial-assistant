@@ -33,7 +33,7 @@ export function SavingsCheckNote({
         هدف‌هایت می‌گویند <Money minor={goalsHeld} currency={currency} /> کنار گذاشته‌ای،
         ولی حساب پس‌اندازی نداری. تا وقتی این پول در حسابی باشد که از آن خرج می‌کنی، یک
         روز بی‌آنکه بفهمی خرج می‌شود.{" "}
-        <Link href="/accounts" className="font-medium text-lapis underline">
+        <Link href="/accounts" className="font-medium text-action underline">
           یک حساب پس‌انداز بساز
         </Link>
         .

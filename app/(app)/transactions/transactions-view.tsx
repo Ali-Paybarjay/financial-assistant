@@ -208,7 +208,7 @@ export function TransactionsView({
               key={chip.key}
               type="button"
               onClick={() => setParam(chip.key, undefined)}
-              className="inline-flex h-8 items-center gap-1.5 rounded-full bg-lapis px-3 text-caption font-medium text-white"
+              className="inline-flex h-8 items-center gap-1.5 rounded-full bg-action px-3 text-caption font-medium text-surface"
             >
               {chip.label}
               <X size={12} />
@@ -434,7 +434,7 @@ function UndoRow({ title, onUndo }: { title: string; onUndo: () => void }) {
       <button
         type="button"
         onClick={onUndo}
-        className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-hairline-strong bg-surface px-3 text-caption font-medium text-lapis"
+        className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-hairline-strong bg-surface px-3 text-caption font-medium text-action"
       >
         <ArrowCounterClockwise size={14} />
         برگردان

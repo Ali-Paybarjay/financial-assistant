@@ -82,7 +82,7 @@ export function BalanceStep({
   return (
     <section className="flex flex-col gap-3 rounded-card border border-hairline bg-surface p-4">
       <h2 className="flex items-center gap-2 text-[15px] font-semibold text-ink">
-        <Scales size={18} className="text-lapis" />
+        <Scales size={18} className="text-action" />
         موجودی {accountTitle}
       </h2>
 

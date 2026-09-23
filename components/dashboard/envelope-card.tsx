@@ -128,7 +128,7 @@ export function EnvelopeCard({
               "block h-full rounded-full",
               state === "over" && "bg-negative",
               state === "tight" && "bg-guess",
-              state === "under" && "bg-lapis",
+              state === "under" && "bg-action",
               // Striped rather than solid: part of this total is still a
               // guess, so the bar is drawn as provisional too.
               hasUnconfirmed && "[background-image:repeating-linear-gradient(115deg,transparent_0_3px,rgb(255_255_255/0.55)_3px_6px)]",
@@ -185,7 +185,7 @@ export function UnsetEnvelopeCard({
       <span className="min-w-0 flex-1 basis-[60%]">
         <Link
           href={href}
-          className="block text-body font-semibold text-ink hover:text-lapis hover:underline"
+          className="block text-body font-semibold text-ink hover:text-action hover:underline"
         >
           {envelope.name_fa} — سقف نداری
         </Link>
@@ -209,7 +209,7 @@ export function UnsetEnvelopeCard({
       <button
         type="button"
         onClick={onSetBudget}
-        className="h-9 shrink-0 rounded-full border border-lapis px-4 text-caption font-semibold text-lapis transition-colors hover:bg-lapis-tint"
+        className="h-9 shrink-0 rounded-full border border-action px-4 text-caption font-semibold text-action transition-colors hover:bg-action-tint"
       >
         سقف بگذار
       </button>

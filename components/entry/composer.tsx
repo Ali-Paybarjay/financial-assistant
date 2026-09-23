@@ -137,7 +137,7 @@ export function Composer({
         className={cn(
           "fixed inset-x-0 bottom-0 z-30 border-t border-hairline bg-surface pb-[env(safe-area-inset-bottom)] transition-colors",
           "min-[960px]:static min-[960px]:z-auto min-[960px]:rounded-card min-[960px]:border",
-          isDropping && "min-[960px]:border-lapis min-[960px]:bg-lapis-tint",
+          isDropping && "min-[960px]:border-action min-[960px]:bg-action-tint",
         )}
       >
         <div className="mx-auto flex max-w-[560px] items-center gap-2 px-4 py-2.5 min-[960px]:max-w-none min-[960px]:px-3">
@@ -145,7 +145,7 @@ export function Composer({
             type="button"
             aria-label="عکس فاکتور"
             onClick={() => fileInput.current?.click()}
-            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-paper text-ink-muted transition-colors hover:text-lapis"
+            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-paper text-ink-muted transition-colors hover:text-action"
           >
             <Camera size={20} />
           </button>
@@ -179,7 +179,7 @@ export function Composer({
             placeholder="بنویس یا دیکته کن"
             // 16px, because anything smaller makes iOS zoom the page on
             // focus and the user lands on a viewport they did not ask for.
-            className="h-[42px] min-w-0 flex-1 rounded-full border border-hairline-strong bg-surface px-4 text-[16px] text-ink outline-none transition-colors placeholder:text-ink-faint focus-visible:border-lapis"
+            className="h-[42px] min-w-0 flex-1 rounded-full border border-hairline-strong bg-surface px-4 text-[16px] text-ink outline-none transition-colors placeholder:text-ink-faint focus-visible:border-action"
           />
 
           <button
@@ -188,9 +188,12 @@ export function Composer({
             onClick={submit}
             disabled={isReading || text.trim().length === 0}
             className={cn(
-              "flex size-11 shrink-0 items-center justify-center rounded-full text-white transition-colors",
-              "bg-lapis hover:bg-lapis/90 active:bg-lapis-pressed",
-              "disabled:bg-hairline-strong disabled:text-white",
+              // text-surface, not text-white: on --action this is near-white
+              // in the light theme and near-black in the dark one, where the
+              // accent lightens and white on it stops being readable.
+              "flex size-11 shrink-0 items-center justify-center rounded-full text-surface transition-colors",
+              "bg-action hover:bg-action/90 active:bg-action-pressed",
+              "disabled:bg-hairline-strong disabled:text-surface",
             )}
           >
             {isReading ? (

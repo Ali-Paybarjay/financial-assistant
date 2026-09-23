@@ -86,6 +86,12 @@ export type ProfileRow = {
    * which is read from the url and never stored — see lib/workspaces.ts.
    */
   default_workspace: WorkspaceId | null;
+  /**
+   * The durable copy of the theme choice. The stylesheet reads a cookie
+   * instead — `<html data-theme>` has to be right before any query runs — and
+   * this is what refills that cookie on another device. See lib/theme.ts.
+   */
+  theme: "light" | "dark" | "system";
   onboarding_completed_at: string | null;
   created_at: string;
   updated_at: string;
@@ -521,7 +527,10 @@ export type DongGroupTotalRow = {
 export type Database = {
   public: {
     Tables: {
-      profiles: Table<ProfileRow, "timezone" | "base_currency" | "onboarding_step">;
+      profiles: Table<
+        ProfileRow,
+        "timezone" | "base_currency" | "onboarding_step" | "theme"
+      >;
       categories: Table<CategoryRow, "is_system" | "sort_order">;
       accounts: Table<
         AccountRow,

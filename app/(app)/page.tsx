@@ -170,10 +170,10 @@ function WorkspaceCard({
   return (
     <Link
       href={meta.href}
-      className="flex min-h-[190px] flex-col gap-3 rounded-card border border-hairline bg-surface p-4 transition-colors hover:border-lapis hover:bg-lapis-tint/40"
+      className="flex min-h-[190px] flex-col gap-3 rounded-card border border-hairline bg-surface p-4 transition-colors hover:border-action hover:bg-action-tint/40"
     >
       <span className="flex items-center gap-2.5">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-lapis-tint text-lapis">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-action-tint text-action">
           <Glyph size={20} />
         </span>
         <span className="min-w-0 flex-1 text-[17px] font-semibold text-ink">

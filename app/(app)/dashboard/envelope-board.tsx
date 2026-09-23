@@ -87,7 +87,7 @@ export function EnvelopeBoard({
         <button
           type="button"
           onClick={() => setPicking(true)}
-          className="text-caption font-semibold text-lapis hover:underline"
+          className="text-caption font-semibold text-action hover:underline"
         >
           + پاکت
         </button>

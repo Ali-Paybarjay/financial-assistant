@@ -81,7 +81,7 @@ export function TransactionRowItem({
       <span
         className={cn(
           "flex size-[34px] shrink-0 items-center justify-center rounded-control",
-          unconfirmed ? "bg-guess-tint text-guess" : "bg-lapis-tint text-lapis",
+          unconfirmed ? "bg-guess-tint text-guess" : "bg-action-tint text-action",
         )}
       >
         <SourceIcon size={18} />
@@ -166,7 +166,7 @@ export function TransactionRowItem({
           }
         />
         {unconfirmed && (
-          <span className="flex items-center gap-0.5 text-caption font-medium text-lapis">
+          <span className="flex items-center gap-0.5 text-caption font-medium text-action">
             بررسی
             <CaretLeft size={11} />
           </span>

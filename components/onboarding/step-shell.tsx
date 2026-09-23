@@ -32,7 +32,7 @@ export function StepShell({
           <Link
             href={`/onboarding/${step - 1}`}
             aria-label="گام قبلی"
-            className="flex size-10 items-center justify-center rounded-control text-ink-muted hover:bg-lapis-tint hover:text-lapis"
+            className="flex size-10 items-center justify-center rounded-control text-ink-muted hover:bg-action-tint hover:text-action"
           >
             {/* Back points right in an RTL reading order. */}
             <CaretRight size={20} />
@@ -59,16 +59,16 @@ export function StepShell({
             key={index}
             className={cn(
               "h-1 flex-1 rounded-full",
-              index < step ? "bg-lapis" : "bg-hairline",
+              index < step ? "bg-action" : "bg-hairline",
             )}
           />
         ))}
       </div>
 
-      <p className="mt-6 text-caption font-semibold tracking-[0.1em] text-lapis">
+      <p className="mt-6 text-caption font-semibold tracking-[0.1em] text-action">
         {kicker}
       </p>
-      <h1 className="mt-2 font-display text-display-l font-bold text-pretty text-ink">
+      <h1 className="mt-2 font-display text-question font-bold text-pretty text-ink">
         {title}
       </h1>
       {subtitle && <p className="mt-2 text-body text-ink-muted">{subtitle}</p>}

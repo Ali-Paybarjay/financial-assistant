@@ -40,7 +40,7 @@ export function BudgetInvite({
   return (
     <section className="rounded-card border border-hairline bg-surface p-4">
       <div className="flex items-start gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-lapis-tint text-lapis">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-action-tint text-action">
           <Envelope size={20} />
         </span>
         <div className="min-w-0 flex-1">
@@ -92,7 +92,7 @@ export function BudgetInvite({
             <button
               type="button"
               onClick={() => onSetBudget(envelope)}
-              className="h-9 shrink-0 rounded-full border border-lapis px-4 text-caption font-semibold text-lapis transition-colors hover:bg-lapis-tint"
+              className="h-9 shrink-0 rounded-full border border-action px-4 text-caption font-semibold text-action transition-colors hover:bg-action-tint"
             >
               سقف بگذار
             </button>

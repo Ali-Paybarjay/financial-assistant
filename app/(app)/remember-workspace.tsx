@@ -67,7 +67,7 @@ export function RememberWorkspace({
           type="button"
           disabled={isSaving}
           onClick={() => remember(null)}
-          className="font-semibold text-lapis hover:underline"
+          className="font-semibold text-action hover:underline"
         >
           هر بار بپرس
         </button>
@@ -84,7 +84,7 @@ export function RememberWorkspace({
           type="button"
           disabled={isSaving}
           onClick={() => remember(workspace)}
-          className="rounded-full border border-hairline-strong px-3 py-1 font-semibold text-ink transition-colors hover:border-lapis hover:text-lapis"
+          className="rounded-full border border-hairline-strong px-3 py-1 font-semibold text-ink transition-colors hover:border-action hover:text-action"
         >
           {LABELS[workspace]}
         </button>

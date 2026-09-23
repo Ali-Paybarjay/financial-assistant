@@ -10,7 +10,7 @@ export function EmptyDashboard({ onStart }: { onStart: () => void }) {
   return (
     <div className="flex flex-col gap-3">
       <section className="rounded-card border border-hairline bg-surface p-5">
-        <h2 className="font-display text-display-l font-bold text-ink">
+        <h2 className="font-display text-question font-bold text-ink">
           اولین خریدت را ثبت کن
         </h2>
         <p className="mt-2 text-body text-ink-muted">
@@ -20,7 +20,7 @@ export function EmptyDashboard({ onStart }: { onStart: () => void }) {
         <button
           type="button"
           onClick={onStart}
-          className="mt-4 flex h-[52px] w-full items-center justify-center gap-2 rounded-control bg-lapis text-[15px] font-semibold text-white transition-colors hover:bg-lapis/90 active:bg-lapis-pressed"
+          className="mt-4 flex h-[52px] w-full items-center justify-center gap-2 rounded-control bg-action text-[15px] font-semibold text-surface transition-colors hover:bg-action/90 active:bg-action-pressed"
         >
           <Plus size={20} weight="bold" />
           اولین هزینه‌ات را ثبت کن
@@ -41,7 +41,7 @@ export function EmptyDashboard({ onStart }: { onStart: () => void }) {
               key={item.title}
               className="flex h-14 items-center gap-3 border-b border-hairline last:border-b-0"
             >
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-control bg-lapis-tint text-lapis">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-control bg-action-tint text-action">
                 <item.icon size={18} />
               </span>
               <span className="flex flex-col">

@@ -1,21 +1,21 @@
 import { Money } from "@/components/money";
 import { faNumber } from "@/lib/format";
 import type { CurrencyCode, Minor } from "@/lib/money";
-import { cn } from "@/lib/utils";
 
 /**
- * The month's balance, and where it is heading.
+ * The month's answer, on a tinted card at the top of the board.
  *
- * The one dark surface in the app, which is why it is also the one place the
- * `*-on-ink` colours are used: the ordinary green and red sit at 2.7:1 here
- * and cannot be read.
+ * Tinted rather than filled, and that is a correction: the first version made
+ * this the one near-black surface in a light app, which read as a different
+ * product bolted onto this one — and left it needing its own green and red,
+ * because the ordinary pair sits at 2.7:1 on ink. `--action-tint` carries the
+ * accent's hue at a tenth of its weight, the figure keeps the colours every
+ * other figure uses, and the two `*-on-ink` tokens are gone with it.
  *
- * The forecast is the point of the card. A balance on its own reports the
- * past, and the question people actually open a budgeting app with is about
- * the future — so the figure beside it says where this month lands at the
- * current rate, under a dashed rule because it is a projection and not a
- * fact. Past months have no future to project, so they show the balance
- * alone.
+ * The forecast sits beside the balance under a dashed rule, because it is the
+ * same kind of statement as a guessed merchant name: nobody has lived those
+ * days yet. Past months have no days left to guess about and show no
+ * forecast at all.
  */
 export function BalanceCard({
   balance,
@@ -37,98 +37,78 @@ export function BalanceCard({
   perDayAllowed: Minor | null;
   /** What has actually been going out per day so far. */
   perDaySpent: Minor | null;
+  /** Named, not «این ماه»: the card also shows months that are over. */
   monthLabel: string;
 }) {
   const daysInMonth = daysGone + daysLeft;
-  const goneShare = daysInMonth > 0 ? (daysGone / daysInMonth) * 100 : 0;
-  // Spending faster than the remaining budget allows is the one thing on this
-  // card worth colouring, and it is said in words directly underneath.
+  const gonePercent = daysInMonth > 0 ? (daysGone / daysInMonth) * 100 : 100;
+  // Worth colouring only when it is news: spending faster than what is left
+  // allows. Otherwise it is a figure, not a warning.
   const outpacing =
     perDayAllowed !== null && perDaySpent !== null && perDaySpent > perDayAllowed;
 
   return (
-    // A container query, not a viewport one: the card is full width on a
-    // phone and a third of the page on a desktop, so what the balance can
-    // afford depends on the card rather than on the screen.
-    <section className="@container rounded-card bg-ink p-4 text-white">
-      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+    // A container query rather than a viewport one: this card is full width
+    // on a phone and a third of a column on a desktop, so what the figure can
+    // afford depends on the card. The package sized it at a flat 34px, which
+    // clipped «+$1,886.15» to «+$1,886.1» at 375px.
+    <section className="@container rounded-card border border-action-tint-edge bg-action-tint p-4">
+      <div className="flex items-end justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-label text-white/70">ماندهٔ {monthLabel}</p>
-          {/* The size is set here and inherited rather than passed to <Money>
-              as a class. tailwind-merge cannot tell a custom colour from a
-              font size, so `text-[clamp(…)]` and `text-positive-on-ink` in
-              one className would have the colour silently delete the size —
-              which is the bug commit a87fc11 was about. */}
-          <span className="mt-1 block font-display text-[clamp(1.5rem,9cqw,2.5rem)] leading-[1.1] font-extrabold">
-            <Money
-              minor={balance}
-              currency={currency}
-              signed
-              className={
-                balance < 0 ? "text-negative-on-ink" : "text-positive-on-ink"
-              }
-            />
+          <p className="text-caption text-ink-muted">ماندهٔ {monthLabel}</p>
+          {/* Size on the wrapper, colour inside <Money>: tailwind-merge
+              cannot tell a custom colour from a font size, so the two in one
+              className would silently lose one of them. */}
+          <span className="mt-0.5 block font-display text-[clamp(1.5rem,9cqw,2.25rem)] leading-[1.1] font-extrabold">
+            <Money minor={balance} currency={currency} tone="auto" signed />
           </span>
         </div>
 
         {forecast !== null && (
           <div className="shrink-0 text-end">
-            <p className="text-caption text-white/70">پیش‌بینی</p>
-            {/* Dashed, like every figure in this app that has not happened
-                yet. The word «پیش‌بینی» carries it for anyone who cannot see
-                the rule. */}
+            <p className="text-micro text-ink-muted">پیش‌بینی</p>
+            {/* rule-guess is the app's dashed grammar, from globals.css —
+                the same rule under a merchant name the model guessed. */}
             <Money
               minor={forecast}
               currency={currency}
               signed
-              className={cn(
-                "mt-0.5 inline-block border-b-2 border-dashed pb-[2px] text-[17px] font-semibold",
-                forecast < 0
-                  ? "border-negative-on-ink/60 text-negative-on-ink"
-                  : "border-positive-on-ink/60 text-positive-on-ink",
-              )}
+              tone="auto"
+              className="rule-guess mt-0.5 inline-block text-figure-md font-bold"
             />
           </div>
         )}
       </div>
 
-      {/* The landing strip. Solid for the days behind, dashed for the days
-          ahead — the same grammar as everything else that is not settled yet.
-          In RTL the first child sits at the start, which is where the month
-          began. */}
+      {/* The month as a runway: the days lived are inked, the days still to
+          come are in pencil. Drawn in the accent because it sits on a tinted
+          ground, where ink would outweigh the figure above it. */}
       {daysInMonth > 0 && (
-        <div aria-hidden className="mt-4 flex items-center gap-1">
-          <span
-            className="h-[3px] rounded-full bg-white"
-            style={{ width: `${goneShare}%` }}
-          />
-          <span className="h-0 flex-1 border-t-[3px] border-dotted border-white/45" />
+        <div className="runway runway-on-tint mt-3.5" aria-hidden>
+          <span className="runway-gone" style={{ width: `${gonePercent}%` }} />
+          {daysLeft > 0 && <span className="runway-left" />}
         </div>
       )}
 
-      <div className="mt-2.5 flex items-baseline justify-between gap-3 text-caption">
-        <span className="text-white/70">{faNumber(daysLeft)} روز مانده</span>
+      <p className="mt-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-micro text-ink-muted">
+        <span>
+          {daysLeft > 0 ? `${faNumber(daysLeft)} روز مانده` : "این ماه تمام شده"}
+        </span>
         {perDayAllowed !== null && perDaySpent !== null && (
-          <span className="flex items-baseline gap-1.5 text-white/70">
-            <span className="flex items-baseline gap-1">
-              سهم روز
-              <Money minor={perDayAllowed} currency={currency} className="text-white" />
-            </span>
-            <span aria-hidden>·</span>
-            <span className="flex items-baseline gap-1">
-              خرجِ روز
-              <Money
-                minor={perDaySpent}
-                currency={currency}
-                className={outpacing ? "text-negative-on-ink" : "text-white"}
-              />
-            </span>
+          <span>
+            سهم روز <Money minor={perDayAllowed} currency={currency} />
+            {" · خرجِ روز "}
+            <Money
+              minor={perDaySpent}
+              currency={currency}
+              className={outpacing ? "text-negative" : undefined}
+            />
           </span>
         )}
-      </div>
+      </p>
 
       {outpacing && (
-        <p className="mt-1.5 text-caption text-negative-on-ink">
+        <p className="mt-1.5 text-caption text-negative">
           تندتر از سهم روز خرج می‌کنی.
         </p>
       )}

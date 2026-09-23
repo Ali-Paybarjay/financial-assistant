@@ -34,9 +34,9 @@ export function ReconcileBanner({ due }: { due: AccountRow[] }) {
   return (
     <Link
       href={due.length === 1 ? `/import?account=${due[0].id}` : "/accounts"}
-      className="flex items-center gap-3 rounded-card border border-lapis/25 bg-lapis-tint p-3 transition-colors hover:border-lapis/50"
+      className="flex items-center gap-3 rounded-card border border-action/25 bg-action-tint p-3 transition-colors hover:border-action/50"
     >
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-control bg-lapis text-white">
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-control bg-action text-surface">
         <Bank size={18} />
       </span>
 
@@ -51,7 +51,7 @@ export function ReconcileBanner({ due }: { due: AccountRow[] }) {
         </span>
       </span>
 
-      <CaretLeft size={16} className="shrink-0 text-lapis" />
+      <CaretLeft size={16} className="shrink-0 text-action" />
     </Link>
   );
 }

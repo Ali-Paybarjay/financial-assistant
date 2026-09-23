@@ -38,7 +38,7 @@ export function AccountBalances({
         className="flex items-center justify-between gap-2 p-4 pb-2.5 hover:bg-paper"
       >
         <span className="flex items-center gap-2">
-          <Wallet size={18} className="text-lapis" />
+          <Wallet size={18} className="text-action" />
           <h2 className="text-[15px] font-semibold text-ink">موجودی حساب‌ها</h2>
         </span>
         <span className="flex items-center gap-1.5">
@@ -82,7 +82,7 @@ export function AccountBalances({
 function AccountsInvitation() {
   return (
     <section className="rounded-card border border-hairline bg-surface p-5">
-      <span className="flex size-11 items-center justify-center rounded-full bg-lapis-tint text-lapis">
+      <span className="flex size-11 items-center justify-center rounded-full bg-action-tint text-action">
         <Wallet size={22} />
       </span>
 

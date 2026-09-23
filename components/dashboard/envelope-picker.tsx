@@ -70,7 +70,7 @@ export function EnvelopePicker({
                   type="button"
                   disabled={isSaving}
                   onClick={() => add(() => setEnvelopeOnBoard(category.id, true))}
-                  className="flex h-9 items-center gap-1.5 rounded-full border border-hairline-strong px-3.5 text-caption font-medium text-ink transition-colors hover:border-lapis hover:bg-lapis-tint hover:text-lapis disabled:opacity-50"
+                  className="flex h-9 items-center gap-1.5 rounded-full border border-hairline-strong px-3.5 text-caption font-medium text-ink transition-colors hover:border-action hover:bg-action-tint hover:text-action disabled:opacity-50"
                 >
                   <Plus size={13} weight="bold" />
                   {category.name_fa}

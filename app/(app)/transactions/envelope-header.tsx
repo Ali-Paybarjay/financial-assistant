@@ -95,7 +95,7 @@ export function EnvelopeHeader({
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="shrink-0 text-caption font-semibold text-lapis"
+            className="shrink-0 text-caption font-semibold text-action"
           >
             سقف بگذار
           </button>
@@ -140,7 +140,7 @@ export function EnvelopeHeader({
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="shrink-0 text-caption font-semibold text-lapis"
+          className="shrink-0 text-caption font-semibold text-action"
         >
           ویرایش سقف
         </button>
@@ -165,7 +165,7 @@ export function EnvelopeHeader({
             "block h-full rounded-full",
             state === "over" && "bg-negative",
             state === "tight" && "bg-guess",
-            state === "under" && "bg-lapis",
+            state === "under" && "bg-action",
           )}
           style={{ width: `${state === "over" ? 100 : filled}%` }}
         />

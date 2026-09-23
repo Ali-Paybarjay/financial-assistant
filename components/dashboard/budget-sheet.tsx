@@ -109,7 +109,7 @@ export function BudgetSheet({
           <button
             type="button"
             onClick={() => setAmount(String(toMajor(suggestion.amount, currency)))}
-            className="w-fit rounded-full bg-lapis-tint px-3 py-1.5 text-caption font-semibold text-lapis"
+            className="w-fit rounded-full bg-action-tint px-3 py-1.5 text-caption font-semibold text-action"
           >
             {suggestion.source === "observed" ? "میانهٔ ۳ ماه" : "در ثبت‌نام گفتی"}:{" "}
             <Money minor={suggestion.amount} currency={currency} />
