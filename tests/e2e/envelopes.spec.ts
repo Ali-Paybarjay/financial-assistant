@@ -19,7 +19,7 @@ import { ALPHA_EMAIL as EMAIL, PASSWORD } from "./credentials";
  */
 
 async function login(page: Page) {
-  await page.goto("/login");
+  await page.goto("/login?method=password");
   await page.getByLabel("ایمیل").fill(EMAIL);
   await page.getByLabel("رمز").fill(PASSWORD);
   await page.getByRole("button", { name: "ورود", exact: true }).click();
