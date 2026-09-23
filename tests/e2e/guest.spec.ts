@@ -329,3 +329,43 @@ test("a Google account that already exists is offered back, not reported as an e
   await page.getByRole("button", { name: "خروج و حذف" }).click();
   await page.waitForURL(/\/login/);
 });
+
+/**
+ * Failing halfway must cost nothing.
+ *
+ * Giving a guest account up for an older one is a trade, and the only moment
+ * it is safe to take the guest down is after the other session is really in
+ * hand. The first version signed the guest out *before* exchanging the code,
+ * which was wrong twice over: it threw the data away on a trip that might not
+ * finish, and — because the PKCE verifier lives in the same cookie store as
+ * the session — it deleted the verifier the very next line needed, so the
+ * sign-in died one step from the finish every single time.
+ *
+ * A bogus code reproduces the second half of that exactly: whatever the guest
+ * is standing in afterwards is what a failed Google trip leaves behind.
+ */
+test("a switch that does not complete leaves the guest exactly where it was", async ({
+  page,
+  context,
+}) => {
+  await page.goto("/login");
+  await page.getByRole("button", { name: "ورود به‌عنوان مهمان" }).click();
+  await page.waitForURL(/\/onboarding\//);
+
+  await context.addCookies([
+    { name: "link_intent", value: "switch", url: "http://localhost:3100", httpOnly: true },
+  ]);
+  await page.goto("/callback?code=not-a-real-authorisation-code");
+
+  // Back on the decision, not thrown out to the login page...
+  await expect(page).toHaveURL(/\/account-exists/);
+  await expect(page.getByText("چیزی از دست نرفت")).toBeVisible();
+
+  // ...and still signed in as the same guest, with the account intact.
+  await page.goto("/save-account");
+  await expect(page.getByText("چیزی از نو شروع نمی‌شود")).toBeVisible();
+
+  await page.getByRole("button", { name: "خروج", exact: true }).click();
+  await page.getByRole("button", { name: "خروج و حذف" }).click();
+  await page.waitForURL(/\/login/);
+});

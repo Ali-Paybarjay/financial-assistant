@@ -20,8 +20,13 @@ import { AccountExistsChoice } from "./choice";
  * guest is taken down in /callback, once the other account has actually been
  * signed in to.
  */
-export default async function AccountExistsPage() {
+export default async function AccountExistsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   const user = await getSessionUser();
+  const { error } = await searchParams;
 
   if (!user) redirect("/login");
   // Whoever is no longer a guest has nothing left to decide here — either the
@@ -65,7 +70,14 @@ export default async function AccountExistsPage() {
         </p>
       </div>
 
-      <AccountExistsChoice guestData={guestData} />
+      <AccountExistsChoice
+        guestData={guestData}
+        returnError={
+          error === "google_failed"
+            ? "ورود با گوگل تمام نشد. چیزی از دست نرفت — دوباره بزن."
+            : undefined
+        }
+      />
     </div>
   );
 }

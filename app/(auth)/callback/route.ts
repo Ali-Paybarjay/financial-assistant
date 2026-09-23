@@ -63,25 +63,38 @@ export async function GET(request: NextRequest) {
   // Read before the exchange replaces the session, and read from the session
   // rather than from anything the browser sent: this id is about to be handed
   // to a delete that runs with admin rights.
+  //
+  // Nothing else happens to the guest here — no sign-out, deliberately. The
+  // exchange is PKCE, and its verifier lives in the same cookie store as the
+  // session: `signOut()` calls `removeAllPKCEVerifiers()`, so signing the
+  // guest out first leaves the very next line with a code and no verifier and
+  // the sign-in dies one step from the finish. (Measured: GoTrue logged the
+  // provider callback succeeding, then a /logout, then no /token at all.)
+  // There is no need for it either — a successful exchange overwrites the
+  // session it finds.
   let leaving: string | null = null;
   if (intent === "switch") {
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (user?.is_anonymous) leaving = user.id;
-    // Clear the guest's cookies first, so the exchange happens the ordinary
-    // way with no session in place. Local only — the guest's rows are still
-    // there, and stay there unless the new session actually arrives.
-    await supabase.auth.signOut({ scope: "local" });
   }
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
+    // A guest is still a guest when this fails, session and rows intact, so
+    // put them back on the screen they were deciding on rather than at a login
+    // page they are already past.
+    if (intent === "switch") return land("/account-exists?error=google_failed");
+    if (intent === "link") return land("/save-account?error=google_failed");
     return land("/login?error=expired_link");
   }
 
-  if (leaving) {
+  // The id has to differ, and it is checked rather than assumed: `leaving` is
+  // about to be deleted outright, and deleting it while it is also the account
+  // just signed in to would destroy the thing this whole trip was for.
+  if (leaving && data.user && data.user.id !== leaving) {
     // Now, and only now: the account they came back for is really in hand, so
     // the guest they agreed to give up can go. Same as every other sign-out in
     // this app, which takes a guest's data with it.
@@ -90,6 +103,9 @@ export async function GET(request: NextRequest) {
     } catch {
       // Not worth failing the sign-in over. purge_stale_guests() sweeps.
     }
+  }
+
+  if (intent === "switch") {
     return land("/");
   }
 

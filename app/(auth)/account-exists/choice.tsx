@@ -30,11 +30,14 @@ import { signInToExistingGoogleAccount } from "../actions";
  */
 export function AccountExistsChoice({
   guestData,
+  returnError,
 }: {
   guestData: { label: string; count: number }[];
+  /** Set when a previous attempt came back from Google without finishing. */
+  returnError?: string;
 }) {
   const queryClient = useQueryClient();
-  const [error, setError] = useState<string>();
+  const [error, setError] = useState<string | undefined>(returnError);
   const [confirming, setConfirming] = useState(false);
   const [isPending, startTransition] = useTransition();
 
