@@ -4,11 +4,14 @@ import { CheckCircle } from "@phosphor-icons/react/dist/ssr";
 import { Button } from "@/components/ui/button";
 import { GuestProvider } from "@/components/guest/guest-provider";
 import { getSessionUser } from "@/lib/auth";
+import { EMAIL_AUTH_ENABLED } from "@/lib/auth-methods";
 import { SaveAccountForm } from "./save-account-form";
 
 /** What the callback sends back here when the Google trip did not finish. */
 const RETURN_ERRORS: Record<string, string> = {
-  google_failed: "ورود با گوگل تمام نشد. دوباره بزن یا با ایمیل و رمز حساب بساز.",
+  google_failed: EMAIL_AUTH_ENABLED
+    ? "ورود با گوگل تمام نشد. دوباره بزن یا با ایمیل و رمز حساب بساز."
+    : "ورود با گوگل تمام نشد. چیزی از دست نرفت — دوباره بزن.",
 };
 
 /**
@@ -57,7 +60,10 @@ export default async function SaveAccountPage({
   // with something to lose.
   return (
     <GuestProvider isGuest>
-      <SaveAccountForm returnError={error ? RETURN_ERRORS[error] : undefined} />
+      <SaveAccountForm
+        emailEnabled={EMAIL_AUTH_ENABLED}
+        returnError={error ? RETURN_ERRORS[error] : undefined}
+      />
     </GuestProvider>
   );
 }

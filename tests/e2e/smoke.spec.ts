@@ -54,12 +54,11 @@ const heading =
 
 const PUBLIC_ROUTES: Route[] = [
   { path: "/login", shows: "خوش آمدی", landmark: heading("خوش آمدی") },
-  { path: "/signup", shows: "حساب بساز", landmark: heading("حساب بساز") },
-  {
-    path: "/forgot-password",
-    shows: "بازیابی رمز",
-    landmark: heading("بازیابی رمز"),
-  },
+  // Email is off for now (lib/auth-methods.ts), so both of these land on
+  // the login page. Kept in the list so the redirect itself is what gets
+  // checked; when email comes back, they go back to their own headings.
+  { path: "/signup", shows: "خوش آمدی", landmark: heading("خوش آمدی") },
+  { path: "/forgot-password", shows: "خوش آمدی", landmark: heading("خوش آمدی") },
   // /reset-password is left out: it is only reachable with a recovery token,
   // and a smoke test that signs itself in cannot hold one.
 ];
@@ -110,7 +109,7 @@ const SIGNED_IN_ROUTES: Route[] = [
 ];
 
 async function login(page: Page) {
-  await page.goto("/login");
+  await page.goto("/login?method=password");
   await page.getByLabel("ایمیل").fill(EMAIL);
   await page.getByLabel("رمز").fill(PASSWORD);
   await page.getByRole("button", { name: "ورود", exact: true }).click();

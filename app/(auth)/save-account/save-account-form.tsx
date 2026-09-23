@@ -17,8 +17,18 @@ import { linkGuestToGoogle, upgradeGuestAccount } from "../actions";
  * as "start over"; this has to read as "keep what you already have", because
  * that is what it actually does — the user id never changes, so the rows the
  * guest created stay theirs.
+ *
+ * With email off (lib/auth-methods.ts) the three fields go too — an address
+ * nobody can confirm would leave the guest a guest — and Google, the one way
+ * that still keeps the data, takes the primary button.
  */
-export function SaveAccountForm({ returnError }: { returnError?: string }) {
+export function SaveAccountForm({
+  emailEnabled,
+  returnError,
+}: {
+  emailEnabled: boolean;
+  returnError?: string;
+}) {
   const [formError, setFormError] = useState<string | undefined>(returnError);
   const [sentTo, setSentTo] = useState<string>();
   const [isPending, startTransition] = useTransition();
@@ -79,7 +89,9 @@ export function SaveAccountForm({ returnError }: { returnError?: string }) {
             اطلاعاتت را نگه دار
           </h1>
           <p className="mt-1 text-body text-ink-muted">
-            یک ایمیل و رمز بگذار تا حساب مهمانت دائمی شود.
+            {emailEnabled
+              ? "یک ایمیل و رمز بگذار تا حساب مهمانت دائمی شود."
+              : "حساب گوگلت را وصل کن تا حساب مهمانت دائمی شود."}
           </p>
         </div>
         {/* Someone who came here to keep their data may decide instead to
@@ -94,55 +106,61 @@ export function SaveAccountForm({ returnError }: { returnError?: string }) {
         همین‌جا می‌ماند. چیزی از نو شروع نمی‌شود.
       </p>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
-        <FormError>{formError}</FormError>
+      {/* One place for every door's failure, so a Google refusal has somewhere
+          to land when the email form is not on the page. */}
+      <FormError>{formError}</FormError>
 
-        <Field label="نام" htmlFor="fullName" error={errors.fullName?.message}>
-          <Input
-            id="fullName"
-            autoComplete="name"
-            aria-invalid={Boolean(errors.fullName)}
-            {...register("fullName")}
-          />
-        </Field>
+      {emailEnabled && (
+        <>
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
+            <Field label="نام" htmlFor="fullName" error={errors.fullName?.message}>
+              <Input
+                id="fullName"
+                autoComplete="name"
+                aria-invalid={Boolean(errors.fullName)}
+                {...register("fullName")}
+              />
+            </Field>
 
-        <Field label="ایمیل" htmlFor="email" error={errors.email?.message}>
-          <Input
-            id="email"
-            type="email"
-            dir="ltr"
-            autoComplete="email"
-            placeholder="name@example.com"
-            aria-invalid={Boolean(errors.email)}
-            {...register("email")}
-          />
-        </Field>
+            <Field label="ایمیل" htmlFor="email" error={errors.email?.message}>
+              <Input
+                id="email"
+                type="email"
+                dir="ltr"
+                autoComplete="email"
+                placeholder="name@example.com"
+                aria-invalid={Boolean(errors.email)}
+                {...register("email")}
+              />
+            </Field>
 
-        <Field
-          label="رمز"
-          htmlFor="password"
-          hint={`دست‌کم ${PASSWORD_MIN_LENGTH_FA} نویسه`}
-          error={errors.password?.message}
-        >
-          <Input
-            id="password"
-            type="password"
-            autoComplete="new-password"
-            aria-invalid={Boolean(errors.password)}
-            {...register("password")}
-          />
-        </Field>
+            <Field
+              label="رمز"
+              htmlFor="password"
+              hint={`دست‌کم ${PASSWORD_MIN_LENGTH_FA} نویسه`}
+              error={errors.password?.message}
+            >
+              <Input
+                id="password"
+                type="password"
+                autoComplete="new-password"
+                aria-invalid={Boolean(errors.password)}
+                {...register("password")}
+              />
+            </Field>
 
-        <Button type="submit" size="lg" disabled={isPending}>
-          {isPending ? "دارم حسابت را می‌سازم…" : "ساخت حساب"}
-        </Button>
-      </form>
+            <Button type="submit" size="lg" disabled={isPending}>
+              {isPending ? "دارم حسابت را می‌سازم…" : "ساخت حساب"}
+            </Button>
+          </form>
 
-      <div className="flex items-center gap-3">
-        <span className="h-px flex-1 bg-hairline" />
-        <span className="text-caption text-ink-muted">یا</span>
-        <span className="h-px flex-1 bg-hairline" />
-      </div>
+          <div className="flex items-center gap-3">
+            <span className="h-px flex-1 bg-hairline" />
+            <span className="text-caption text-ink-muted">یا</span>
+            <span className="h-px flex-1 bg-hairline" />
+          </div>
+        </>
+      )}
 
       {/* Links Google to the account that is already signed in rather than
           signing in with it. The difference is the whole page: signing in
@@ -159,7 +177,7 @@ export function SaveAccountForm({ returnError }: { returnError?: string }) {
       >
         <Button
           type="submit"
-          variant="outline"
+          variant={emailEnabled ? "outline" : "default"}
           size="lg"
           className="w-full"
           disabled={isGooglePending || isPending}
