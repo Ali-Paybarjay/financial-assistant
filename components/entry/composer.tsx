@@ -140,7 +140,7 @@ export function Composer({
           isDropping && "min-[960px]:border-action min-[960px]:bg-action-tint",
         )}
       >
-        <div className="mx-auto flex max-w-[560px] items-center gap-2 px-4 py-2.5 min-[960px]:max-w-none min-[960px]:px-3">
+        <div className="mx-auto flex max-w-[560px] items-center gap-2 px-3.5 pt-2.5 pb-1 min-[960px]:max-w-none min-[960px]:px-3 min-[960px]:pb-2.5">
           <button
             type="button"
             aria-label="عکس فاکتور"
@@ -179,7 +179,9 @@ export function Composer({
             placeholder="بنویس یا دیکته کن"
             // 16px, because anything smaller makes iOS zoom the page on
             // focus and the user lands on a viewport they did not ask for.
-            className="h-[42px] min-w-0 flex-1 rounded-full border border-hairline-strong bg-surface px-4 text-[16px] text-ink outline-none transition-colors placeholder:text-ink-faint focus-visible:border-action"
+            // The v3 package has 14px here; that is the one thing of its
+            // composer not copied.
+            className="h-11 min-w-0 flex-1 rounded-full border border-hairline-strong bg-surface px-4 text-[16px] text-ink outline-none transition-colors placeholder:text-ink-faint focus-visible:border-action"
           />
 
           <button

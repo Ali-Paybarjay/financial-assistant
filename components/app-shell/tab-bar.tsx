@@ -24,9 +24,9 @@ export function TabBar({ workspace }: { workspace: WorkspaceId }) {
   return (
     <nav
       aria-label="ناوبری اصلی"
-      className="border-t border-hairline min-[960px]:hidden"
+      className="pb-[env(safe-area-inset-bottom)] min-[960px]:hidden"
     >
-      <ul className="mx-auto flex max-w-[480px]">
+      <ul className="mx-auto flex max-w-[480px] justify-between px-1.5">
         {items.map((item) => {
           const active = pathname.startsWith(item.href);
           const Icon = item.icon;
@@ -36,12 +36,12 @@ export function TabBar({ workspace }: { workspace: WorkspaceId }) {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex h-14 flex-col items-center justify-center gap-1",
+                  "flex h-14 flex-1 flex-col items-center justify-center gap-1",
                   active ? "text-action" : "text-ink-muted",
                 )}
               >
                 <Icon size={22} weight={active ? "fill" : "regular"} />
-                <span className="text-micro font-medium">{item.label}</span>
+                <span className="text-[10px] font-medium">{item.label}</span>
               </Link>
             </li>
           );
