@@ -82,3 +82,43 @@ export function isIdentityTaken(code: string | null, description: string): boole
     description,
   );
 }
+
+/**
+ * Whether the account we have just been signed in to was made by that very
+ * sign-in.
+ *
+ * It matters on the way back from «sign me into the account I already have».
+ * If Google shows its chooser and a *different* address is picked — one with
+ * no account here — the sign-in still succeeds, because Supabase creates a
+ * user for whoever turns up. The result is an empty account nobody asked for,
+ * standing where the user's own account was supposed to be, and the guest they
+ * agreed to leave would be deleted for it.
+ *
+ * The two timestamps come from the same row and are compared to each other,
+ * never to our clock: an account signing in for the first time has them within
+ * a moment of each other, and one that existed before has a `created_at` from
+ * whenever it was made. Clock skew between here and Postgres cannot make an
+ * old account look new, which is the mistake that would matter — it is the one
+ * that ends in deleting something real.
+ *
+ * `last_sign_in_at` is set on every sign-in, but two of the rows in this
+ * project have none, so there is a fallback: a `created_at` from moments ago
+ * by our own clock. That one can be fooled by skew, which is why it is only
+ * ever half the answer — the delete downstream has its own guard, and being
+ * wrong here costs a retry rather than an account.
+ */
+export function isBrandNewAccount(
+  createdAt: string | undefined,
+  lastSignInAt: string | null | undefined,
+  now: number = Date.now(),
+): boolean {
+  if (!createdAt) return false;
+  const created = Date.parse(createdAt);
+  if (Number.isNaN(created)) return false;
+
+  if (lastSignInAt) {
+    const signedIn = Date.parse(lastSignInAt);
+    if (!Number.isNaN(signedIn)) return Math.abs(signedIn - created) < 60_000;
+  }
+  return Math.abs(now - created) < 60_000;
+}

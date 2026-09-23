@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  isBrandNewAccount,
   isIdentityTaken,
   isSwitch,
   needsGoogleScreen,
@@ -79,5 +80,46 @@ describe("needsGoogleScreen", () => {
     expect(needsGoogleScreen("access_denied")).toBe(false);
     expect(needsGoogleScreen("server_error")).toBe(false);
     expect(needsGoogleScreen(null)).toBe(false);
+  });
+});
+
+/**
+ * Telling «the account you already had» from «an account that did not exist
+ * until you pressed that button».
+ *
+ * Getting this wrong in one direction leaves a guest deleted for an empty
+ * account nobody wanted. Getting it wrong in the other points a delete at
+ * somebody's real account, so the timestamps are compared to each other
+ * rather than to our clock wherever both are there.
+ */
+describe("isBrandNewAccount", () => {
+  const now = Date.parse("2026-09-23T12:00:00Z");
+
+  it("knows an account made by this very sign-in", () => {
+    expect(
+      isBrandNewAccount("2026-09-23T11:59:58Z", "2026-09-23T11:59:58.400Z", now),
+    ).toBe(true);
+  });
+
+  it("leaves an account that existed before alone", () => {
+    // The one that matters: this is somebody's ledger, and the branch behind
+    // this answer deletes things.
+    expect(isBrandNewAccount("2026-03-01T09:00:00Z", "2026-09-23T11:59:58Z", now)).toBe(false);
+  });
+
+  it("is not fooled by a clock that disagrees, when both stamps are there", () => {
+    // Both come from the same row, so an hour of skew moves them together and
+    // an old account still reads as old.
+    expect(isBrandNewAccount("2026-03-01T09:00:00Z", "2026-09-23T13:30:00Z", now)).toBe(false);
+  });
+
+  it("falls back to the clock only when there is no sign-in stamp", () => {
+    expect(isBrandNewAccount("2026-09-23T11:59:40Z", null, now)).toBe(true);
+    expect(isBrandNewAccount("2026-03-01T09:00:00Z", null, now)).toBe(false);
+  });
+
+  it("answers no to nonsense rather than guessing", () => {
+    expect(isBrandNewAccount(undefined, undefined, now)).toBe(false);
+    expect(isBrandNewAccount("not a date", "not a date", now)).toBe(false);
   });
 });

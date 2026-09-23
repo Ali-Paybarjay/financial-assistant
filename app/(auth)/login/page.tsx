@@ -6,6 +6,7 @@ const LINK_ERRORS: Record<string, string> = {
   missing_code: "لینک ناقص بود. دوباره از ایمیلت روی لینک بزن.",
   cancelled: "ورود با گوگل نیمه‌کاره ماند. دوباره بزن یا با ایمیل و رمز وارد شو.",
   google_failed: "ورود با گوگل تمام نشد. دوباره بزن یا با ایمیل و رمز وارد شو.",
+  wrong_account: "آن حساب گوگل اینجا حسابی نداشت. با همان ایمیلی وارد شو که با آن ثبت‌نام کرده بودی.",
 };
 
 export default async function LoginPage({

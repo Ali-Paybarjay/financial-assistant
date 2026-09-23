@@ -1,11 +1,12 @@
 import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { purgeGuest } from "@/lib/guests";
+import { accountIsEmpty, purgeGuest } from "@/lib/guests";
 import {
   LINK_INTENT_COOKIE,
   LINK_INTENT_MAX_AGE,
   type LinkIntent,
+  isBrandNewAccount,
   isIdentityTaken,
   isSwitch,
   needsGoogleScreen,
@@ -114,11 +115,26 @@ export async function GET(request: NextRequest) {
   // There is no need for it either — a successful exchange overwrites the
   // session it finds.
   let leaving: string | null = null;
+  let guestSession: { access_token: string; refresh_token: string } | null = null;
   if (isSwitch(intent)) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (user?.is_anonymous) leaving = user.id;
+    if (user?.is_anonymous) {
+      leaving = user.id;
+      // Kept so the guest can be put back if this trip lands somewhere it was
+      // not meant to. The exchange overwrites the cookie but does not touch
+      // the tokens themselves, so they are still good afterwards.
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session) {
+        guestSession = {
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+        };
+      }
+    }
   }
 
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
@@ -130,6 +146,40 @@ export async function GET(request: NextRequest) {
     if (isSwitch(intent)) return land("/account-exists?error=google_failed");
     if (intent === "link") return land("/save-account?error=google_failed");
     return land("/login?error=expired_link");
+  }
+
+  // The account chooser can be answered wrongly.
+  //
+  // Google opens it whenever it will not decide between several signed-in
+  // accounts, and picking an address with no account here does not fail — it
+  // creates one. So the user presses «sign me into the account I already have»
+  // and arrives, a moment later, at the first step of onboarding in an empty
+  // account, with the guest they agreed to leave already deleted for it.
+  //
+  // None of that is what they asked for, and none of it is kept: the guest
+  // goes back on, the account nobody wanted goes away, and they land back on
+  // the same decision to try again. Pressing the wrong thing at Google now
+  // costs a second, which is what it should have cost all along.
+  if (leaving && data.user && isBrandNewAccount(data.user.created_at, data.user.last_sign_in_at)) {
+    const stray = data.user.id;
+
+    if (guestSession) {
+      await supabase.auth.setSession(guestSession);
+    }
+
+    // Three guards, because this is a delete and the account is not the one
+    // whose session we hold: it has to be new by its own timestamps, it has to
+    // be somebody other than the guest, and it has to be empty. Any doubt and
+    // the row stays — a stray account is a mess, a deleted one is a loss.
+    if (stray !== leaving && (await accountIsEmpty(stray))) {
+      try {
+        await purgeGuest(stray);
+      } catch {
+        // Leaving it behind is untidy, not harmful.
+      }
+    }
+
+    return land(guestSession ? "/account-exists?error=wrong_account" : "/login?error=wrong_account");
   }
 
   // The id has to differ, and it is checked rather than assumed: `leaving` is

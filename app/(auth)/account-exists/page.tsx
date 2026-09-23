@@ -4,6 +4,16 @@ import { createClient } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth";
 import { AccountExistsChoice } from "./choice";
 
+/** What the callback sends back here when the trip to Google did not land. */
+const RETURN_ERRORS: Record<string, string> = {
+  google_failed: "ورود با گوگل تمام نشد. چیزی از دست نرفت — دوباره بزن.",
+  // The chooser was answered with an address that has no account here. Said
+  // plainly, because the obvious reading of «it did not work» would be that
+  // the app is broken, when in fact one line of the list was the wrong one.
+  wrong_account:
+    "آن حساب گوگل اینجا حسابی ندارد، پس حساب قبلی‌ات نبود. چیزی از دست نرفت — دوباره بزن و این بار همان ایمیلی را انتخاب کن که با آن ثبت‌نام کرده بودی.",
+};
+
 /**
  * «This Google account is already yours.»
  *
@@ -72,11 +82,7 @@ export default async function AccountExistsPage({
 
       <AccountExistsChoice
         guestData={guestData}
-        returnError={
-          error === "google_failed"
-            ? "ورود با گوگل تمام نشد. چیزی از دست نرفت — دوباره بزن."
-            : undefined
-        }
+        returnError={RETURN_ERRORS[error ?? ""]}
       />
     </div>
   );
