@@ -215,7 +215,7 @@ export default async function DashboardPage({
       invite={invite}
       availableCategories={availableCategories}
       forecast={forecast}
-      insightCount={insights.length}
+      insights={insights}
       totals={{
         income: totals.income,
         expense: totals.expense,

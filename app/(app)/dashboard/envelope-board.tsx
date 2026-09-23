@@ -6,7 +6,7 @@ import { EnvelopeCard, UnsetEnvelopeCard } from "@/components/dashboard/envelope
 import { BudgetSheet } from "@/components/dashboard/budget-sheet";
 import { BudgetInvite } from "@/components/dashboard/budget-invite";
 import { EnvelopePicker } from "@/components/dashboard/envelope-picker";
-import { dismissInsight } from "@/app/(app)/stream/actions";
+import { dismissInsight } from "@/app/(app)/dashboard/insight-actions";
 import { envelopeState, type EnvelopeRow } from "@/lib/envelopes";
 import type { CurrencyCode, Minor } from "@/lib/money";
 import type { CategoryRow } from "@/lib/supabase/database.types";

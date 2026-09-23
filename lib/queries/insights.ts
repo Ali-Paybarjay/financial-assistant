@@ -4,11 +4,15 @@ import { createClient } from "@/lib/supabase/server";
 import { listTransactions } from "@/lib/queries/transactions";
 import { addDays, type IsoDate } from "@/lib/date";
 import type { Minor } from "@/lib/money";
-import type { TransactionRow } from "@/lib/supabase/database.types";
 
 /**
- * The reads behind the stream. `lib/insights.ts` does the deciding and takes
- * everything as arguments; this is the half that goes to the database.
+ * The reads behind the insights. `lib/insights.ts` does the deciding and
+ * takes everything as arguments; this is the half that goes to the database.
+ *
+ * It fed a «جریان» tab until that was removed — the tab's most visible
+ * content turned out to be an echo of what the composer had just recorded,
+ * which the composer already says and the ledger already holds. The rules
+ * themselves were the part worth keeping, and they live on the board now.
  */
 
 /** Keys the user has waved away. Returned as a set, which is what the rules want. */
@@ -67,12 +71,4 @@ export async function oldestUnconfirmed(): Promise<string | null> {
 
   if (error) throw error;
   return data?.[0]?.created_at ?? null;
-}
-
-/** How many days of recent activity the stream shows beneath the insights. */
-const STREAM_DAYS = 7;
-
-/** The recent rows the stream turns into messages. */
-export async function streamActivity(today: IsoDate): Promise<TransactionRow[]> {
-  return listTransactions({ from: addDays(today, -STREAM_DAYS), to: today });
 }

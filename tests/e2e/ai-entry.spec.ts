@@ -131,26 +131,19 @@ test("a row the user confirmed is not then reported as unconfirmed", async ({
   await page.getByRole("button", { name: /^ثبت( یک)? تراکنش$/ }).click();
   await expect(page.getByText(/ثبت شد\./)).toBeVisible({ timeout: 30_000 });
 
-  await page.goto("/stream");
-  await page.waitForLoadState("networkidle");
-
-  // Scoped to this row on purpose. The fixture account carries older
-  // unconfirmed rows from statement imports, and those are *meant* to stay
-  // doubted — ticking forty lines off a bank file is not the same act as
-  // reading one card. What must not happen is this row joining them.
-  const mine = page.locator("article").filter({ hasText: amount });
-  await expect(mine.first()).toBeVisible();
-  await expect(mine.first()).toContainText("ثبت شد");
-  await expect(mine.filter({ hasText: "مطمئن نیستم" })).toHaveCount(0);
-
-  // Put the account back: the row this wrote is removed.
+  // The ledger is where a saved row is described now that the stream is
+  // gone. A confirmed row carries no «حدس زدم» marking; the fixture account's
+  // older statement rows still do, and are meant to — ticking forty lines off
+  // a bank file is not the same act as reading one card.
   await page.goto("/transactions");
   await page.waitForLoadState("networkidle");
-  await page
-    .getByRole("button")
-    .filter({ hasText: amount })
-    .first()
-    .click();
+  const mine = page.getByRole("button").filter({ hasText: amount }).first();
+  await expect(mine).toBeVisible();
+  await expect(mine).not.toContainText("تأییدنشده");
+  await expect(mine).not.toContainText("حدس زدم");
+
+  // Put the account back: the row this wrote is removed.
+  await mine.click();
   await page.getByRole("button", { name: "حذف" }).click();
   await expect(page.getByText("برگردان")).toBeVisible();
 });

@@ -19,7 +19,7 @@ import { ALPHA_EMAIL as EMAIL, PASSWORD } from "./credentials";
  */
 
 /** Every personal route that renders a list under the bar. */
-const ROUTES = ["/dashboard", "/stream", "/transactions", "/goals", "/settings"];
+const ROUTES = ["/dashboard", "/transactions", "/goals", "/settings"];
 
 async function login(page: Page) {
   await page.goto("/login");

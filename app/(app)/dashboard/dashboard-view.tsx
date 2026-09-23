@@ -3,26 +3,23 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  CaretLeft,
-  CaretRight,
-  ChatTeardropText,
-  MagnifyingGlass,
-} from "@phosphor-icons/react/dist/ssr";
+import { CaretLeft, CaretRight, MagnifyingGlass } from "@phosphor-icons/react/dist/ssr";
 import { Money } from "@/components/money";
 import { KpiCards } from "@/components/dashboard/kpi-cards";
 import { BalanceCard } from "@/components/dashboard/balance-card";
 import { MonthBars } from "@/components/dashboard/month-bars";
+import { InsightList } from "@/components/dashboard/insight-list";
 import { EnvelopeBoard } from "./envelope-board";
 import { EmptyDashboard } from "@/components/dashboard/empty-dashboard";
 import { AccountBalances } from "@/components/dashboard/account-balances";
 import { ReconcileBanner } from "@/components/accounts/reconcile-banner";
 import { TransactionRowItem } from "@/components/transactions/transaction-row";
 import { MissedBanner, MissedReview } from "./missed-review";
-import { faNumber, faPercent } from "@/lib/format";
+import { faPercent } from "@/lib/format";
 import { formatMonthFa, shiftMonth } from "@/lib/date";
 import { requiredMonthly, type GoalWithProgress } from "@/lib/goals";
 import type { EnvelopeRow } from "@/lib/envelopes";
+import type { Insight } from "@/lib/insights";
 import type { CurrencyCode, Minor } from "@/lib/money";
 import type { MonthPoint } from "@/lib/queries/transactions";
 import type { AccountWithBalance } from "@/lib/accounts";
@@ -50,7 +47,7 @@ export function DashboardView({
   invite,
   availableCategories,
   forecast,
-  insightCount,
+  insights,
   totals,
   previousTotals,
   series,
@@ -81,8 +78,8 @@ export function DashboardView({
   availableCategories: CategoryRow[];
   /** Where the month lands at the current rate. null for a month already over. */
   forecast: Minor | null;
-  /** How many things the stream has to say, for the one-line pointer to it. */
-  insightCount: number;
+  /** What the app worked out about this month. Rendered on the board now. */
+  insights: Insight[];
   totals: { income: number; expense: number; unconfirmedCount: number };
   previousTotals: { income: number; expense: number };
   series: MonthPoint[];
@@ -237,6 +234,8 @@ export function DashboardView({
           </>
         ) : (
           <>
+            <InsightList insights={insights} currency={currency} />
+
             <EnvelopeBoard
               envelopes={envelopes}
               suggestions={suggestions}
@@ -247,22 +246,6 @@ export function DashboardView({
               available={availableCategories}
             />
 
-            {/* The yellow banner this replaces said there was something to
-                deal with but not what, and sent every kind of unfinished
-                business to the same page. The stream is where they live now,
-                so the board only has to point. */}
-            {insightCount > 0 && (
-              <Link
-                href="/stream"
-                className="flex items-center gap-2 rounded-control bg-lapis-tint px-3 py-2.5"
-              >
-                <ChatTeardropText size={17} className="shrink-0 text-lapis" />
-                <span className="flex-1 text-caption font-medium text-ink">
-                  {streamHint(insightCount, totals.unconfirmedCount)}
-                </span>
-                <CaretLeft size={14} className="shrink-0 text-lapis" />
-              </Link>
-            )}
 
             <MonthBars series={series} currency={currency} />
 
@@ -390,22 +373,6 @@ export function DashboardView({
         open={missedOpen}
         onOpenChange={setMissedOpen}
       />
-
     </div>
   );
-}
-
-/**
- * The one line the board gives the stream.
- *
- * Counts, not adjectives: «۲ بینش تازه و ۱ حدس تأییدنشده» tells the user
- * whether it is worth the tap, and «چند نکته برایت دارم» does not.
- */
-function streamHint(insightCount: number, unconfirmedCount: number): string {
-  const parts: string[] = [];
-  if (insightCount > 0) parts.push(`${faNumber(insightCount)} بینش تازه`);
-  if (unconfirmedCount > 0) {
-    parts.push(`${faNumber(unconfirmedCount)} حدس تأییدنشده`);
-  }
-  return `${parts.join(" و ")} در جریان هست.`;
 }

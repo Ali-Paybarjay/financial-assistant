@@ -14,6 +14,9 @@ export type DismissResult = { error: string } | { ok: true };
  * and not the rule that produced it. Next week's comparison has a different
  * key and comes back, which is the point: they dismissed a sentence, not a
  * subject.
+ *
+ * It lived under /stream until that tab was removed. The table it writes to
+ * is unchanged.
  */
 export async function dismissInsight(key: string): Promise<DismissResult> {
   if (!key.trim()) return { error: "این پیام شناسه ندارد." };
@@ -30,7 +33,6 @@ export async function dismissInsight(key: string): Promise<DismissResult> {
 
   if (error) return { error: "بسته نشد. دوباره بزن." };
 
-  revalidatePath("/stream");
   revalidatePath("/dashboard");
   return { ok: true };
 }
