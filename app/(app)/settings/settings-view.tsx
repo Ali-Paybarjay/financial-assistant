@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import {
   ArrowsClockwise,
   Bank,
   CaretLeft,
   Coins,
   CreditCard,
+  ListChecks,
   Palette,
   Plus,
   SignOut,
@@ -36,7 +36,13 @@ import {
   CURRENCY_LABELS,
   EMPLOYMENT_OPTIONS,
   RISK_LABELS,
+  type StepMeta,
 } from "@/lib/onboarding/config";
+import {
+  profileFormSchema,
+  type ProfileFormInput,
+  type ProfileFormOutput,
+} from "@/lib/validation/onboarding";
 import { cn } from "@/lib/utils";
 import type { CategoryRow, ProfileRow } from "@/lib/supabase/database.types";
 import {
@@ -56,11 +62,13 @@ export function SettingsView({
   email,
   currency,
   categories,
+  missingSteps,
 }: {
   profile: ProfileRow;
   email: string | null;
   currency: CurrencyCode;
   categories: CategoryRow[];
+  missingSteps: StepMeta[];
 }) {
   const [sheet, setSheet] = useState<Sheet>(null);
   const isGuest = useIsGuest();
@@ -79,6 +87,7 @@ export function SettingsView({
       <h1 className="mb-4 text-title font-semibold text-ink">تنظیمات</h1>
 
       <GuestCard />
+      <CompleteProfileCard steps={missingSteps} />
 
       <button
         type="button"
@@ -319,6 +328,45 @@ function GuestCard() {
   );
 }
 
+/**
+ * The standing invitation to finish what onboarding let them skip.
+ *
+ * Judged on the data rather than on how far they got, so it names exactly
+ * what is empty and goes away on its own once nothing is. It leads with what
+ * they get — a better answer — and never with what they failed to do:
+ * skipping was offered as a first-class choice, and this is not the place to
+ * take that back.
+ */
+function CompleteProfileCard({ steps }: { steps: StepMeta[] }) {
+  if (steps.length === 0) return null;
+
+  return (
+    <div className="mb-4 rounded-card border border-action-tint-edge bg-action-tint p-4">
+      <div className="flex items-center gap-2">
+        <ListChecks size={18} weight="fill" className="shrink-0 text-action" />
+        <h2 className="text-[15px] font-semibold text-ink">تصویر مالی‌ات هنوز کامل نیست</h2>
+      </div>
+      <p className="mt-1.5 text-caption text-ink-muted">
+        هرچه بیشتر از وضعیتت بدانم، دقیق‌تر می‌توانم بگویم آخر ماه چقدر برایت می‌ماند.
+        هر وقت خواستی، از همین‌جا ادامه بده.
+      </p>
+      <ul className="mt-3 flex flex-wrap gap-1.5">
+        {steps.map((step) => (
+          <li
+            key={step.step}
+            className="inline-flex h-7 items-center rounded-full bg-surface px-2.5 text-caption font-medium text-ink-muted"
+          >
+            {step.kicker}
+          </li>
+        ))}
+      </ul>
+      <Button asChild size="default" className="mt-3 w-full">
+        <Link href={`/onboarding/${steps[0].step}`}>تکمیل اطلاعات</Link>
+      </Button>
+    </div>
+  );
+}
+
 function SignOutRow() {
   const isGuest = useIsGuest();
   const [confirming, setConfirming] = useState(false);
@@ -355,14 +403,6 @@ function SignOutRow() {
   );
 }
 
-const profileFormSchema = z.object({
-  fullName: z.string().trim().min(2, "نامت را بنویس").max(80),
-  countryCode: z.enum(COUNTRIES.map((country) => country.code)),
-  birthYear: z.number().int().min(1930).max(new Date().getFullYear() - 13),
-  employmentStatus: z.enum(EMPLOYMENT_OPTIONS.map((option) => option.value)),
-});
-type ProfileForm = z.infer<typeof profileFormSchema>;
-
 function ProfileSheet({
   open,
   onClose,
@@ -380,14 +420,15 @@ function ProfileSheet({
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<ProfileForm>({
+  } = useForm<ProfileFormInput, unknown, ProfileFormOutput>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
       fullName: profile.full_name ?? "",
-      countryCode: (profile.country_code as ProfileForm["countryCode"]) ?? "CA",
-      birthYear: profile.birth_year ?? 1990,
-      employmentStatus:
-        (profile.employment_status as ProfileForm["employmentStatus"]) ?? "employed",
+      countryCode: (profile.country_code as ProfileFormInput["countryCode"]) ?? "CA",
+      // "" is what an unanswered optional field looks like to the DOM; the
+      // form schema turns it back into null. A made-up 1990 would be an answer.
+      birthYear: profile.birth_year ?? "",
+      employmentStatus: profile.employment_status ?? "",
     },
   });
 
@@ -423,18 +464,19 @@ function ProfileSheet({
           </NativeSelect>
         </Field>
 
-        <Field label="سال تولد" htmlFor="s-birth" error={errors.birthYear?.message}>
+        <Field label="سال تولد" htmlFor="s-birth" optional error={errors.birthYear?.message}>
           <Input
             id="s-birth"
             dir="ltr"
             inputMode="numeric"
             className="tabular-nums"
-            {...register("birthYear", { valueAsNumber: true })}
+            {...register("birthYear")}
           />
         </Field>
 
-        <Field label="وضعیت اشتغال" htmlFor="s-employment">
+        <Field label="وضعیت اشتغال" htmlFor="s-employment" optional>
           <NativeSelect id="s-employment" {...register("employmentStatus")}>
+            <option value="">بعداً می‌گویم</option>
             {EMPLOYMENT_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}

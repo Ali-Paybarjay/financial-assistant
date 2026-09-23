@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/native-select";
 import { AmountInput } from "@/components/amount-input";
 import { Field, FormError } from "@/components/field";
-import { StepShell, SaveReassurance } from "@/components/onboarding/step-shell";
+import { StepShell } from "@/components/onboarding/step-shell";
 import { SkipButton } from "@/components/onboarding/skip-button";
 import { formatMoney, toMinor, type CurrencyCode } from "@/lib/money";
 import { GOAL_TYPE_OPTIONS, type StepMeta } from "@/lib/onboarding/config";
@@ -89,7 +89,6 @@ export function Step5({
               {isPending ? "دارم ذخیره می‌کنم…" : "ادامه"}
             </Button>
             <SkipButton step={meta.step} />
-            <SaveReassurance />
           </>
         }
       >

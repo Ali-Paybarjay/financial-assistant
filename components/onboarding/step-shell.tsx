@@ -4,6 +4,8 @@ import Link from "next/link";
 import { CaretRight, CheckCircle, Warning } from "@phosphor-icons/react/dist/ssr";
 import { TOTAL_STEPS } from "@/lib/onboarding/config";
 import { ExitButton } from "@/components/onboarding/exit-button";
+import { PostponeButton } from "@/components/onboarding/postpone-button";
+import { useOnboardingCompleted } from "@/components/onboarding/onboarding-provider";
 import { useIsGuest } from "@/components/guest/guest-provider";
 import { faNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -14,7 +16,14 @@ type StepShellProps = {
   title: string;
   subtitle?: string;
   children: React.ReactNode;
+  /** The step's own actions: «ادامه», and «فعلاً رد کن» where there is one. */
   footer: React.ReactNode;
+  /**
+   * Replaces the default way out of the flow. Step 1 needs to: its way out has
+   * to submit the form first, because the name is the one answer the flow does
+   * not let anyone leave without.
+   */
+  postpone?: React.ReactNode;
 };
 
 export function StepShell({
@@ -24,7 +33,13 @@ export function StepShell({
   subtitle,
   children,
   footer,
+  postpone,
 }: StepShellProps) {
+  // Someone back from settings to fill in a gap is not in a flow they need a
+  // way out of; the header already offers the way back.
+  const completed = useOnboardingCompleted();
+  const leave = postpone !== undefined ? postpone : completed ? null : <PostponeButton />;
+
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-[480px] flex-col bg-surface px-4 pb-6 pt-4">
       <header className="flex items-center justify-between gap-2">
@@ -75,7 +90,11 @@ export function StepShell({
 
       <div className="mt-6 flex-1">{children}</div>
 
-      <div className="mt-8 flex flex-col gap-3">{footer}</div>
+      <div className="mt-8 flex flex-col gap-3">
+        {footer}
+        {leave}
+        <SaveReassurance />
+      </div>
     </div>
   );
 }
@@ -84,7 +103,7 @@ export function StepShell({
  *  people abandon a multi-step form. A guest gets the honest version of it:
  *  their answers survive the next step, not the session, and promising them
  *  otherwise here would be the app's own copy lying to them. */
-export function SaveReassurance() {
+function SaveReassurance() {
   const isGuest = useIsGuest();
 
   if (isGuest) {

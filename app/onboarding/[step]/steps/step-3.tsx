@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AmountInput } from "@/components/amount-input";
 import { FormError } from "@/components/field";
-import { StepShell, SaveReassurance } from "@/components/onboarding/step-shell";
+import { StepShell } from "@/components/onboarding/step-shell";
+import { SkipButton } from "@/components/onboarding/skip-button";
 import { formatMoney, toMinor, type CurrencyCode } from "@/lib/money";
 import { RECURRING_SUGGESTIONS, type StepMeta } from "@/lib/onboarding/config";
 import { step3Schema, type Step3Input } from "@/lib/validation/onboarding";
@@ -78,7 +79,7 @@ export function Step3({
             <Button type="submit" size="lg" disabled={isPending}>
               {isPending ? "دارم ذخیره می‌کنم…" : "ادامه"}
             </Button>
-            <SaveReassurance />
+            <SkipButton step={meta.step} />
           </>
         }
       >

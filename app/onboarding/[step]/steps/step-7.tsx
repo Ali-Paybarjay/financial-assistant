@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { AmountInput } from "@/components/amount-input";
 import { NativeSelect } from "@/components/native-select";
 import { Field, FormError } from "@/components/field";
-import { StepShell, SaveReassurance } from "@/components/onboarding/step-shell";
+import { StepShell } from "@/components/onboarding/step-shell";
 import { OptionCard } from "@/components/onboarding/option-card";
 import { SkipButton } from "@/components/onboarding/skip-button";
 import { formatMoney, toMinor, type CurrencyCode } from "@/lib/money";
@@ -73,7 +73,6 @@ export function Step7({
               {isPending ? "دارم ذخیره می‌کنم…" : "تمام"}
             </Button>
             <SkipButton step={meta.step} />
-            <SaveReassurance />
           </>
         }
       >

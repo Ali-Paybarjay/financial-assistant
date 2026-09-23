@@ -1,10 +1,14 @@
 import { requireViewer } from "@/lib/auth";
 import { listCategories } from "@/lib/queries/categories";
+import { listMissingOnboardingSteps } from "@/lib/queries/onboarding";
 import { SettingsView } from "./settings-view";
 
 export default async function SettingsPage() {
   const viewer = await requireViewer();
-  const categories = await listCategories();
+  const [categories, missingSteps] = await Promise.all([
+    listCategories(),
+    listMissingOnboardingSteps(viewer.profile),
+  ]);
 
   return (
     <SettingsView
@@ -12,6 +16,7 @@ export default async function SettingsPage() {
       email={viewer.email}
       currency={viewer.currency}
       categories={categories}
+      missingSteps={missingSteps}
     />
   );
 }
