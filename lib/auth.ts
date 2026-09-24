@@ -63,8 +63,12 @@ export const getSessionUser = cache(async (): Promise<User | null> => {
  * The single way a server component or action gets the current user. Throws the
  * user back to /login rather than returning null, so callers never have to
  * handle a signed-out branch they cannot recover from anyway.
+ *
+ * Memoized for the same reason getSessionUser is: the layout asks, and then
+ * the page under it asks again. Without this every route selects the profile
+ * row twice — once through the layout's own gate and once here.
  */
-export async function requireViewer(): Promise<Viewer> {
+export const requireViewer = cache(async function requireViewer(): Promise<Viewer> {
   const user = await getSessionUser();
 
   if (!user) redirect("/login");
@@ -91,4 +95,4 @@ export async function requireViewer(): Promise<Viewer> {
     isGuest: user.is_anonymous === true,
     identity: { fullName: providerFullName(user) },
   };
-}
+});
