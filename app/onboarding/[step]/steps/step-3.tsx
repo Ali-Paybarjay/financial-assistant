@@ -68,7 +68,7 @@ export function Step3({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate>
+    <form method="post" onSubmit={handleSubmit(onSubmit)} noValidate>
       <StepShell
         step={meta.step}
         kicker={meta.kicker}

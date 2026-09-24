@@ -130,7 +130,7 @@ export function Step1({
   );
 
   return (
-    <form onSubmit={handleSubmit((values) => submit(values, false))} noValidate>
+    <form method="post" onSubmit={handleSubmit((values) => submit(values, false))} noValidate>
       <StepShell
         step={meta.step}
         kicker={meta.kicker}
