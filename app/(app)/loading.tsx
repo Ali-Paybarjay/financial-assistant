@@ -9,16 +9,16 @@
 export default function AppLoading() {
   return (
     <div
-      className="mx-auto flex w-full max-w-[560px] flex-1 animate-pulse flex-col px-4 py-4"
+      className="mx-auto flex w-full max-w-[560px] flex-1 animate-pulse flex-col px-4 py-4 min-[960px]:my-auto min-[960px]:flex-none"
       aria-busy
     >
       <span className="sr-only">در حال بارگذاری</span>
 
       <div className="h-[66px] rounded-card bg-surface" />
 
-      <div className="flex-1" />
+      <div className="flex-1 min-[960px]:hidden" />
 
-      <div className="h-7 w-40 rounded bg-surface" />
+      <div className="h-7 w-40 rounded bg-surface min-[960px]:mt-8" />
       <div className="mt-2 h-3 w-56 rounded bg-surface" />
       <div className="mt-3 h-[100px] rounded-well bg-surface" />
       <div className="mt-3 h-[52px] rounded-control bg-surface" />
@@ -28,7 +28,7 @@ export default function AppLoading() {
         <div className="h-[52px] flex-1 rounded-control bg-surface" />
       </div>
 
-      <div className="flex-[0.7]" />
+      <div className="flex-[0.7] min-[960px]:hidden" />
     </div>
   );
 }

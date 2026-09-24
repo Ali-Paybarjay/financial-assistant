@@ -73,14 +73,21 @@ export function CaptureView({
       }}
       className={cn(
         "mx-auto flex w-full max-w-[560px] flex-1 flex-col px-4 py-4 transition-colors",
+        // From 960px the whole column centres as one block instead: there is
+        // no thumb to reach and no keyboard to leave room for, so pinning the
+        // figure to the top of a tall window only strands it above 250px of
+        // nothing.
+        "min-[960px]:my-auto min-[960px]:flex-none",
         isDropping && "bg-action-tint",
       )}
     >
       <MonthLine remaining={remaining} currency={data.currency} />
 
-      <div className="flex-1" />
+      {/* The phone puts the field in the thumb's half of the screen. */}
+      <div className="flex-1 min-[960px]:hidden" />
 
-      <h1 className="font-display text-question text-ink">
+      {/* The gap the hidden spacer was providing, once it is hidden. */}
+      <h1 className="font-display text-question text-ink min-[960px]:mt-8">
         <label htmlFor="capture-text">چه خریدی؟</label>
       </h1>
       <p className="mt-1.5 text-caption text-ink-muted">
@@ -185,7 +192,7 @@ export function CaptureView({
         }}
       />
 
-      <div className="flex-[0.7]" />
+      <div className="flex-[0.7] min-[960px]:hidden" />
 
       <CaptureSheet
         state={capture.sheet}
