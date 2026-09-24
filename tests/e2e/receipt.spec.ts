@@ -21,7 +21,8 @@ async function login(page: Page) {
   await page.getByLabel("ایمیل").fill(EMAIL);
   await page.getByLabel("رمز").fill(PASSWORD);
   await page.getByRole("button", { name: "ورود", exact: true }).click();
-  // The hub is the landing page now; onboarding still intercepts a new account.
+  // The capture screen is the landing page; onboarding still intercepts a new
+  // account.
   await page.waitForURL(/\/($|onboarding)/);
 }
 
@@ -31,12 +32,17 @@ test("a receipt photo yields its total, not its subtotal or its change", async (
   test.setTimeout(120_000);
 
   await login(page);
-  await page.goto("/dashboard");
-  await page.getByRole("button", { name: "ثبت هزینه" }).first().click();
-  await page.getByRole("tab", { name: "عکس" }).click();
+  await page.goto("/");
+  await expect(page.getByLabel("چه خریدی؟")).toBeVisible({ timeout: 30_000 });
 
-  // Drive the hidden gallery input directly; a real camera is not available.
-  await page.locator('input[type="file"]:not([capture])').setInputFiles(RECEIPT);
+  // Drive the hidden gallery input directly; a real camera is not available,
+  // and clicking «از گالری» would open a native file dialog Playwright cannot
+  // reach. `.first()` is the capture screen's own — ReceiptTab mounts two
+  // more once the sheet is open.
+  await page
+    .locator('input[type="file"]:not([capture])')
+    .first()
+    .setInputFiles(RECEIPT);
 
   await expect(page.getByText("کارت تأیید")).toBeVisible({ timeout: 90_000 });
 
