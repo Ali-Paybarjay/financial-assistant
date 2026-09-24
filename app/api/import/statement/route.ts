@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { requireViewer } from "@/lib/auth";
+import { getViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { listCategories, categoryIdsBySlug } from "@/lib/queries/categories";
@@ -38,7 +38,16 @@ const bodySchema = z.object({ importId: z.string().uuid() });
 const GENERIC_ERROR = "خواندن صورت‌حساب انجام نشد. دوباره بزن.";
 
 export async function POST(request: NextRequest) {
-  const viewer = await requireViewer();
+  const viewer = await getViewer();
+  if (!viewer) {
+    // Not requireViewer: a redirect here answers fetch() with a 307 to /login,
+    // whose HTML then breaks response.json() and the caller reports a dropped
+    // connection instead of an expired session.
+    return NextResponse.json(
+      { ok: false, error: "نشستت تمام شده. دوباره وارد شو." },
+      { status: 401 },
+    );
+  }
 
   const parsedBody = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsedBody.success) {

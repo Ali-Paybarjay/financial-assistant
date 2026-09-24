@@ -60,18 +60,21 @@ export const getSessionUser = cache(async (): Promise<User | null> => {
 });
 
 /**
- * The single way a server component or action gets the current user. Throws the
- * user back to /login rather than returning null, so callers never have to
- * handle a signed-out branch they cannot recover from anyway.
+ * The current user, or null when there is not one.
+ *
+ * Route handlers want this rather than requireViewer: a handler that redirects
+ * answers `fetch()` with a 307 to /login, whose HTML then breaks the caller's
+ * `response.json()` — so an expired session reaches the user as «اتصال قطع شد»
+ * when what happened was that they need to sign in again.
  *
  * Memoized for the same reason getSessionUser is: the layout asks, and then
  * the page under it asks again. Without this every route selects the profile
  * row twice — once through the layout's own gate and once here.
  */
-export const requireViewer = cache(async function requireViewer(): Promise<Viewer> {
+export const getViewer = cache(async function getViewer(): Promise<Viewer | null> {
   const user = await getSessionUser();
 
-  if (!user) redirect("/login");
+  if (!user) return null;
 
   const supabase = await createClient();
 
@@ -81,7 +84,7 @@ export const requireViewer = cache(async function requireViewer(): Promise<Viewe
     .eq("id", user.id)
     .single();
 
-  if (!profile) redirect("/login");
+  if (!profile) return null;
 
   return {
     userId: user.id,
@@ -96,3 +99,14 @@ export const requireViewer = cache(async function requireViewer(): Promise<Viewe
     identity: { fullName: providerFullName(user) },
   };
 });
+
+/**
+ * The single way a server component or action gets the current user. Throws the
+ * user back to /login rather than returning null, so callers never have to
+ * handle a signed-out branch they cannot recover from anyway.
+ */
+export async function requireViewer(): Promise<Viewer> {
+  const viewer = await getViewer();
+  if (!viewer) redirect("/login");
+  return viewer;
+}
