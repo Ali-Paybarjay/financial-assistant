@@ -6,12 +6,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FormError } from "@/components/field";
+import { useHydrated } from "@/components/use-hydrated";
 import { PASSWORD_MIN_LENGTH_FA, type ResetPasswordInput, resetPasswordSchema } from "@/lib/validation/auth";
 import { resetPassword } from "../actions";
 
 export function ResetPasswordForm() {
   const [formError, setFormError] = useState<string>();
   const [isPending, startTransition] = useTransition();
+  const hydrated = useHydrated();
 
   const {
     register,
@@ -39,7 +41,12 @@ export function ResetPasswordForm() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
+      <form
+        method="post"
+        onSubmit={handleSubmit(onSubmit)}
+        className="flex flex-col gap-4"
+        noValidate
+      >
         <FormError>{formError}</FormError>
 
         <Field
@@ -57,7 +64,7 @@ export function ResetPasswordForm() {
           />
         </Field>
 
-        <Button type="submit" size="lg" disabled={isPending}>
+        <Button type="submit" size="lg" disabled={isPending || !hydrated}>
           {isPending ? "دارم ذخیره می‌کنم…" : "ذخیره و ورود"}
         </Button>
       </form>

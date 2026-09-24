@@ -8,6 +8,7 @@ import { EnvelopeSimple } from "@phosphor-icons/react/dist/ssr";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FormError } from "@/components/field";
+import { useHydrated } from "@/components/use-hydrated";
 import { PASSWORD_MIN_LENGTH_FA, type SignupInput, signupSchema } from "@/lib/validation/auth";
 import { signup } from "../actions";
 
@@ -15,6 +16,7 @@ export function SignupForm() {
   const [formError, setFormError] = useState<string>();
   const [sentTo, setSentTo] = useState<string>();
   const [isPending, startTransition] = useTransition();
+  const hydrated = useHydrated();
 
   const {
     register,
@@ -64,7 +66,12 @@ export function SignupForm() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
+      <form
+        method="post"
+        onSubmit={handleSubmit(onSubmit)}
+        className="flex flex-col gap-4"
+        noValidate
+      >
         <FormError>{formError}</FormError>
 
         <Field label="نام" htmlFor="fullName" error={errors.fullName?.message}>
@@ -103,7 +110,7 @@ export function SignupForm() {
           />
         </Field>
 
-        <Button type="submit" size="lg" disabled={isPending}>
+        <Button type="submit" size="lg" disabled={isPending || !hydrated}>
           {isPending ? "دارم حسابت را می‌سازم…" : "ثبت‌نام"}
         </Button>
       </form>

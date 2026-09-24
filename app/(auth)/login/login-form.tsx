@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FormError } from "@/components/field";
+import { useHydrated } from "@/components/use-hydrated";
 import { loginSchema, type LoginInput } from "@/lib/validation/auth";
 import { continueAsGuest, login, signInWithGoogle } from "../actions";
 
@@ -21,6 +22,7 @@ import { continueAsGuest, login, signInWithGoogle } from "../actions";
 export function LoginForm({ showPassword }: { showPassword: boolean }) {
   const [formError, setFormError] = useState<string>();
   const [isPending, startTransition] = useTransition();
+  const hydrated = useHydrated();
   const [isGooglePending, startGoogleTransition] = useTransition();
   const [isGuestPending, startGuestTransition] = useTransition();
 
@@ -56,7 +58,12 @@ export function LoginForm({ showPassword }: { showPassword: boolean }) {
 
       {showPassword && (
         <>
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
+          <form
+            method="post"
+            onSubmit={handleSubmit(onSubmit)}
+            className="flex flex-col gap-4"
+            noValidate
+          >
             <Field label="ایمیل" htmlFor="email" error={errors.email?.message}>
               <Input
                 id="email"
@@ -79,7 +86,7 @@ export function LoginForm({ showPassword }: { showPassword: boolean }) {
               />
             </Field>
 
-            <Button type="submit" size="lg" disabled={isPending}>
+            <Button type="submit" size="lg" disabled={isPending || !hydrated}>
               {isPending ? "دارم واردت می‌کنم…" : "ورود"}
             </Button>
           </form>
