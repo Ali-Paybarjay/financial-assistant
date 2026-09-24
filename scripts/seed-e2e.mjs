@@ -70,7 +70,7 @@ const monthStart = (back) => {
 
 // ---------------------------------------------------------------- users ---
 
-async function recreate(email, fullName) {
+async function recreate(email, fullName, { onboarded }) {
   // listUsers is paged; the fixture database is small, one page is plenty.
   const { data: list, error } = await db.auth.admin.listUsers({ perPage: 1000 });
   if (error) throw new Error(`listUsers: ${error.message}`);
@@ -89,8 +89,14 @@ async function recreate(email, fullName) {
   ok(`create ${email}`, created);
   const id = created.data.user.id;
 
-  // handle_new_user() made the profile row on insert; this finishes it, so the
-  // onboarding gate lets the suite through to the app.
+  // handle_new_user() made the profile row on insert; this finishes it.
+  //
+  // `onboarded` is the difference between the two fixtures and it is load
+  // bearing both ways. alpha is through the gate, so the suite can reach the
+  // app at all. beta is deliberately not: onboarding.spec needs an account
+  // that has never finished — that is its whole subject — and isolation.spec
+  // leans on the same fact when it checks that a half-set-up account is not
+  // handed someone else's figures on the way past a redirect.
   ok(
     `profile ${email}`,
     await db
@@ -100,8 +106,8 @@ async function recreate(email, fullName) {
         country_code: "CA",
         timezone: "America/Toronto",
         base_currency: "CAD",
-        onboarding_step: 7,
-        onboarding_completed_at: new Date().toISOString(),
+        onboarding_step: onboarded ? 7 : 0,
+        onboarding_completed_at: onboarded ? new Date().toISOString() : null,
       })
       .eq("id", id),
   );
@@ -149,6 +155,26 @@ async function seedAlpha(userId) {
     }),
   );
 
+  // An auto-posting bill, so post_recurring_for_month() has something to post.
+  // recurring.spec calls it for a month in 2020 and asserts the first call
+  // inserted something — without a bill here, its second call returning zero
+  // would prove nothing, and the spec says so itself.
+  ok(
+    "recurring",
+    await db.from("recurring_expenses").insert({
+      user_id: userId,
+      title: "اجارهٔ خانه",
+      category_id: cat.housing,
+      amount: 177_700,
+      currency: "CAD",
+      frequency: "monthly",
+      due_day: 1,
+      is_active: true,
+      auto_post: true,
+      account_id: accountId,
+    }),
+  );
+
   ok(
     "goal",
     await db.from("goals").insert({
@@ -181,6 +207,9 @@ async function seedAlpha(userId) {
       occurred_on: on(back, day),
     });
 
+  // None of these amounts is one a spec types. A seeded row worth exactly
+  // $45.00 makes ai-entry's getByText("$45.00") ambiguous, and the failure
+  // reads as the model having got it wrong.
   const transactions = [
     // This month, confirmed.
     spend(0, 3, "groceries", 8_500, "Loblaws"),
@@ -200,14 +229,14 @@ async function seedAlpha(userId) {
     // which is what lets the board say so. tests/e2e/dashboard.spec.ts asserts
     // exactly this.
     {
-      ...spend(0, 9, "groceries", 4_500, null),
+      ...spend(0, 9, "groceries", 4_470, null),
       source: "text",
       is_confirmed: false,
       needs_review: ["category"],
       ai_confidence: 0.55,
     },
     {
-      ...spend(0, 15, "groceries", 3_200, null),
+      ...spend(0, 15, "groceries", 3_180, null),
       source: "text",
       is_confirmed: false,
       needs_review: ["category"],
@@ -243,11 +272,12 @@ async function seedAlpha(userId) {
 
 // ------------------------------------------------------------------ run ---
 
-const alphaId = await recreate(ALPHA, "کاربر الف");
+const alphaId = await recreate(ALPHA, "کاربر الف", { onboarded: true });
 const rows = await seedAlpha(alphaId);
 console.log(`${ALPHA}: ${rows} transactions, 1 account, 1 goal, 1 budget`);
 
-await recreate(BETA, "کاربر ب");
-// Deliberately empty: tests/e2e/isolation.spec.ts needs a second account with
-// nothing in it, so that «sees nothing of the first user» means something.
-console.log(`${BETA}: empty, on purpose`);
+await recreate(BETA, "کاربر ب", { onboarded: false });
+// Deliberately empty and deliberately mid-onboarding: isolation.spec needs a
+// second account with nothing in it, and onboarding.spec needs one that has
+// never finished.
+console.log(`${BETA}: empty and un-onboarded, on purpose`);
