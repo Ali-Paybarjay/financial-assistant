@@ -2,18 +2,18 @@ import { expect, test, type Page } from "@playwright/test";
 import { ALPHA_EMAIL as EMAIL, PASSWORD } from "./credentials";
 
 /**
- * «/» is a chooser, and for someone who only ever opens one side it is a tap
- * paid on every visit to answer a question already answered. It can be told
- * to stop asking.
+ * Opening the app lands on the capture screen. Someone whose reason for being
+ * here is a trip rather than their own month can point it at «دنگ و دونگ»
+ * instead, and point it back.
  *
  * This is worth a test of its own because it changes where the app *starts*.
- * Every other spec signs in and waits for the hub; if the redirect leaks —
- * fires when it should not, or cannot be turned off — it does not break one
- * feature, it breaks the way into all of them.
+ * Every other spec signs in and waits for the front door; if the redirect
+ * leaks — fires when it should not, or cannot be turned off — it does not
+ * break one feature, it breaks the way into all of them.
  *
  * The reset runs in afterEach rather than at the end of the test body, so a
- * failure halfway through cannot leave the fixture account with a default
- * that every other spec then trips over.
+ * failure halfway through cannot leave the fixture account pointed at a
+ * workspace that every other spec then trips over.
  */
 
 async function login(page: Page) {
@@ -24,48 +24,59 @@ async function login(page: Page) {
   await page.waitForURL(/\/($|onboarding|dashboard)/);
 }
 
+/** The same switch as on the chooser, where it can be found again later. */
+const settingsToggle = (page: Page) => page.getByLabel(/باز شدن اپ روی/);
+
 test.afterEach(async ({ page }) => {
-  // «?choose» always shows the chooser, whatever is remembered.
-  await page.goto("/?choose=1");
-  const undo = page.getByRole("button", { name: "هر بار بپرس" });
-  if ((await undo.count()) > 0) await undo.click();
-  await expect(page.getByText("همیشه برو به")).toBeVisible();
+  await page.goto("/settings");
+  const toggle = settingsToggle(page);
+  if (await toggle.isChecked()) await toggle.click();
+  await expect(toggle).not.toBeChecked();
 });
 
-test("the hub can be told to stop asking, and told to start again", async ({
+test("opening the app can be pointed at the trip side, and pointed back", async ({
   page,
 }) => {
   test.setTimeout(120_000);
 
   await login(page);
 
-  // By default it asks: both sides are offered and nothing is remembered.
-  await page.goto("/?choose=1");
-  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(page.getByText("همیشه برو به")).toBeVisible();
+  // By default the app opens on the field.
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByLabel("چه خریدی؟")).toBeVisible({ timeout: 30_000 });
 
-  await page
-    .getByRole("button", { name: "حسابداری شخصی", exact: true })
-    .click();
-  await expect(page.getByText("یک‌راست به")).toBeVisible();
+  await page.goto("/switch");
+  const remember = page.getByLabel(/یک‌راست برو به/);
+  await expect(remember).not.toBeChecked();
+  await remember.click();
+  await expect(remember).toBeChecked();
 
-  // Now «/» goes straight through rather than asking again.
+  // Now opening the app goes straight to the trip side instead. The field
+  // writes to the personal ledger, so someone who asked to start in a trip
+  // must not be handed it.
   await page.goto("/");
-  await page.waitForURL(/\/dashboard/);
+  await page.waitForURL(/\/dong$/);
 
-  // And the switch in the header still reaches the chooser, rather than
-  // bouncing straight back to the workspace it was pressed in.
-  await page.getByRole("link", { name: /تعویض/ }).click();
-  await page.waitForURL(/\?choose=/);
-  await expect(page.getByText("یک‌راست به")).toBeVisible();
+  // The switch in the header still reaches the chooser, rather than bouncing
+  // straight back into the workspace it was pressed in. Filtered to the
+  // visible one: it is rendered twice — in the sidebar and in the phone's
+  // header strip — and at 375px the sidebar copy is in the DOM but hidden,
+  // and it is the one that comes first.
+  await page
+    .locator('a[href="/switch"]')
+    .filter({ visible: true })
+    .first()
+    .click();
+  await page.waitForURL(/\/switch$/);
 
   // Settings is where someone would look to undo it.
   await page.goto("/settings");
-  const toggle = page.getByLabel("هر بار بپرس کدام بخش");
-  await expect(toggle).not.toBeChecked();
-  await toggle.click();
+  const toggle = settingsToggle(page);
   await expect(toggle).toBeChecked();
+  await toggle.click();
+  await expect(toggle).not.toBeChecked();
 
+  // …and the field is the front door again.
   await page.goto("/");
-  await expect(page.getByText("همیشه برو به")).toBeVisible();
+  await expect(page.getByLabel("چه خریدی؟")).toBeVisible();
 });

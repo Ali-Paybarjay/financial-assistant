@@ -34,7 +34,7 @@ async function login(page: Page) {
   await page.getByLabel("ایمیل").fill(EMAIL);
   await page.getByLabel("رمز").fill(PASSWORD);
   await page.getByRole("button", { name: "ورود", exact: true }).click();
-  // The hub is the landing page now; onboarding still intercepts a new account.
+  // The capture screen is the landing page; onboarding still intercepts a new account.
   await page.waitForURL(/\/($|onboarding)/);
 }
 
@@ -77,7 +77,12 @@ async function upload(page: Page) {
   await page.goto("/import");
   await clearOpenImport(page);
 
-  await page.locator('input[type="file"]').setInputFiles(STATEMENT, { timeout: 20_000 });
+  // `[multiple]` is the uploader's own. The composer bar is on this page too
+  // and carries a single-file camera input, so an unscoped selector matches
+  // two elements and strict mode refuses.
+  await page
+    .locator('input[type="file"][multiple]')
+    .setInputFiles(STATEMENT, { timeout: 20_000 });
   await page.getByRole("button", { name: "بخوان" }).click({ timeout: 20_000 });
   await expect(page.getByText("گزارش صورت‌حساب")).toBeVisible({ timeout: 180_000 });
 }

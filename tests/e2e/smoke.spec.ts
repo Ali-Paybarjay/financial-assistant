@@ -66,10 +66,15 @@ const PUBLIC_ROUTES: Route[] = [
 const SIGNED_IN_ROUTES: Route[] = [
   {
     path: "/",
-    // The hub's heading is «سلام <name>», which is the one thing on it that
-    // depends on the account. Its two boxes do not.
+    shows: "the capture field",
+    landmark: (page) => page.getByLabel("چه خریدی؟"),
+  },
+  {
+    path: "/switch",
+    // The chooser's heading is «سلام <name>», which is the one thing on it
+    // that depends on the account. Its two boxes do not.
     shows: "the two workspace boxes",
-    landmark: (page) => page.locator('main a[href="/dashboard"]'),
+    landmark: (page) => page.locator('main a[href="/dong"]'),
   },
   {
     path: "/dashboard",

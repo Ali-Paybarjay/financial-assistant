@@ -22,29 +22,39 @@
  *
  * `profiles.default_workspace` is not a counter-example, and the difference
  * is worth being precise about because it looks like one. What it stores is
- * the default *destination of «/»* — one route's redirect target — and not
- * the current workspace. Nothing reads it to decide what side a page belongs
- * to; `workspaceForPath` is still the only thing that answers that, still
- * from the url, still with nothing remembered. The chooser at «/» is a
- * question, and for someone who only ever opens one side it is a question
- * they answer identically every time. Remembering their answer to it changes
- * where one link goes; it does not make the current workspace stateful.
+ * whether opening the app should go straight to «دنگ و دونگ» — one route's
+ * redirect target — and not the current workspace. Nothing reads it to decide
+ * what side a page belongs to; `workspaceForPath` is still the only thing that
+ * answers that, still from the url, still with nothing remembered. Remembering
+ * an answer changes where one link goes; it does not make the current
+ * workspace stateful.
  */
 
 export type WorkspaceId = "personal" | "dong";
 
-/** The chooser. Not a workspace itself — it is where you stand between them. */
-export const HUB_PATH = "/";
+/**
+ * The chooser. Not a workspace itself — it is where you stand between them.
+ *
+ * It has its own address rather than living at «/» with a query string. It
+ * used to need one, because «/» redirected to a remembered workspace and a
+ * plain link there would bounce you back where you came from. «/» is the
+ * capture screen now and redirects nobody who has not asked for it, so the
+ * second address that existed to escape the first one is gone.
+ */
+export const HUB_PATH = "/switch";
 
 /**
- * The chooser, asked for on purpose.
+ * The app's home, and the screen for recording something.
  *
- * «/» redirects to profiles.default_workspace when one is set, so a plain
- * link to HUB_PATH from inside a workspace would bounce the user straight
- * back where they came from — the switch would look broken. This is the
- * address that always shows the choice.
+ * Personal — it writes to the personal ledger — but not a page the docked bar
+ * belongs on, because this screen *is* the composer at full size. The shell
+ * asks about it separately for that one reason.
  */
-export const HUB_CHOOSE_PATH = "/?choose=1";
+export const CAPTURE_PATH = "/";
+
+export function isCapturePath(pathname: string): boolean {
+  return pathname === CAPTURE_PATH;
+}
 
 export type WorkspaceMeta = {
   id: WorkspaceId;
@@ -95,8 +105,11 @@ function isUnder(pathname: string, route: string): boolean {
   return pathname === route || pathname.startsWith(`${route}/`);
 }
 
-/** Which side of the app this path belongs to, or null on the hub itself. */
+/** Which side of the app this path belongs to, or null on the chooser. */
 export function workspaceForPath(pathname: string): WorkspaceId | null {
+  // Exact equality, and first. «/» is a prefix of every path, so listing it
+  // in ROUTES.personal would hand /onboarding/3 and a 404 the ledger's nav.
+  if (pathname === CAPTURE_PATH) return "personal";
   if (ROUTES.dong.some((route) => isUnder(pathname, route))) return "dong";
   if (ROUTES.personal.some((route) => isUnder(pathname, route))) return "personal";
   return null;

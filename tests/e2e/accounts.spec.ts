@@ -24,7 +24,7 @@ async function login(page: Page) {
   await page.getByLabel("ایمیل").fill(EMAIL);
   await page.getByLabel("رمز").fill(PASSWORD);
   await page.getByRole("button", { name: "ورود", exact: true }).click();
-  // The hub is the landing page now; onboarding still intercepts a new account.
+  // The capture screen is the landing page; onboarding still intercepts a new account.
   await page.waitForURL(/\/($|onboarding)/);
 }
 
@@ -80,8 +80,11 @@ test("an expense posted to an account comes off its balance, and undoing it puts
   const before = await balanceOf(page, ACCOUNT);
 
   // Record an expense against the account, through the ordinary entry sheet.
+  // The bar is the way into it: an amount with nothing said about it is what
+  // the gate hands straight to the form, so this costs no model call.
   await page.goto("/dashboard");
-  await page.getByRole("button", { name: "ثبت هزینه", exact: true }).click();
+  await page.locator("#composer-text").fill(AMOUNT);
+  await page.getByRole("button", { name: "ثبت", exact: true }).click();
   await page.getByLabel("مبلغ").fill(AMOUNT);
   await page.getByLabel("فروشنده").fill(MERCHANT);
   await page.getByLabel("حساب", { exact: true }).selectOption({ label: ACCOUNT });

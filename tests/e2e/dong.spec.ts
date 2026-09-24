@@ -31,7 +31,7 @@ async function login(page: Page) {
   await page.getByLabel("ایمیل").fill(EMAIL);
   await page.getByLabel("رمز").fill(PASSWORD);
   await page.getByRole("button", { name: "ورود", exact: true }).click();
-  // The hub is the landing page now; onboarding still intercepts a new account.
+  // The capture screen is the landing page; onboarding still intercepts a new account.
   await page.waitForURL(/\/($|onboarding)/);
 }
 
@@ -181,7 +181,10 @@ test("the hub can be signed out of without entering a workspace", async ({
   page,
 }) => {
   await login(page);
-  await page.goto("/");
+  // The chooser's own address. «/» is the capture screen and carries the
+  // shell's own sign-out, so asserting there would pass without ever
+  // exercising the button this test is about.
+  await page.goto("/switch");
 
   const exit = page.getByRole("button", { name: "خروج", exact: true });
   await expect(exit).toBeVisible({ timeout: 30_000 });
@@ -207,7 +210,7 @@ test("the hub leads to both halves, and neither carries the other", async ({
   page,
 }) => {
   await login(page);
-  await page.goto("/");
+  await page.goto("/switch");
 
   const toPersonal = page.locator('main a[href="/dashboard"]').first();
   const toDong = page.locator('main a[href="/dong"]').first();
@@ -225,11 +228,11 @@ test("the hub leads to both halves, and neither carries the other", async ({
   // phone's header strip — and on a 375px viewport the sidebar copy is in the
   // DOM but hidden, and it is the one that comes first.
   await page
-    .locator('a[href="/"]')
+    .locator('a[href="/switch"]')
     .filter({ visible: true })
     .first()
     .click();
-  await page.waitForURL(/\/$/);
+  await page.waitForURL(/\/switch$/);
 
   await toPersonal.click();
   await page.waitForURL(/\/dashboard/);

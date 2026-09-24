@@ -20,7 +20,7 @@ async function login(page: Page) {
   await page.getByLabel("ایمیل").fill(EMAIL);
   await page.getByLabel("رمز").fill(PASSWORD);
   await page.getByRole("button", { name: "ورود", exact: true }).click();
-  // The hub is the landing page now; onboarding still intercepts a new account.
+  // The capture screen is the landing page; onboarding still intercepts a new account.
   await page.waitForURL(/\/($|onboarding)/);
 }
 
@@ -38,19 +38,26 @@ test("free text becomes two transactions in the confirm card", async ({ page }) 
 
   await expect(page.getByText("کارت تأیید")).toBeVisible({ timeout: 45_000 });
 
+  // Everything below is about what the card says, so it is asked of the card
+  // rather than of the page. The board behind it lists the same amounts and
+  // the same category names, and an unscoped getByText("$45.00") matches a
+  // ledger row as readily as the card — which is a strict-mode failure that
+  // says nothing about the model.
+  const card = page.getByRole("dialog");
+
   // Nothing is written until the user confirms.
-  await expect(page.getByText("تا تأیید نکنی ذخیره نمی‌شود")).toBeVisible();
+  await expect(card.getByText("تا تأیید نکنی ذخیره نمی‌شود")).toBeVisible();
 
   // Two transactions, so the button counts them.
-  await expect(page.getByRole("button", { name: "ثبت دو تراکنش" })).toBeVisible();
+  await expect(card.getByRole("button", { name: "ثبت دو تراکنش" })).toBeVisible();
 
   // Both amounts came through as Latin, tabular money.
-  await expect(page.getByText("$45.00")).toBeVisible();
-  await expect(page.getByText("$12.00")).toBeVisible();
+  await expect(card.getByText("$45.00")).toBeVisible();
+  await expect(card.getByText("$12.00")).toBeVisible();
 
   // And the categories the model picked are real ones, rendered in Persian.
-  await expect(page.getByText("خوراک و سوپرمارکت").first()).toBeVisible();
-  await expect(page.getByText("رستوران و کافه").first()).toBeVisible();
+  await expect(card.getByText("خوراک و سوپرمارکت").first()).toBeVisible();
+  await expect(card.getByText("رستوران و کافه").first()).toBeVisible();
 });
 
 test("a sentence with no amount never reaches the model", async ({ page }) => {

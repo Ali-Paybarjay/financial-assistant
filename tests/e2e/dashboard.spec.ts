@@ -13,7 +13,7 @@ async function login(page: Page) {
   await page.getByLabel("ایمیل").fill(EMAIL);
   await page.getByLabel("رمز").fill(PASSWORD);
   await page.getByRole("button", { name: "ورود", exact: true }).click();
-  // The hub is the landing page now; onboarding still intercepts a new account.
+  // The capture screen is the landing page; onboarding still intercepts a new account.
   await page.waitForURL(/\/($|onboarding)/);
 }
 
@@ -47,8 +47,14 @@ test("an unconfirmed transaction is marked everywhere it appears", async ({ page
   await login(page);
   await page.goto("/dashboard");
 
-  // The banner names the count, so colour is never the only carrier.
-  await expect(page.getByText(/تراکنش تأییدنشده در این جمع هست/)).toBeVisible();
+  // Named in words, so colour is never the only carrier. It used to be a
+  // banner over the month's total; that went with the envelope board, and the
+  // envelope carrying the guess is where the claim lives now — «شامل ‹مبلغ›
+  // تأییدنشده». scripts/seed-e2e.mjs puts the unconfirmed rows in a category
+  // that has a ceiling precisely so there is an envelope to say it.
+  await expect(page.getByText(/تأییدنشده/).first()).toBeVisible({
+    timeout: 30_000,
+  });
 
   await page.goto("/transactions");
   await expect(page.getByText(/تأییدنشده/).first()).toBeVisible();

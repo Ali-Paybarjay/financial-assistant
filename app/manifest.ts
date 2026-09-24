@@ -11,7 +11,12 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "دستیار مالی",
     short_name: "دستیار مالی",
     description: "ثبت سریع هزینه و دیدن مانده‌ی این ماه",
+    // «/» is the capture screen, so the installed icon opens straight onto
+    // the field — which is the whole point of putting it there.
     start_url: "/",
+    // Pinned rather than derived from start_url, so moving that later does
+    // not re-key an install somebody already has on their home screen.
+    id: "/",
     display: "standalone",
     orientation: "portrait",
     // --paper in the light theme. A manifest is static JSON with no media

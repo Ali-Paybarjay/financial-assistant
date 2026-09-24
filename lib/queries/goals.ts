@@ -1,5 +1,7 @@
 import "server-only";
 
+import { cache } from "react";
+
 import { createClient } from "@/lib/supabase/server";
 import type { GoalProgressRow, GoalRow } from "@/lib/supabase/database.types";
 import type { GoalWithProgress } from "@/lib/goals";
@@ -16,8 +18,15 @@ import type { Minor } from "@/lib/money";
 
 export type { GoalWithProgress };
 
-/** In priority order, which is also the order the plan hands money out in. */
-export async function listGoalsWithProgress(): Promise<GoalWithProgress[]> {
+/**
+ * In priority order, which is also the order the plan hands money out in.
+ *
+ * Memoized: the layout reads this for the composer and the page under it
+ * reads it again. Same request, same rows, one query.
+ */
+export const listGoalsWithProgress = cache(async function listGoalsWithProgress(): Promise<
+  GoalWithProgress[]
+> {
   const supabase = await createClient();
 
   const [{ data: goals, error }, { data: progress }] = await Promise.all([
@@ -42,7 +51,7 @@ export async function listGoalsWithProgress(): Promise<GoalWithProgress[]> {
       spent: derived?.spent ?? 0,
     };
   });
-}
+});
 
 /**
  * How much has already been moved into savings for each goal this month.

@@ -1,5 +1,7 @@
 import "server-only";
 
+import { cache } from "react";
+
 import { createClient } from "@/lib/supabase/server";
 import type { AccountBalanceRow, AccountRow } from "@/lib/supabase/database.types";
 import { inDisplayOrder, type AccountWithBalance } from "@/lib/accounts";
@@ -21,7 +23,14 @@ export async function listAccounts(): Promise<AccountRow[]> {
   return inDisplayOrder(data ?? []);
 }
 
-export async function listAccountsWithBalances(): Promise<AccountWithBalance[]> {
+/**
+ * Memoized: the layout reads this for the composer and the page under it
+ * reads it again. Same request, same rows, one query — and this one is a
+ * select plus an RPC.
+ */
+export const listAccountsWithBalances = cache(async function listAccountsWithBalances(): Promise<
+  AccountWithBalance[]
+> {
   const supabase = await createClient();
 
   const [{ data: accounts, error }, { data: balances }] = await Promise.all([
@@ -47,4 +56,4 @@ export async function listAccountsWithBalances(): Promise<AccountWithBalance[]> 
       lastActivityOn: derived?.last_activity_on ?? null,
     };
   });
-}
+});

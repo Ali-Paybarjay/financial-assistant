@@ -1,196 +1,56 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CaretLeft } from "@phosphor-icons/react/dist/ssr";
 import { requireViewer } from "@/lib/auth";
+import { listCategories } from "@/lib/queries/categories";
 import { listAccountsWithBalances } from "@/lib/queries/accounts";
-import { listOpenDongGroups } from "@/lib/queries/dong";
-import { monthTotals } from "@/lib/queries/transactions";
-import { totalBalance } from "@/lib/accounts";
-import { standing } from "@/lib/dong";
+import { listGoalsWithProgress } from "@/lib/queries/goals";
+import { listEnvelopes } from "@/lib/queries/envelopes";
+import { preferredAccountId } from "@/lib/accounts";
+import { monthRemaining } from "@/lib/envelopes";
 import { monthRange, todayInTimeZone } from "@/lib/date";
-import { faNumber } from "@/lib/format";
-import { WORKSPACE_ICON } from "@/components/app-shell/nav-items";
-import { Money } from "@/components/money";
-import { HubSignOutButton } from "@/components/sign-out";
-import { WORKSPACES } from "@/lib/workspaces";
-import { RememberWorkspace } from "./remember-workspace";
+import { CaptureView } from "./capture-view";
 
 /**
- * The first screen after signing in: two boxes, one per side of the app.
+ * Where opening the app lands you: a field, and the one number it moves.
  *
- * Each carries the one number that side is about, so the choice is made on
- * what is actually going on rather than on two labels — and so the trip you
- * are not opening still gets to say that somebody owes you.
+ * The board used to be here, and it costs — before a single pixel — a write
+ * (ensureRecurringPosted) and twelve reads, one of which scans three months of
+ * transactions. That is paid on every launch, while most launches exist to
+ * write down one purchase. So the board keeps its address and this keeps the
+ * front door.
  *
- * Nothing here is a summary of both. There is no number that is true of the
- * two of them together: a group in euros and an account in tomans cannot be
- * added, and «کل دارایی» that quietly includes what six people owe each other
- * would be the most misleading figure in the product.
+ * Nothing on this page is fetched for the field itself; the field needs no
+ * data to render. Everything below is read by the layout already, for the
+ * composer, and comes back from React's per-request cache.
  */
-export default async function HubPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ choose?: string }>;
-}) {
+export default async function CapturePage() {
   const viewer = await requireViewer();
-  const { choose } = await searchParams;
 
-  // Someone who only ever opens one side answers this question identically
-  // every visit, so it stops being asked. «?choose» is how the switch in the
-  // header and the settings toggle get back here without being bounced
-  // straight out again.
-  //
-  // This segment has a loading.tsx, so the response has already begun
-  // streaming by the time a page can throw: Next turns this into a
-  // client-side navigation rather than a 3xx, and the browser stays on «/»
-  // for a moment before moving. Nothing of the hub is rendered in that
-  // moment — the decision is made above every fetch on this page, so what
-  // shows is the loading shell and then /dashboard.
-  if (viewer.profile.default_workspace && choose === undefined) {
-    redirect(WORKSPACES[viewer.profile.default_workspace].href);
-  }
+  // Someone who asked to start in «دنگ و دونگ» still does. This field writes
+  // to the personal ledger, so handing it to them would be the exact
+  // cross-contamination the two workspaces exist to prevent — rule 11, from
+  // the other direction.
+  if (viewer.profile.default_workspace === "dong") redirect("/dong");
 
   const today = todayInTimeZone(viewer.timeZone);
-  const month = monthRange(viewer.timeZone, today);
+  const month = monthRange(viewer.timeZone, today).month;
 
-  const [accounts, totals, dongGroups] = await Promise.all([
+  const [categories, accounts, goals, envelopes] = await Promise.all([
+    listCategories(),
     listAccountsWithBalances(),
-    monthTotals(month.from, month.to),
-    listOpenDongGroups(),
+    listGoalsWithProgress(),
+    listEnvelopes(month),
   ]);
 
-  const firstName = (viewer.profile.full_name ?? "").trim().split(" ")[0];
-  const hasLedger = accounts.length > 0 || totals.income > 0 || totals.expense > 0;
-  const openGroups = dongGroups.length;
-  // Sorted by how much the viewer is in or out of pocket, so the first one is
-  // the one worth putting on the card.
-  const loudest = dongGroups[0];
-
   return (
-    <div className="mx-auto w-full max-w-[720px] px-4 py-6">
-      <header className="mb-5 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-title font-semibold text-ink">
-            {firstName ? `سلام ${firstName}` : "سلام"}
-          </h1>
-          <p className="mt-1 text-caption text-ink-muted">
-            دو بخش جدا: حساب‌وکتاب خودت، و حساب‌وکتاب چندنفره. هر وقت خواستی از بالای
-            صفحه بینشان جابه‌جا شو.
-          </p>
-        </div>
-        {/* The shell hangs no nav on this page, so without this the only way
-            off the account is through a workspace you did not come here for. */}
-        <HubSignOutButton />
-      </header>
-
-      <div className="grid gap-3 min-[720px]:grid-cols-2">
-        <WorkspaceCard
-          workspace="personal"
-          headline={
-            hasLedger ? (
-              <Money
-                minor={totals.income - totals.expense}
-                currency={viewer.currency}
-                size="kpi"
-                signed
-                tone="auto"
-              />
-            ) : (
-              <span className="text-[16px] font-semibold text-ink-muted">—</span>
-            )
-          }
-          headlineLabel={hasLedger ? "مانده‌ی این ماه" : "هنوز چیزی ثبت نکرده‌ای"}
-          footer={
-            accounts.length > 0 ? (
-              <>
-                موجودی {faNumber(accounts.filter((a) => a.is_active).length)} حساب:{" "}
-                <Money
-                  minor={totalBalance(accounts)}
-                  currency={viewer.currency}
-                  omitSymbol
-                />
-              </>
-            ) : (
-              "اولین خرجت را ثبت کن یا یک حساب بساز."
-            )
-          }
-        />
-
-        <WorkspaceCard
-          workspace="dong"
-          headline={
-            loudest && loudest.net !== null && loudest.net !== 0 ? (
-              <Money
-                minor={loudest.net}
-                currency={loudest.currency}
-                size="kpi"
-                signed
-                tone="auto"
-              />
-            ) : (
-              <span className="text-[16px] font-semibold text-ink-muted">
-                {openGroups > 0 ? "صاف" : "—"}
-              </span>
-            )
-          }
-          headlineLabel={
-            loudest && loudest.net !== null && loudest.net !== 0
-              ? `${standing(loudest.net) === "owed" ? "طلبت در" : "بدهی‌ات در"} «${loudest.title}»`
-              : openGroups > 0
-                ? "حسابت در دوره‌های باز صاف است"
-                : "هنوز دوره‌ای نساخته‌ای"
-          }
-          footer={
-            openGroups > 0
-              ? `${faNumber(openGroups)} دوره‌ی باز`
-              : "برای سفر یا دورهمی یک دوره بساز."
-          }
-        />
-      </div>
-
-      <RememberWorkspace current={viewer.profile.default_workspace} />
-    </div>
-  );
-}
-
-function WorkspaceCard({
-  workspace,
-  headline,
-  headlineLabel,
-  footer,
-}: {
-  workspace: keyof typeof WORKSPACES;
-  headline: React.ReactNode;
-  headlineLabel: string;
-  footer: React.ReactNode;
-}) {
-  const meta = WORKSPACES[workspace];
-  const Glyph = WORKSPACE_ICON[workspace];
-
-  return (
-    <Link
-      href={meta.href}
-      className="flex min-h-[190px] flex-col gap-3 rounded-card border border-hairline bg-surface p-4 transition-colors hover:border-action hover:bg-action-tint/40"
-    >
-      <span className="flex items-center gap-2.5">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-action-tint text-action">
-          <Glyph size={20} />
-        </span>
-        <span className="min-w-0 flex-1 text-[17px] font-semibold text-ink">
-          {meta.title}
-        </span>
-        <CaretLeft size={16} className="shrink-0 text-ink-faint" />
-      </span>
-
-      <span className="text-caption text-ink-muted">{meta.blurb}</span>
-
-      <span className="mt-auto flex flex-col gap-0.5 border-t border-hairline pt-3">
-        <span className="flex items-baseline justify-between gap-2">
-          <span className="text-caption text-ink-muted">{headlineLabel}</span>
-          {headline}
-        </span>
-        <span className="truncate text-caption text-ink-faint">{footer}</span>
-      </span>
-    </Link>
+    <CaptureView
+      remaining={monthRemaining(envelopes)}
+      currency={viewer.currency}
+      categories={categories}
+      accounts={accounts}
+      goals={goals.filter((goal) => goal.status === "active")}
+      envelopes={envelopes}
+      defaultAccountId={preferredAccountId(accounts)}
+      today={today}
+    />
   );
 }

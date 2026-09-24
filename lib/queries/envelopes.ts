@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { monthRange, shiftMonth, type IsoDate } from "@/lib/date";
 import { suggestBudget } from "@/lib/envelopes";
@@ -15,8 +16,17 @@ import type { CategoryBudgetRow, EnvelopeStatusRow } from "@/lib/supabase/databa
 
 export type { EnvelopeRow };
 
-/** What each envelope is worth in the month containing `month`. */
-export async function listEnvelopes(month: IsoDate): Promise<EnvelopeRow[]> {
+/**
+ * What each envelope is worth in the month containing `month`.
+ *
+ * Memoized per request, because the layout reads this month's envelopes for
+ * the composer and «/» reads the same month again for its one figure. Both
+ * derive the key from the viewer's timezone, so it is the same string and
+ * React collapses them into one RPC.
+ */
+export const listEnvelopes = cache(async function listEnvelopes(
+  month: IsoDate,
+): Promise<EnvelopeRow[]> {
   const supabase = await createClient();
   // The month key already names the month, so the timezone argument never
   // gets consulted — monthRange only reaches for it when there is no anchor.
@@ -30,7 +40,7 @@ export async function listEnvelopes(month: IsoDate): Promise<EnvelopeRow[]> {
 
   if (error) throw error;
   return (data ?? []) as EnvelopeStatusRow[];
-}
+});
 
 /** The ceilings in force from `month` onwards, for the settings editor. */
 export async function listBudgets(month: IsoDate): Promise<CategoryBudgetRow[]> {

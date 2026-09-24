@@ -8,6 +8,7 @@ import { CaretRight, EnvelopeSimple, ShieldCheck } from "@phosphor-icons/react/d
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FormError } from "@/components/field";
+import { useHydrated } from "@/components/use-hydrated";
 import { PASSWORD_MIN_LENGTH_FA, type SignupInput, signupSchema } from "@/lib/validation/auth";
 import { SignOutButton } from "@/components/sign-out";
 import { linkGuestToGoogle, upgradeGuestAccount } from "../actions";
@@ -32,6 +33,7 @@ export function SaveAccountForm({
   const [formError, setFormError] = useState<string | undefined>(returnError);
   const [sentTo, setSentTo] = useState<string>();
   const [isPending, startTransition] = useTransition();
+  const hydrated = useHydrated();
   const [isGooglePending, startGoogleTransition] = useTransition();
 
   const {
@@ -112,7 +114,12 @@ export function SaveAccountForm({
 
       {emailEnabled && (
         <>
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
+          <form
+            method="post"
+            onSubmit={handleSubmit(onSubmit)}
+            className="flex flex-col gap-4"
+            noValidate
+          >
             <Field label="نام" htmlFor="fullName" error={errors.fullName?.message}>
               <Input
                 id="fullName"
@@ -149,7 +156,7 @@ export function SaveAccountForm({
               />
             </Field>
 
-            <Button type="submit" size="lg" disabled={isPending}>
+            <Button type="submit" size="lg" disabled={isPending || !hydrated}>
               {isPending ? "دارم حسابت را می‌سازم…" : "ساخت حساب"}
             </Button>
           </form>

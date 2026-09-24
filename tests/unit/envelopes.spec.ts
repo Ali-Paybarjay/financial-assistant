@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   dailyAllowance,
   envelopeState,
+  monthRemaining,
   projectedSpend,
   suggestBudget,
   suggestedCeiling,
+  type EnvelopeRow,
 } from "@/lib/envelopes";
+import type { Minor } from "@/lib/money";
 
 describe("envelopeState", () => {
   it("has no state to report without a ceiling", () => {
@@ -136,5 +139,92 @@ describe("suggestedCeiling", () => {
     // decided, and decided something absurd.
     expect(suggestedCeiling({ baseline_minor: null }, null)).toBeNull();
     expect(suggestedCeiling({ baseline_minor: 0 }, 0)).toBeNull();
+  });
+});
+
+/**
+ * The one figure the capture screen carries. It is the first thing the app
+ * says on opening, so the ways it can quietly be wrong matter more than the
+ * ways it can be missing.
+ */
+describe("monthRemaining", () => {
+  /** One row of `envelope_status()`, with only the two fields this reads. */
+  function envelope(budget: Minor | null, spent: Minor): EnvelopeRow {
+    return {
+      category_id: `${budget ?? "none"}-${spent}`,
+      name_fa: "دسته",
+      budget_minor: budget,
+      spent_minor: spent,
+      remaining_minor: budget === null ? null : budget - spent,
+      unconfirmed_minor: 0,
+      baseline_minor: null,
+    };
+  }
+
+  it("counts only the categories that have a ceiling", () => {
+    // The regression this function exists to avoid. «خوراک» has a 60_000
+    // ceiling and has spent 20_000 of it; the 90_000 went on rent, which has
+    // no ceiling at all. Counting that 90_000 would report the budget blown
+    // while the budgeted envelope sits two thirds full.
+    expect(monthRemaining([envelope(60_000, 20_000), envelope(null, 90_000)])).toEqual({
+      kind: "budgeted",
+      budget: 60_000,
+      spent: 20_000,
+      remaining: 40_000,
+    });
+  });
+
+  it("adds up every ceiling, not just the first", () => {
+    expect(monthRemaining([envelope(60_000, 20_000), envelope(40_000, 5_000)])).toEqual({
+      kind: "budgeted",
+      budget: 100_000,
+      spent: 25_000,
+      remaining: 75_000,
+    });
+  });
+
+  it("treats a ceiling of zero as a decision rather than an absence", () => {
+    // «spend nothing here» is the strictest thing a user can say. A truthiness
+    // check would drop exactly that row and forgive the overspend on it.
+    expect(monthRemaining([envelope(0, 5_000)])).toEqual({
+      kind: "budgeted",
+      budget: 0,
+      spent: 5_000,
+      remaining: -5_000,
+    });
+  });
+
+  it("lets the remainder go negative rather than flooring it", () => {
+    // The screen decides whether to say «مانده» or «رد شده‌ای». It cannot do
+    // that if this function has already clamped the answer to zero.
+    expect(monthRemaining([envelope(60_000, 90_000)])).toMatchObject({
+      kind: "budgeted",
+      remaining: -30_000,
+    });
+  });
+
+  it("reports what was spent when no ceiling is set anywhere", () => {
+    expect(monthRemaining([envelope(null, 30_000), envelope(null, 12_000)])).toEqual({
+      kind: "spent",
+      spent: 42_000,
+    });
+  });
+
+  it("has nothing to report for a month with no ceilings and no spending", () => {
+    // A brand-new account. «0 تومان خرج کرده‌ای» is true and reads as a
+    // measurement; the screen says «هنوز چیزی ثبت نکرده‌ای» instead.
+    expect(monthRemaining([])).toEqual({ kind: "empty" });
+    expect(monthRemaining([envelope(null, 0)])).toEqual({ kind: "empty" });
+  });
+
+  it("still reports a budget when the budgeted categories are untouched", () => {
+    // Nothing spent, but a ceiling exists — so there is something to be left
+    // of, and this is «budgeted», not «empty».
+    expect(monthRemaining([envelope(60_000, 0)])).toEqual({
+      kind: "budgeted",
+      budget: 60_000,
+      spent: 0,
+      remaining: 60_000,
+    });
   });
 });

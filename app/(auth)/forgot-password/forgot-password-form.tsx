@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FormError } from "@/components/field";
+import { useHydrated } from "@/components/use-hydrated";
 import {
   forgotPasswordSchema,
   type ForgotPasswordInput,
@@ -17,6 +18,7 @@ export function ForgotPasswordForm() {
   const [formError, setFormError] = useState<string>();
   const [sent, setSent] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const hydrated = useHydrated();
 
   const {
     register,
@@ -60,7 +62,12 @@ export function ForgotPasswordForm() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
+      <form
+        method="post"
+        onSubmit={handleSubmit(onSubmit)}
+        className="flex flex-col gap-4"
+        noValidate
+      >
         <FormError>{formError}</FormError>
 
         <Field label="ایمیل" htmlFor="email" error={errors.email?.message}>
@@ -75,7 +82,7 @@ export function ForgotPasswordForm() {
           />
         </Field>
 
-        <Button type="submit" size="lg" disabled={isPending}>
+        <Button type="submit" size="lg" disabled={isPending || !hydrated}>
           {isPending ? "دارم می‌فرستم…" : "لینک را بفرست"}
         </Button>
       </form>

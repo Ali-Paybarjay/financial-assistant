@@ -19,6 +19,7 @@ import {
   Target,
   Trash,
   UserCircle,
+  UsersThree,
   Warning,
   WarningCircle,
 } from "@phosphor-icons/react/dist/ssr";
@@ -248,32 +249,36 @@ function Row({
 }
 
 /**
- * «Ask me which section every time.»
+ * «Open the app on دنگ و دونگ.»
  *
- * On when nothing is remembered, which is the state a new account starts in
- * — so the switch reads as a thing you turn off rather than a setting you
- * have to find and turn on. Turning it off here would have nothing to
- * remember yet, so it only ever puts the chooser back.
+ * Off is where a new account starts, and off means opening the app lands on
+ * the capture screen — which is where someone who came to record a purchase
+ * wants to be. The same switch sits on the chooser, at the moment the
+ * question is actually in front of you; this is where it is looked for
+ * afterwards.
+ *
+ * Not optimistic and holding no state of its own: setDefaultWorkspace
+ * revalidates /settings, so the row comes back from the server already
+ * showing what was written.
  */
 function StartRow({ current }: { current: "personal" | "dong" | null }) {
   const [isPending, startTransition] = useTransition();
-  const asksEveryTime = current === null;
 
   return (
     <div className="flex h-14 w-full items-center gap-3 px-4">
       <span className="text-action">
-        <SquaresFour size={20} />
+        <UsersThree size={20} />
       </span>
-      <label htmlFor="ask-workspace" className="flex-1 text-[14px] text-ink">
-        هر بار بپرس کدام بخش
+      <label htmlFor="start-in-dong" className="flex-1 text-[14px] text-ink">
+        باز شدن اپ روی «دنگ و دونگ»
       </label>
       <Switch
-        id="ask-workspace"
-        checked={asksEveryTime}
-        disabled={isPending || asksEveryTime}
-        onCheckedChange={() =>
+        id="start-in-dong"
+        checked={current === "dong"}
+        disabled={isPending}
+        onCheckedChange={(next) =>
           startTransition(async () => {
-            await setDefaultWorkspace(null);
+            await setDefaultWorkspace(next ? "dong" : null);
           })
         }
       />

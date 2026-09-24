@@ -27,7 +27,7 @@ async function login(page: Page) {
   await page.getByLabel("ایمیل").fill(EMAIL);
   await page.getByLabel("رمز").fill(PASSWORD);
   await page.getByRole("button", { name: "ورود", exact: true }).click();
-  // The hub is the landing page now; onboarding still intercepts a new account.
+  // The capture screen is the landing page; onboarding still intercepts a new account.
   await page.waitForURL(/\/($|onboarding)/);
 }
 
@@ -78,7 +78,10 @@ test("a transfer moves money between accounts without touching the month's total
   await expect(expenseCard).toBeVisible({ timeout: 30_000 });
   const monthBefore = await expenseCard.innerText();
 
-  await page.getByRole("button", { name: "ثبت هزینه", exact: true }).click();
+  // The bar is the way into the form: an amount with nothing said about it is
+  // what the gate hands straight to it, so this costs no model call.
+  await page.locator("#composer-text").fill(AMOUNT);
+  await page.getByRole("button", { name: "ثبت", exact: true }).click();
   // The segmented control is a tablist, so its segments are tabs, not buttons.
   await page.getByRole("tab", { name: "انتقال" }).click();
   await page.getByLabel("مبلغ").fill(AMOUNT);
@@ -154,7 +157,8 @@ test("an expense can be reclassified as a transfer, and the month stops counting
   const expenseBefore = await monthExpense(page);
 
   await page.goto("/dashboard");
-  await page.getByRole("button", { name: "ثبت هزینه", exact: true }).click();
+  await page.locator("#composer-text").fill(AMOUNT);
+  await page.getByRole("button", { name: "ثبت", exact: true }).click();
   await page.getByLabel("مبلغ").fill(AMOUNT);
   await page.getByLabel("فروشنده").fill(MISFILED);
   await page.getByLabel("حساب", { exact: true }).selectOption({ label: FROM });
