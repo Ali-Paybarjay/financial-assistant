@@ -4,12 +4,10 @@ import { usePathname } from "next/navigation";
 import { Sidebar } from "./sidebar";
 import { WorkspaceSwitch } from "./workspace-switch";
 import { Composer } from "@/components/entry/composer";
+import type { CaptureData } from "@/components/entry/capture-sheet";
 import { SignOutButton } from "@/components/sign-out";
 import { GuestBanner } from "@/components/guest/guest-banner";
 import { workspaceForPath } from "@/lib/workspaces";
-import type { CurrencyCode } from "@/lib/money";
-import type { EnvelopeRow } from "@/lib/envelopes";
-import type { AccountRow, CategoryRow, GoalRow } from "@/lib/supabase/database.types";
 import { cn } from "@/lib/utils";
 
 /**
@@ -37,15 +35,7 @@ export function AppShell({
    * rather than per page, because the bar is on every page — that is the
    * whole point of it replacing a button that was only on two of them.
    */
-  entry: {
-    currency: CurrencyCode;
-    categories: CategoryRow[];
-    accounts: AccountRow[];
-    goals: GoalRow[];
-    envelopes: EnvelopeRow[];
-    defaultAccountId: string | null;
-    today: string;
-  };
+  entry: CaptureData;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
