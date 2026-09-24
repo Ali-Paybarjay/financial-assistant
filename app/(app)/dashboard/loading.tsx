@@ -2,7 +2,7 @@
  * Shape-matched to the dashboard rather than a spinner, so the page does not
  * jump when the real numbers land.
  */
-export default function AppLoading() {
+export default function DashboardLoading() {
   return (
     <div className="mx-auto w-full max-w-[560px] animate-pulse" aria-busy>
       <span className="sr-only">در حال بارگذاری</span>

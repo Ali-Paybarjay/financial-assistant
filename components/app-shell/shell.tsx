@@ -3,11 +3,12 @@
 import { usePathname } from "next/navigation";
 import { Sidebar } from "./sidebar";
 import { WorkspaceSwitch } from "./workspace-switch";
+import { TabBar, hasTabBar } from "./tab-bar";
 import { Composer } from "@/components/entry/composer";
 import type { CaptureData } from "@/components/entry/capture-sheet";
 import { SignOutButton } from "@/components/sign-out";
 import { GuestBanner } from "@/components/guest/guest-banner";
-import { workspaceForPath } from "@/lib/workspaces";
+import { isCapturePath, workspaceForPath } from "@/lib/workspaces";
 import { cn } from "@/lib/utils";
 
 /**
@@ -40,6 +41,13 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const workspace = workspaceForPath(pathname);
+
+  // The capture screen is the composer, at full size. The docked bar must not
+  // also render: two elements with id="composer-text" make the label
+  // ambiguous and the field unfocusable by id, which is how the dashboard's
+  // empty state puts the cursor in it.
+  const capturing = workspace === "personal" && isCapturePath(pathname);
+  const docked = workspace === "personal" && !capturing;
 
   return (
     <div className="flex min-h-dvh bg-paper">
@@ -76,9 +84,19 @@ export function AppShell({
             دونگ» records an expense through its own sheet, which knows who
             paid and how it splits; a free-text bar that knew neither would
             have to guess both. */}
-        {workspace === "personal" && (
+        {docked && (
           <div className="min-[960px]:mx-auto min-[960px]:w-full min-[960px]:max-w-[1120px] min-[960px]:px-7 min-[960px]:pt-6">
-            <Composer workspace={workspace} {...entry} />
+            <Composer workspace="personal" {...entry} />
+          </div>
+        )}
+
+        {/* On the capture screen there is no bar for the tabs to live inside,
+            so they carry the strip's own chrome — the same rule and surface
+            the bar draws. Kept because the person who opened the app to look
+            rather than to record is one tap from anywhere. */}
+        {capturing && hasTabBar("personal") && (
+          <div className="fixed inset-x-0 bottom-0 z-30 border-t border-hairline bg-surface min-[960px]:hidden">
+            <TabBar workspace="personal" />
           </div>
         )}
 
@@ -101,8 +119,13 @@ export function AppShell({
         <main
           className={cn(
             "min-w-0 flex-1",
-            workspace === "personal" &&
-              "pb-[calc(124px+env(safe-area-inset-bottom))] min-[960px]:pb-0",
+            // The capture screen fills what is left rather than scrolling in
+            // it: its field wants to sit in the thumb's half of the phone.
+            capturing && "flex flex-col",
+            docked && "pb-[calc(124px+env(safe-area-inset-bottom))] min-[960px]:pb-0",
+            // The tab strip alone: a 1px rule and the 56px tab row, plus the
+            // same 2px of slack the bar's own constant carries.
+            capturing && "pb-[calc(59px+env(safe-area-inset-bottom))] min-[960px]:pb-0",
           )}
         >
           {children}

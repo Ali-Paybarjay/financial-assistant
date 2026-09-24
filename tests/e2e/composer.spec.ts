@@ -18,8 +18,14 @@ import { ALPHA_EMAIL as EMAIL, PASSWORD } from "./credentials";
  * always report an overlap exactly one bar tall and never notice a real one.
  */
 
-/** Every personal route that renders a list under the bar. */
-const ROUTES = ["/dashboard", "/transactions", "/goals", "/settings"];
+/**
+ * Every personal route with a fixed strip at the bottom of the phone.
+ *
+ * «/» is in the list even though it carries the tab bar alone rather than the
+ * composer: it reserves its own height with its own constant, and a constant
+ * that is wrong hides content exactly the same way.
+ */
+const ROUTES = ["/", "/dashboard", "/transactions", "/goals", "/settings"];
 
 async function login(page: Page) {
   await page.goto("/login?method=password");
@@ -35,6 +41,15 @@ test("no page scrolls sideways, and nothing hides under the composer", async ({
   test.setTimeout(180_000);
   await login(page);
 
+  // The capture screen IS the composer, at full size, so the docked bar must
+  // not also render there. Two elements with id="composer-text" make the
+  // label ambiguous and the field unfocusable by id — which is how the
+  // dashboard's empty state puts the cursor in it.
+  await page.goto("/");
+  await expect(page.getByLabel("چه خریدی؟")).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator("#composer-text")).toHaveCount(0);
+  await expect(page.locator("#capture-text")).toHaveCount(1);
+
   for (const route of ROUTES) {
     await page.goto(route);
     await page.waitForLoadState("networkidle");
@@ -49,7 +64,11 @@ test("no page scrolls sideways, and nothing hides under the composer", async ({
     ).toBeLessThanOrEqual(overflow.clientWidth + 1);
 
     const clearance = await page.evaluate(() => {
-      const bar = document.getElementById("composer-text")?.closest(".fixed");
+      // The tab bar is inside the composer's fixed strip on every route that
+      // has one, and is the strip itself on «/», so it finds both.
+      const bar =
+        document.getElementById("composer-text")?.closest(".fixed") ??
+        document.querySelector('nav[aria-label="ناوبری اصلی"]')?.closest(".fixed");
       const main = document.querySelector("main");
       if (!bar || !main) return null;
 
@@ -70,7 +89,7 @@ test("no page scrolls sideways, and nothing hides under the composer", async ({
       return { lowest: Math.round(lowest), barTop: Math.round(bar.getBoundingClientRect().top) };
     });
 
-    expect(clearance, `${route} has no composer`).not.toBeNull();
+    expect(clearance, `${route} has no bottom strip`).not.toBeNull();
     expect(
       clearance!.lowest,
       `${route} draws content under the composer`,

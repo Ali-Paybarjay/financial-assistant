@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { CaretLeft } from "@phosphor-icons/react/dist/ssr";
 import { requireViewer } from "@/lib/auth";
 import { listAccountsWithBalances } from "@/lib/queries/accounts";
@@ -16,7 +15,7 @@ import { WORKSPACES } from "@/lib/workspaces";
 import { RememberWorkspace } from "./remember-workspace";
 
 /**
- * The first screen after signing in: two boxes, one per side of the app.
+ * The chooser: two boxes, one per side of the app.
  *
  * Each carries the one number that side is about, so the choice is made on
  * what is actually going on rather than on two labels — and so the trip you
@@ -26,29 +25,13 @@ import { RememberWorkspace } from "./remember-workspace";
  * two of them together: a group in euros and an account in tomans cannot be
  * added, and «کل دارایی» that quietly includes what six people owe each other
  * would be the most misleading figure in the product.
+ *
+ * You arrive here on purpose — from the switch in the header, or from
+ * settings. It redirects nobody: a page whose whole job is to ask would be a
+ * strange one to answer on the visitor's behalf.
  */
-export default async function HubPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ choose?: string }>;
-}) {
+export default async function SwitchPage() {
   const viewer = await requireViewer();
-  const { choose } = await searchParams;
-
-  // Someone who only ever opens one side answers this question identically
-  // every visit, so it stops being asked. «?choose» is how the switch in the
-  // header and the settings toggle get back here without being bounced
-  // straight out again.
-  //
-  // This segment has a loading.tsx, so the response has already begun
-  // streaming by the time a page can throw: Next turns this into a
-  // client-side navigation rather than a 3xx, and the browser stays on «/»
-  // for a moment before moving. Nothing of the hub is rendered in that
-  // moment — the decision is made above every fetch on this page, so what
-  // shows is the loading shell and then /dashboard.
-  if (viewer.profile.default_workspace && choose === undefined) {
-    redirect(WORKSPACES[viewer.profile.default_workspace].href);
-  }
 
   const today = todayInTimeZone(viewer.timeZone);
   const month = monthRange(viewer.timeZone, today);
@@ -148,7 +131,7 @@ export default async function HubPage({
         />
       </div>
 
-      <RememberWorkspace current={viewer.profile.default_workspace} />
+      <RememberWorkspace startsInDong={viewer.profile.default_workspace === "dong"} />
     </div>
   );
 }
