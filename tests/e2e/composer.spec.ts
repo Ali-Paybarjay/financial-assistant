@@ -66,9 +66,16 @@ test("no page scrolls sideways, and nothing hides under the composer", async ({
     const clearance = await page.evaluate(() => {
       // The tab bar is inside the composer's fixed strip on every route that
       // has one, and is the strip itself on «/», so it finds both.
+      //
+      // Scoped to a `.fixed` ancestor rather than matched on its own: the
+      // sidebar's nav carries the same aria-label, is in the DOM at 375px
+      // even though it is hidden, and comes first — so an unscoped query
+      // finds a sticky <aside> and `closest(".fixed")` returns null.
       const bar =
         document.getElementById("composer-text")?.closest(".fixed") ??
-        document.querySelector('nav[aria-label="ناوبری اصلی"]')?.closest(".fixed");
+        document
+          .querySelector('.fixed nav[aria-label="ناوبری اصلی"]')
+          ?.closest(".fixed");
       const main = document.querySelector("main");
       if (!bar || !main) return null;
 
