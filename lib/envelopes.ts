@@ -145,3 +145,61 @@ export function suggestedCeiling(
   }
   return null;
 }
+
+/**
+ * What is left of this month's budget, and what it is left *of*.
+ *
+ * The one figure the capture screen carries, so that recording a purchase
+ * still happens in front of the number it moves.
+ */
+export type MonthRemaining =
+  /** Ceilings exist. Every figure counts only the categories that have one. */
+  | { kind: "budgeted"; budget: Minor; spent: Minor; remaining: Minor }
+  /** No ceiling anywhere, so there is nothing to be left *of*. */
+  | { kind: "spent"; spent: Minor }
+  /** No ceilings and nothing spent: a month with no facts in it yet. */
+  | { kind: "empty" };
+
+/**
+ * Both sides of the fraction come from the budgeted categories alone.
+ *
+ * Counting every category's spending against the few ceilings that exist would
+ * report «۳ از ۶ مانده» when «خوراک» has a 6M ceiling it has not touched and
+ * the 3M went on unbudgeted rent. That is wrong, and wrong in the pessimistic
+ * direction — which is precisely how a user learns to distrust the one figure
+ * this screen exists to show.
+ *
+ * `remaining` is allowed to go negative. What to call that is the screen's
+ * decision; flooring it here would be this function telling a lie on the
+ * screen's behalf.
+ */
+export function monthRemaining(envelopes: readonly EnvelopeRow[]): MonthRemaining {
+  let budget = 0;
+  let budgetedSpend = 0;
+  let totalSpend = 0;
+  let hasCeiling = false;
+
+  for (const envelope of envelopes) {
+    totalSpend += envelope.spent_minor;
+
+    // `!== null` rather than truthiness: a ceiling of zero is a decision —
+    // «spend nothing here» — and treating it as an absence would quietly
+    // forgive the one category the user was strictest about.
+    if (envelope.budget_minor === null) continue;
+
+    hasCeiling = true;
+    budget += envelope.budget_minor;
+    budgetedSpend += envelope.spent_minor;
+  }
+
+  if (hasCeiling) {
+    return {
+      kind: "budgeted",
+      budget,
+      spent: budgetedSpend,
+      remaining: budget - budgetedSpend,
+    };
+  }
+
+  return totalSpend > 0 ? { kind: "spent", spent: totalSpend } : { kind: "empty" };
+}
