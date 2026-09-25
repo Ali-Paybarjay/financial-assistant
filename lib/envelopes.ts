@@ -1,4 +1,5 @@
 import { minorExponent, type CurrencyCode, type Minor } from "@/lib/money";
+import type { CostKind } from "@/lib/supabase/database.types";
 
 /**
  * What an envelope is worth, and what that means. Pure arithmetic on numbers
@@ -13,15 +14,59 @@ import { minorExponent, type CurrencyCode, type Minor } from "@/lib/money";
 export type EnvelopeRow = {
   category_id: string;
   name_fa: string;
-  /** null = no ceiling set. */
+  /**
+   * «fixed» is rent, the bills, the loan instalment: an amount someone else
+   * decided, on a date someone else decided. It is a commitment rather than
+   * an envelope, it never carries a ceiling, and nothing here should ever
+   * ask the user to give it one.
+   */
+  cost_kind: CostKind;
+  /** null = no ceiling set. Always null when `cost_kind` is «fixed». */
   budget_minor: Minor | null;
   spent_minor: Minor;
   /** null when there is no ceiling; negative when the ceiling is passed. */
   remaining_minor: Minor | null;
   unconfirmed_minor: Minor;
-  /** What onboarding says this costs per month, if anything. A suggestion. */
+  /**
+   * What onboarding says this costs per month, if anything.
+   *
+   * A suggestion for a variable category — a figure someone guessed at
+   * signup, offered as a starting ceiling. For a fixed one it is closer to a
+   * fact: it is the monthly bills the user declared in this category, and it
+   * is what the commitment card reads the month's payments against.
+   */
   baseline_minor: Minor | null;
 };
+
+/**
+ * Is this a bill rather than a budget?
+ *
+ * One predicate, used everywhere the difference matters, so the board, the
+ * ledger header, the invite and the server action cannot drift into three
+ * slightly different ideas of what «fixed» means.
+ */
+export function isFixedCost(envelope: Pick<EnvelopeRow, "cost_kind">): boolean {
+  return envelope.cost_kind === "fixed";
+}
+
+/**
+ * What is still owed on a fixed cost this month, as far as anyone can tell.
+ *
+ * `baseline_minor` is what the user declared as monthly bills in this
+ * category and `spent_minor` is what has actually been posted against it, so
+ * the difference answers the only question a fixed cost raises: has it been
+ * paid yet?
+ *
+ * Floored at zero, and null when nothing was declared. Paying *more* than
+ * was declared is not a debt of a negative amount — it is simply a month
+ * where the bill came in higher, which the card says in words instead.
+ */
+export function commitmentLeft(
+  envelope: Pick<EnvelopeRow, "baseline_minor" | "spent_minor">,
+): Minor | null {
+  if (envelope.baseline_minor === null || envelope.baseline_minor <= 0) return null;
+  return Math.max(0, envelope.baseline_minor - envelope.spent_minor);
+}
 
 export type EnvelopeState = "under" | "tight" | "over" | "unset";
 
@@ -134,9 +179,13 @@ export type CeilingSuggestion = {
  * should not be dressed as the same one.
  */
 export function suggestedCeiling(
-  envelope: Pick<EnvelopeRow, "baseline_minor">,
+  envelope: Pick<EnvelopeRow, "baseline_minor" | "cost_kind">,
   observedMedian: Minor | null | undefined,
 ): CeilingSuggestion | null {
+  // A fixed cost has no ceiling to propose one for. Checked here rather than
+  // only at the call sites so that a screen which forgets the distinction
+  // shows nothing rather than an invitation the app has decided not to make.
+  if (isFixedCost(envelope)) return null;
   if (observedMedian != null && observedMedian > 0) {
     return { amount: observedMedian, source: "observed" };
   }
@@ -172,6 +221,11 @@ export type MonthRemaining =
  * `remaining` is allowed to go negative. What to call that is the screen's
  * decision; flooring it here would be this function telling a lie on the
  * screen's behalf.
+ *
+ * Fixed costs take care of themselves: they never have a ceiling, so they
+ * never reach the fraction. They are still in `spent` in the «no ceilings
+ * anywhere» case, which is right — that figure claims to be everything the
+ * month has cost so far, and rent is part of everything.
  */
 export function monthRemaining(envelopes: readonly EnvelopeRow[]): MonthRemaining {
   let budget = 0;

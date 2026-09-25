@@ -33,6 +33,7 @@ function envelope(over: Partial<EnvelopeRow> = {}): EnvelopeRow {
   return {
     category_id: "cat-1",
     name_fa: "خوراک",
+    cost_kind: "variable",
     budget_minor: 100_000,
     spent_minor: 0,
     remaining_minor: 100_000,

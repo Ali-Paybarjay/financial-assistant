@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  commitmentLeft,
   dailyAllowance,
   envelopeState,
+  isFixedCost,
   monthRemaining,
   projectedSpend,
   suggestBudget,
@@ -112,7 +114,7 @@ describe("suggestBudget", () => {
 });
 
 describe("suggestedCeiling", () => {
-  const declared = { baseline_minor: 40_000 };
+  const declared = { baseline_minor: 40_000, cost_kind: "variable" } as const;
 
   it("prefers what happened over what was guessed at signup", () => {
     // Same reason monthlySurplus prefers observed over declared: one is a
@@ -137,8 +139,45 @@ describe("suggestedCeiling", () => {
   it("proposes nothing rather than proposing zero", () => {
     // An empty field says «you decide». A ceiling of zero says the app
     // decided, and decided something absurd.
-    expect(suggestedCeiling({ baseline_minor: null }, null)).toBeNull();
-    expect(suggestedCeiling({ baseline_minor: 0 }, 0)).toBeNull();
+    expect(suggestedCeiling({ baseline_minor: null, cost_kind: "variable" }, null))
+      .toBeNull();
+    expect(suggestedCeiling({ baseline_minor: 0, cost_kind: "variable" }, 0)).toBeNull();
+  });
+
+  it("proposes nothing at all for a fixed cost", () => {
+    // Rent has three months of history and a figure from onboarding, so both
+    // sources would happily produce a number. Neither is a ceiling: the
+    // amount is already decided, and offering one would be inviting the user
+    // to budget for something they cannot spend differently.
+    expect(suggestedCeiling({ baseline_minor: 40_000, cost_kind: "fixed" }, 55_000))
+      .toBeNull();
+  });
+});
+
+describe("isFixedCost", () => {
+  it("separates a bill from an allowance", () => {
+    expect(isFixedCost({ cost_kind: "fixed" })).toBe(true);
+    expect(isFixedCost({ cost_kind: "variable" })).toBe(false);
+  });
+});
+
+describe("commitmentLeft", () => {
+  it("is what is still to pay on a declared monthly bill", () => {
+    expect(commitmentLeft({ baseline_minor: 40_000, spent_minor: 15_000 })).toBe(25_000);
+  });
+
+  it("is zero once the bill is paid, never negative", () => {
+    // A bill that came in higher than declared is news, not a debt of a
+    // negative amount. The card says «بیشتر از ۴۰٬۰۰۰ ماهانه» instead.
+    expect(commitmentLeft({ baseline_minor: 40_000, spent_minor: 40_000 })).toBe(0);
+    expect(commitmentLeft({ baseline_minor: 40_000, spent_minor: 52_000 })).toBe(0);
+  });
+
+  it("has nothing to say when nothing was declared", () => {
+    // Distinct from zero: «paid in full» and «we were never told what full
+    // is» are different claims, and the card draws them differently.
+    expect(commitmentLeft({ baseline_minor: null, spent_minor: 15_000 })).toBeNull();
+    expect(commitmentLeft({ baseline_minor: 0, spent_minor: 0 })).toBeNull();
   });
 });
 
@@ -153,6 +192,7 @@ describe("monthRemaining", () => {
     return {
       category_id: `${budget ?? "none"}-${spent}`,
       name_fa: "دسته",
+      cost_kind: "variable",
       budget_minor: budget,
       spent_minor: spent,
       remaining_minor: budget === null ? null : budget - spent,

@@ -40,6 +40,14 @@ export type TransactionSource =
 /** "transfer" is money moving between two of the user's own accounts. */
 export type TransactionType = "expense" | "income" | "transfer";
 export type CategoryKind = "expense" | "income";
+/**
+ * Whether spending in a category is a decision or an obligation.
+ *
+ * «fixed» — rent, bills, instalments: the amount and the date are
+ * already settled, so a ceiling would be a budget for something nobody
+ * can spend differently. Only «variable» categories can carry one.
+ */
+export type CostKind = "fixed" | "variable";
 /** A receipt photo, or a statement file (PDF, CSV, or a photographed page). */
 export type MediaKind = "image" | "document";
 export type MediaStatus = "uploaded" | "processing" | "parsed" | "failed";
@@ -103,6 +111,12 @@ export type CategoryRow = {
   name_fa: string;
   slug: string;
   kind: CategoryKind;
+  /**
+   * Whether a ceiling is a meaningful thing to ask about this category.
+   * «fixed» is a committed amount on a committed date — rent, bills,
+   * instalments — and can never carry one. See migration 0026.
+   */
+  cost_kind: CostKind;
   icon: string | null;
   color: string | null;
   is_system: boolean;
@@ -202,7 +216,9 @@ export type InsightDismissalRow = {
 export type EnvelopeStatusRow = {
   category_id: string;
   name_fa: string;
-  /** null = no ceiling set for this month. */
+  /** A fixed cost is a commitment, not an envelope, and never has a ceiling. */
+  cost_kind: CostKind;
+  /** null = no ceiling set for this month, and always null when fixed. */
   budget_minor: number | null;
   spent_minor: number;
   /** null without a ceiling; negative once the ceiling is passed. */
@@ -531,7 +547,7 @@ export type Database = {
         ProfileRow,
         "timezone" | "base_currency" | "onboarding_step" | "theme"
       >;
-      categories: Table<CategoryRow, "is_system" | "sort_order">;
+      categories: Table<CategoryRow, "is_system" | "sort_order" | "cost_kind">;
       accounts: Table<
         AccountRow,
         "opening_balance" | "is_default" | "is_active" | "sort_order"

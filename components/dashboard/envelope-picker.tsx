@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Plus } from "@phosphor-icons/react/dist/ssr";
 import { BottomSheet } from "@/components/bottom-sheet";
+import { SegmentedControl } from "@/components/segmented-control";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FormError } from "@/components/field";
@@ -11,7 +12,7 @@ import {
   createEnvelopeCategory,
   setEnvelopeOnBoard,
 } from "@/app/(app)/dashboard/budget-actions";
-import type { CategoryRow } from "@/lib/supabase/database.types";
+import type { CategoryRow, CostKind } from "@/lib/supabase/database.types";
 
 /**
  * Adding a packet: pick one of the categories that is not on the board yet,
@@ -35,6 +36,7 @@ export function EnvelopePicker({
 }) {
   const router = useRouter();
   const [name, setName] = useState("");
+  const [costKind, setCostKind] = useState<CostKind>("variable");
   const [error, setError] = useState<string>();
   const [isSaving, startSaving] = useTransition();
 
@@ -47,6 +49,7 @@ export function EnvelopePicker({
         return;
       }
       setName("");
+      setCostKind("variable");
       onOpenChange(false);
       router.refresh();
     });
@@ -98,16 +101,37 @@ export function EnvelopePicker({
               onKeyDown={(event) => {
                 if (event.key === "Enter" && name.trim().length >= 2) {
                   event.preventDefault();
-                  add(() => createEnvelopeCategory(name));
+                  add(() => createEnvelopeCategory(name, costKind));
                 }
               }}
             />
           </Field>
+
+          {/* Asked here because nothing else can answer it: «قسط ماشین» is
+              exactly as fixed as the rent, and without the question the app
+              would turn round and ask for a ceiling on it. */}
+          <div className="mt-3">
+            <SegmentedControl
+              label="جنس این هزینه"
+              value={costKind}
+              onChange={setCostKind}
+              segments={[
+                { value: "variable", label: "متغیر" },
+                { value: "fixed", label: "ثابت" },
+              ]}
+            />
+            <p className="mt-1.5 text-caption text-ink-muted">
+              {costKind === "variable"
+                ? "مبلغش دست خودت است، پس می‌توانی برایش سقف بگذاری."
+                : "مبلغ و تاریخش معلوم است و باید پرداخت شود — سقف نمی‌خواهد."}
+            </p>
+          </div>
+
           <Button
             size="lg"
             className="mt-3 w-full"
             disabled={isSaving || name.trim().length < 2}
-            onClick={() => add(() => createEnvelopeCategory(name))}
+            onClick={() => add(() => createEnvelopeCategory(name, costKind))}
           >
             {isSaving ? "دارم می‌سازم…" : "بساز و بگذار روی بورد"}
           </Button>

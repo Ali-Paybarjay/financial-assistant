@@ -58,8 +58,15 @@ test("a ceiling says what it does before it is saved, then draws the envelope", 
   await expect(sheet).toBeHidden();
 
   // It is a real envelope now, and it reports being over its ceiling.
+  //
+  // Read off the bar's accessible name rather than the card's text. The one
+  // line of copy under the figure has more to say than fits: where part of
+  // the spending is still unconfirmed it says *that* instead, so whether the
+  // words «از سقف» appear depends on which category the fixture account
+  // happens to have an unconfirmed row in that month. The state itself is on
+  // the bar in every variant, which is also the thing being asserted.
   const card = page.getByRole("link").filter({ hasText: category }).first();
-  await expect(card).toContainText("از سقف");
+  await expect(card.getByRole("progressbar", { name: /از سقف رد شده/ })).toBeVisible();
 
   // Tapping it opens the ledger filtered to that category — the other half
   // of the feature, and the only route to the editor.
@@ -126,4 +133,53 @@ test("a packet can be added from the list, invented, and taken off for good", as
   await expect(
     categories.getByRole("button", { name: `حذف ${invented}` }),
   ).toBeHidden();
+});
+
+/**
+ * The bill that must not be asked to have a ceiling.
+ *
+ * The fixture account posts «اجارهٔ خانه» into «مسکن و اجاره» every month, so
+ * the category is on the board with real spending in it — which is exactly
+ * the state that used to draw a «سقف نداری» card with a «سقف بگذار» button on
+ * it. Rent has one possible answer to «how much do you want to spend», and
+ * asking anyway teaches the user that the board asks pointless questions.
+ *
+ * This asserts the absence of things, which is usually a weak test. It is
+ * the right one here: the whole change is that two buttons and one
+ * invitation are gone from a specific screen, and a test that only checked
+ * the new card would pass with the old prompt sitting beside it.
+ */
+test("a fixed cost is never asked for a ceiling", async ({ page }) => {
+  test.setTimeout(120_000);
+
+  await login(page);
+  await page.goto("/dashboard");
+
+  const board = page.getByRole("region").filter({ hasText: "پاکت‌های این ماه" });
+  await expect(board.getByText("هزینه‌های ثابت")).toBeVisible();
+
+  // The commitment card: what was paid, and no way to budget for it.
+  const rent = page.getByRole("link").filter({ hasText: "مسکن و اجاره" }).first();
+  await expect(rent).toBeVisible();
+  await expect(rent).not.toContainText("سقف");
+
+  // And the ledger behind it says why there is no ceiling, rather than
+  // leaving the missing button to be read as a bug.
+  await rent.click();
+  await page.waitForURL(/\/transactions\?category=/);
+  await expect(page.getByText("هزینه‌ی ثابت")).toBeVisible();
+  await expect(page.getByRole("button", { name: "سقف بگذار" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "ویرایش سقف" })).toHaveCount(0);
+
+  // A packet of the user's own can say it is a bill too — «قسط ماشین» is as
+  // fixed as the rent, and nothing else in the app could work that out.
+  await page.goto("/dashboard");
+  await page.getByRole("button", { name: "+ پاکت" }).click();
+  const picker = page.getByRole("dialog");
+  await expect(picker.getByRole("tab", { name: "متغیر" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await picker.getByRole("tab", { name: "ثابت" }).click();
+  await expect(picker).toContainText("سقف نمی‌خواهد");
 });

@@ -19,6 +19,7 @@ function category(slug: string, kind: "expense" | "income"): CategoryRow {
     name_fa: slug,
     slug,
     kind,
+    cost_kind: "variable",
     icon: null,
     color: null,
     is_system: true,
