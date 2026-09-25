@@ -69,8 +69,12 @@ const FAILURE_MESSAGES: Record<ModelError["kind"], string> = {
   malformed: "این فایل را نتوانستم بخوانم. PDF یا CSV خودِ بانک بهتر جواب می‌دهد.",
 };
 
-/** Same reasoning as limitReachedMessage in parse.ts. */
-export function importLimitReached({ limit, isGuest }: Allowance): string {
+/** Same reasoning as limitReachedMessage in parse.ts, including `disabled`. */
+export function importLimitReached({ limit, isGuest, disabled }: Allowance): string {
+  if (disabled) {
+    return "پردازش هوشمند فعلاً خاموش است. صورت‌حساب را بعداً آپلود کن.";
+  }
+
   const ceiling = `امروز به سقف ${faNumber(limit)} پردازش هوشمند رسیدی.`;
   return isGuest
     ? `${ceiling} مهمان‌ها سهم کمتری دارند؛ حساب بساز تا بیشتر شود.`

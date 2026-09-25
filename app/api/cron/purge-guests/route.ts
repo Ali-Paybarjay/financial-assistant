@@ -1,6 +1,8 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
-import { GUEST_RETENTION_DAYS, purgeGuest, staleGuestIds } from "@/lib/guests";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { sweepStaleGuests } from "@/lib/guests";
+import { readSettings } from "@/lib/settings-server";
 
 /**
  * Deletes guests nobody is coming back for.
@@ -13,6 +15,10 @@ import { GUEST_RETENTION_DAYS, purgeGuest, staleGuestIds } from "@/lib/guests";
  * It runs here rather than in Postgres because deleting an upload needs the
  * Storage API — see migration 0018 for the version that looked simpler and
  * could not work.
+ *
+ * The sweep itself is in lib/guests.ts, shared with the admin panel's «purge
+ * now», and it records the run in `cron_runs` so that «did it happen» is a
+ * question with an answer on a page rather than in a scheduler's log.
  */
 
 /** Same length or not, the comparison must not leak where it stopped matching. */
@@ -36,21 +42,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const ids = await staleGuestIds(GUEST_RETENTION_DAYS);
+  // The service role, because the scheduler is not a browser and carries no
+  // session — so there is no user whose RLS could read the settings row.
+  const settings = await readSettings(createAdminClient());
 
-  // One at a time, and one failure does not abandon the rest: a guest whose
-  // storage call times out should not keep every guest behind them alive for
-  // another day.
-  let purged = 0;
-  const failed: string[] = [];
-  for (const id of ids) {
-    try {
-      await purgeGuest(id);
-      purged += 1;
-    } catch {
-      failed.push(id);
-    }
-  }
+  const result = await sweepStaleGuests({
+    days: settings.guest_retention_days,
+    triggeredBy: "cron",
+  });
 
-  return NextResponse.json({ found: ids.length, purged, failed: failed.length });
+  return NextResponse.json(result);
 }

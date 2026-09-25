@@ -12,6 +12,7 @@ import {
   CheckCircle,
   Coins,
   CreditCard,
+  ShieldCheck,
   ListChecks,
   Palette,
   Plus,
@@ -64,6 +65,7 @@ export function SettingsView({
   categories,
   missingSteps,
   ledgerIsEmpty,
+  isAdmin,
 }: {
   profile: ProfileRow;
   email: string | null;
@@ -72,6 +74,12 @@ export function SettingsView({
   missingSteps: StepMeta[];
   /** Nothing recorded and no account, so nothing could be stranded. */
   ledgerIsEmpty: boolean;
+  /**
+   * Whether to draw the way into /admin. Decided on the server from the JWT
+   * claim, because this component is a client one and the claim is not
+   * something a client should be trusted to read about itself.
+   */
+  isAdmin: boolean;
 }) {
   const [sheet, setSheet] = useState<Sheet>(null);
   const isGuest = useIsGuest();
@@ -147,6 +155,22 @@ export function SettingsView({
           label="نام، کشور، سال تولد"
         />
       </Group>
+
+      {/* Only for an operator, and this is the only link to the panel that
+          exists anywhere in the app. Without it /admin is reachable only by
+          typing the address — which is how the feature came to look missing to
+          the person it was built for. Hiding the row from everyone else is not
+          the security boundary: middleware and requireAdmin() are. */}
+      {isAdmin && (
+        <Group title="مدیریت">
+          <Row
+            href="/admin"
+            icon={<ShieldCheck size={20} />}
+            label="پنل مدیریت"
+            value="فقط تو می‌بینی"
+          />
+        </Group>
+      )}
 
       <Group title="حساب">
         <div className="flex h-14 items-center gap-3 px-4">

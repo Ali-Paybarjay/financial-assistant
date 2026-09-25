@@ -16,7 +16,13 @@ export type ParseOutcome = ParseSuccess | ParseFailure;
  * wrong one reads as a bug in the counter. A guest is also told the way out,
  * because for them it is not "wait until tomorrow" — an account raises it now.
  */
-export function limitReachedMessage({ limit, isGuest }: Allowance): string {
+export function limitReachedMessage({ limit, isGuest, disabled }: Allowance): string {
+  // Nothing to do with this user's ceiling, so it must not name one: «تا فردا
+  // صبر کن» would be false, and «سقف ۰» would read as a bug in the counter.
+  if (disabled) {
+    return "پردازش هوشمند فعلاً خاموش است. با فرم ثبت کن؛ هیچ‌چیز از دست نمی‌رود.";
+  }
+
   const ceiling = `امروز به سقف ${faNumber(limit)} پردازش هوشمند رسیدی.`;
   return isGuest
     ? `${ceiling} مهمان‌ها سهم کمتری دارند؛ حساب بساز تا بیشتر شود، یا فعلاً با فرم ثبت کن.`

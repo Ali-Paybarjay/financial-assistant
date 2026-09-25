@@ -537,6 +537,212 @@ export type DongGroupTotalRow = {
   last_activity_on: string | null;
 };
 
+// ------------------------------------------------------------------ admin ---
+// Migration 0027. The panel reads counts and metadata and never a ledger row,
+// so nothing below carries an amount belonging to a user — the only money here
+// is `cost_cents`, which is what the app paid OpenRouter.
+
+/** What an admin did. Insert-only: there is no update or delete policy. */
+export type AdminAuditLogRow = {
+  id: string;
+  /** Null once the admin's own account is deleted; `actor_email` outlives it. */
+  actor_id: string | null;
+  actor_email: string | null;
+  /** `user.delete`, `guests.purge`, `category.save`, `settings.save`, … */
+  action: string;
+  target_type: string | null;
+  /** Sometimes a uuid, sometimes a category slug — so text. */
+  target_id: string | null;
+  detail: Record<string, unknown> | null;
+  created_at: string;
+};
+
+/** One run of a scheduled job. Written with the service role, like usage logs. */
+export type CronRunRow = {
+  id: string;
+  job: string;
+  triggered_by: "cron" | "admin";
+  started_at: string;
+  /** Null while running, and also when a run died part-way through. */
+  finished_at: string | null;
+  result: Record<string, unknown> | null;
+  error: string | null;
+};
+
+/**
+ * One runtime knob. `value` is jsonb of whatever shape that key's schema in
+ * lib/settings.ts says, which is why it is unknown here rather than a union:
+ * the parsing happens once, there.
+ */
+export type AppSettingRow = {
+  key: string;
+  value: unknown;
+  updated_at: string;
+  updated_by: string | null;
+};
+
+/** The single row of admin_overview(). */
+export type AdminOverviewRow = {
+  users_total: number;
+  users_guests: number;
+  users_registered: number;
+  users_onboarded: number;
+  users_new_7d: number;
+  users_active_7d: number;
+  transactions_total: number;
+  transactions_7d: number;
+  dong_groups_total: number;
+  dong_groups_open: number;
+  ai_calls_today: number;
+  ai_calls_7d: number;
+  ai_calls_30d: number;
+  /** Under-reports: logUsage rounds to whole cents and stores 0 as null. */
+  ai_cost_cents_30d: number;
+  ai_failures_7d: number;
+  ai_rate_limited_7d: number;
+  imports_open: number;
+  imports_failed_7d: number;
+  media_count: number;
+  media_bytes: number;
+  guests_stale: number;
+  last_purge_at: string | null;
+  last_purge_result: Record<string, unknown> | null;
+};
+
+export type AdminSignupDayRow = {
+  day: string;
+  guests: number;
+  registered: number;
+};
+
+/** One row of admin_users(). `total_count` is the same on every row. */
+export type AdminUserRow = {
+  id: string;
+  /** Null for a guest: an anonymous user's email is '', which is not an address. */
+  email: string | null;
+  full_name: string | null;
+  /** «guest» for anonymous, otherwise the auth provider. */
+  provider: string;
+  is_anonymous: boolean;
+  is_admin: boolean;
+  onboarded: boolean;
+  onboarding_step: number;
+  country_code: string | null;
+  base_currency: string | null;
+  created_at: string;
+  last_sign_in_at: string | null;
+  ai_calls_30d: number;
+  total_count: number;
+};
+
+/** The single row of admin_user_detail(). Counts and dates; never an amount. */
+export type AdminUserDetailRow = {
+  id: string;
+  email: string | null;
+  full_name: string | null;
+  provider: string;
+  is_anonymous: boolean;
+  is_admin: boolean;
+  created_at: string;
+  last_sign_in_at: string | null;
+  country_code: string | null;
+  timezone: string | null;
+  base_currency: string | null;
+  onboarding_step: number;
+  onboarding_completed_at: string | null;
+  default_workspace: WorkspaceId | null;
+  theme: string | null;
+  transactions_count: number;
+  accounts_count: number;
+  goals_count: number;
+  dong_groups_count: number;
+  imports_count: number;
+  media_count: number;
+  media_bytes: number;
+  ai_calls_30d: number;
+  ai_cost_cents_30d: number;
+  /** «Are they still using it», answered without naming a sum. */
+  last_transaction_on: string | null;
+};
+
+/** One (day, feature, status, model) bucket. The page folds these itself. */
+export type AdminAiDayRow = {
+  day: string;
+  feature: string;
+  status: string;
+  model: string;
+  calls: number;
+  cost_cents: number;
+  input_tokens: number;
+  output_tokens: number;
+};
+
+/** Percentiles over completed calls only — a timeout measures the budget. */
+export type AdminAiLatencyRow = {
+  feature: string;
+  p50: number | null;
+  p95: number | null;
+  calls: number;
+};
+
+export type AdminAiTopUserRow = {
+  user_id: string;
+  email: string | null;
+  is_anonymous: boolean;
+  calls: number;
+  cost_cents: number;
+  /** Refused before spending: over the ceiling, or the model switched off. */
+  rejected: number;
+  failed: number;
+};
+
+/** Import metadata. No `closing_balance`: that one figure is the user's money. */
+export type AdminImportRow = {
+  id: string;
+  user_id: string;
+  email: string | null;
+  is_anonymous: boolean;
+  status: StatementImportStatus;
+  source_currency: string;
+  target_currency: string;
+  period_from: string | null;
+  period_to: string | null;
+  file_count: number;
+  line_count: number;
+  matched_count: number;
+  new_count: number;
+  imported_count: number;
+  error_message: string | null;
+  /** Open, and untouched for over an hour — the state nothing else reports. */
+  is_stuck: boolean;
+  created_at: string;
+  updated_at: string;
+  applied_at: string | null;
+  total_count: number;
+};
+
+export type AdminGuestRow = {
+  id: string;
+  created_at: string;
+  last_sign_in_at: string | null;
+  /** Idle, not age: a guest who keeps coming back is still using the app. */
+  idle_days: number;
+  is_stale: boolean;
+  transactions_count: number;
+  media_count: number;
+  total_count: number;
+};
+
+/** Across every user, which is why the function needs definer rights. */
+export type AdminCategoryUsageRow = {
+  category_id: string;
+  transactions: number;
+  statement_lines: number;
+  recurring: number;
+  budgets: number;
+  baselines: number;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -576,6 +782,10 @@ export type Database = {
       category_budgets: Table<CategoryBudgetRow>;
       insight_dismissals: Table<InsightDismissalRow, "dismissed_at">;
       envelope_preferences: Table<EnvelopePreferenceRow, "updated_at">;
+      admin_audit_log: Table<AdminAuditLogRow>;
+      /** Select-only through the API; the service role writes it. */
+      cron_runs: Table<CronRunRow, "triggered_by" | "started_at">;
+      app_settings: Table<AppSettingRow, "updated_at">;
     };
     Views: Record<never, never>;
     Functions: {
@@ -639,6 +849,70 @@ export type Database = {
           p_account_id?: string | null;
         };
         Returns: string;
+      };
+
+      // ------------------------------------------------------------ admin ---
+      // Every one of these asserts admin first and raises 42501 otherwise, so
+      // being callable by `authenticated` is not being readable by it. See
+      // migration 0027.
+
+      /** True when the caller's *token* carries the claim — see adminJwtIsFresh. */
+      is_admin: {
+        Args: Record<never, never>;
+        Returns: boolean;
+      };
+      admin_overview: {
+        Args: { p_tz?: string; p_retention_days?: number };
+        Returns: AdminOverviewRow[];
+      };
+      admin_signups_daily: {
+        Args: { p_from: string; p_to: string; p_tz?: string };
+        Returns: AdminSignupDayRow[];
+      };
+      admin_users: {
+        Args: {
+          p_q?: string | null;
+          /** all · guest · registered · onboarded · pending */
+          p_kind?: string;
+          p_provider?: string | null;
+          p_page?: number;
+          p_page_size?: number;
+        };
+        Returns: AdminUserRow[];
+      };
+      admin_user_detail: {
+        Args: { p_id: string };
+        Returns: AdminUserDetailRow[];
+      };
+      admin_ai_usage_daily: {
+        Args: { p_from: string; p_to: string; p_tz?: string };
+        Returns: AdminAiDayRow[];
+      };
+      admin_ai_latency: {
+        Args: { p_from: string; p_to: string; p_tz?: string };
+        Returns: AdminAiLatencyRow[];
+      };
+      admin_ai_top_users: {
+        Args: { p_from: string; p_to: string; p_tz?: string; p_limit?: number };
+        Returns: AdminAiTopUserRow[];
+      };
+      admin_imports: {
+        Args: {
+          /** all · open · stuck · failed · applied · discarded */
+          p_status?: string;
+          p_user_id?: string | null;
+          p_page?: number;
+          p_page_size?: number;
+        };
+        Returns: AdminImportRow[];
+      };
+      admin_guests: {
+        Args: { p_retention_days?: number; p_limit?: number };
+        Returns: AdminGuestRow[];
+      };
+      admin_category_usage: {
+        Args: Record<never, never>;
+        Returns: AdminCategoryUsageRow[];
       };
     };
     Enums: Record<never, never>;

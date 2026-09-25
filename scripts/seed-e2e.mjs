@@ -70,7 +70,7 @@ const monthStart = (back) => {
 
 // ---------------------------------------------------------------- users ---
 
-async function recreate(email, fullName, { onboarded }) {
+async function recreate(email, fullName, { onboarded, admin = false }) {
   // listUsers is paged; the fixture database is small, one page is plenty.
   const { data: list, error } = await db.auth.admin.listUsers({ perPage: 1000 });
   if (error) throw new Error(`listUsers: ${error.message}`);
@@ -81,10 +81,16 @@ async function recreate(email, fullName, { onboarded }) {
     }
   }
 
+  // `admin` puts the claim in app_metadata, which is the only thing that makes
+  // /admin reachable. alpha carries it so the smoke suite can open the panel's
+  // pages at all; beta deliberately does not, and is what admin.spec probes
+  // every report and every policy with. Keep them on opposite sides of this:
+  // two admin fixtures would leave the negative half of that spec untested.
   const created = await db.auth.admin.createUser({
     email,
     password: PASSWORD,
     email_confirm: true,
+    app_metadata: admin ? { role: "admin" } : undefined,
   });
   ok(`create ${email}`, created);
   const id = created.data.user.id;
@@ -277,9 +283,9 @@ async function seedAlpha(userId) {
 
 // ------------------------------------------------------------------ run ---
 
-const alphaId = await recreate(ALPHA, "کاربر الف", { onboarded: true });
+const alphaId = await recreate(ALPHA, "کاربر الف", { onboarded: true, admin: true });
 const rows = await seedAlpha(alphaId);
-console.log(`${ALPHA}: ${rows} transactions, 1 account, 1 goal, 1 budget`);
+console.log(`${ALPHA}: ${rows} transactions, 1 account, 1 goal, 1 budget, admin`);
 
 await recreate(BETA, "کاربر ب", { onboarded: false });
 // Deliberately empty and deliberately mid-onboarding: isolation.spec needs a

@@ -6,7 +6,7 @@ import { cookies } from "next/headers";
 import { THEME_COOKIE, isTheme, type Theme } from "@/lib/theme";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { purgeUser } from "@/lib/guests";
 import { requireViewer } from "@/lib/auth";
 import { CURRENCIES } from "@/lib/money";
 import { profileSchema } from "@/lib/validation/onboarding";
@@ -121,8 +121,16 @@ export async function deleteAccount(confirmation: string): Promise<SettingsResul
     return { error: "نامت را دقیقاً همان‌طور که نوشته شده تایپ کن." };
   }
 
-  const { error } = await createAdminClient().auth.admin.deleteUser(viewer.userId);
-  if (error) return { error: "حذف نشد. دوباره بزن." };
+  // purgeUser, not a bare deleteUser: the uploads have no foreign key back to
+  // auth.users, so deleting the account on its own leaves every receipt and
+  // bank statement the person uploaded sitting in storage. This path had that
+  // bug for as long as it has existed — the sweep in lib/guests.ts was the only
+  // place that swept, and it only ran for guests.
+  try {
+    await purgeUser(viewer.userId);
+  } catch {
+    return { error: "حذف نشد. دوباره بزن." };
+  }
 
   const supabase = await createClient();
   await supabase.auth.signOut();

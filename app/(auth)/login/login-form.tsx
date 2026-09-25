@@ -19,7 +19,14 @@ import { continueAsGuest, login, signInWithGoogle } from "../actions";
  * so it takes the primary style the password button used to have, and the
  * sign-up and forgot-password links leave with the form they belonged to.
  */
-export function LoginForm({ showPassword }: { showPassword: boolean }) {
+export function LoginForm({
+  showPassword,
+  next,
+}: {
+  showPassword: boolean;
+  /** Where the gate was sending them, so Google does not lose it. */
+  next?: string;
+}) {
   const [formError, setFormError] = useState<string>();
   const [isPending, startTransition] = useTransition();
   const hydrated = useHydrated();
@@ -102,7 +109,7 @@ export function LoginForm({ showPassword }: { showPassword: boolean }) {
       <form
         action={() => {
           startGoogleTransition(async () => {
-            const result = await signInWithGoogle();
+            const result = await signInWithGoogle(next);
             if (result && "error" in result) setFormError(result.error);
           });
         }}

@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isAdmin, isAdminPath } from "@/lib/admin/claims";
 import type { Database } from "./database.types";
 
 const PUBLIC_PATHS = [
@@ -25,6 +26,12 @@ function isPublic(pathname: string): boolean {
  * Refreshes the auth cookie and gates private routes. The onboarding redirect
  * lives in the (app) layout instead — it needs the profile row, and putting a
  * table read on every request here would tax static assets too.
+ *
+ * The admin gate *does* live here, and it is the only one: a server action is a
+ * POST to a path this matcher covers, so gating in the layout alone would leave
+ * every admin action reachable by anyone who knew the action id. It costs
+ * nothing — `getUser()` below already returns `app_metadata`, so the claim is in
+ * hand and no query is added.
  */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -70,6 +77,20 @@ export async function updateSession(request: NextRequest) {
     url.pathname = "/";
     url.search = "";
     return NextResponse.redirect(url);
+  }
+
+  // 404, not 403: a page that says «you are not allowed here» has told whoever
+  // asked that the page is there. Rewritten to a path no route owns, so
+  // app/not-found.tsx renders with a real 404 status.
+  //
+  // Refreshed cookies are dropped on this branch, the same trade the redirect
+  // above already makes — a request that is not being served the app does not
+  // need its session rotated.
+  if (isAdminPath(pathname) && !isAdmin(user)) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/404";
+    url.search = "";
+    return NextResponse.rewrite(url);
   }
 
   return response;

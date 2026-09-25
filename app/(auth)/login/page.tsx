@@ -16,15 +16,15 @@ const LINK_ERRORS: Record<string, string> = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; method?: string }>;
+  searchParams: Promise<{ error?: string; method?: string; next?: string }>;
 }) {
-  const { error, method } = await searchParams;
+  const { error, method, next } = await searchParams;
   const message = error ? LINK_ERRORS[error] : undefined;
 
   return (
     <div className="flex flex-col gap-4">
       {message && <FormError>{message}</FormError>}
-      <LoginForm showPassword={showsPasswordLogin(method)} />
+      <LoginForm showPassword={showsPasswordLogin(method)} next={next} />
     </div>
   );
 }

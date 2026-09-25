@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { accountIsEmpty, purgeGuest } from "@/lib/guests";
+import { accountIsEmpty, purgeUser } from "@/lib/guests";
 import {
   LINK_INTENT_COOKIE,
   LINK_INTENT_MAX_AGE,
@@ -173,7 +173,7 @@ export async function GET(request: NextRequest) {
     // the row stays — a stray account is a mess, a deleted one is a loss.
     if (stray !== leaving && (await accountIsEmpty(stray))) {
       try {
-        await purgeGuest(stray);
+        await purgeUser(stray);
       } catch {
         // Leaving it behind is untidy, not harmful.
       }
@@ -190,7 +190,7 @@ export async function GET(request: NextRequest) {
     // the guest they agreed to give up can go. Same as every other sign-out in
     // this app, which takes a guest's data with it.
     try {
-      await purgeGuest(leaving);
+      await purgeUser(leaving);
     } catch {
       // Not worth failing the sign-in over. purge_stale_guests() sweeps.
     }
@@ -208,8 +208,11 @@ export async function GET(request: NextRequest) {
   }
 
   // Only same-origin relative paths, so a crafted link cannot bounce the user
-  // off-site with a fresh session in hand.
+  // off-site with a fresh session in hand. «//evil.example» starts with a
+  // slash and is not a relative path — the browser reads it as a protocol-
+  // relative url — so a bare startsWith("/") would have let it through.
   const next = searchParams.get("next") ?? "/";
-  const destination = next.startsWith("/") ? next : "/";
+  const destination =
+    next.startsWith("/") && !next.startsWith("//") ? next : "/";
   return land(destination);
 }

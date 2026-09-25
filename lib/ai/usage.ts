@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSessionUser } from "@/lib/auth";
 import { startOfDayUtc, todayInTimeZone } from "@/lib/date";
+import { DEFAULT_SETTINGS } from "@/lib/settings";
+import { appSettings } from "@/lib/settings-server";
 
 /** The three routes that cost money. */
 export type AiFeature = "parse_text" | "parse_receipt" | "parse_statement";
@@ -23,12 +25,13 @@ export type AiFeature = "parse_text" | "parse_receipt" | "parse_statement";
  * against what it actually costs. The worst case rises from 50 calls to 85,
  * and gets *cheaper*, because 50 statement parses cost many times what
  * 60 text parses plus 20 receipts plus 5 statements do.
+ *
+ * These are now the *defaults*. `app_settings.ai_daily_limits` can override
+ * them without a deploy — see lib/settings.ts and lib/settings-server.ts — and falls back to exactly
+ * these numbers whenever it cannot.
  */
-export const FEATURE_DAILY_LIMITS: Record<AiFeature, number> = {
-  parse_text: 60,
-  parse_receipt: 20,
-  parse_statement: 5,
-};
+export const FEATURE_DAILY_LIMITS: Record<AiFeature, number> =
+  DEFAULT_SETTINGS.ai_daily_limits;
 
 /**
  * What a guest gets instead.
@@ -51,13 +54,19 @@ export const FEATURE_DAILY_LIMITS: Record<AiFeature, number> = {
  * to sign in — which is a worse trade than a few cents an hour. See
  * DECISIONS.md.
  */
-export const GUEST_DAILY_CALL_LIMIT = 3;
+export const GUEST_DAILY_CALL_LIMIT = DEFAULT_SETTINGS.guest_daily_calls;
 
 export type Allowance = {
   remaining: number;
   /** What the ceiling was, so the message that reports it can say a true number. */
   limit: number;
   isGuest: boolean;
+  /**
+   * The model is switched off for everybody, not this user's ceiling reached.
+   * A different sentence, because «wait until tomorrow» is false advice when
+   * the answer is «the operator turned it off».
+   */
+  disabled: boolean;
 };
 
 /**
@@ -70,6 +79,11 @@ export type Allowance = {
  * feature: their ceiling exists to keep the demo affordable for an account
  * that costs one tap to make, and three of each would be three times the
  * number that was actually reasoned about.
+ *
+ * This is also the single checkpoint in front of every model call — both
+ * lib/ai/parse.ts and lib/ai/statement.ts go through it — which is why the
+ * kill switch is read here rather than on the three routes. A switch with
+ * three implementations is a switch that is off in two places.
  */
 export async function remainingCalls(
   timeZone: string,
@@ -80,7 +94,18 @@ export async function remainingCalls(
   const since = startOfDayUtc(todayInTimeZone(timeZone), timeZone);
 
   const isGuest = user?.is_anonymous === true;
-  const limit = isGuest ? GUEST_DAILY_CALL_LIMIT : FEATURE_DAILY_LIMITS[feature];
+
+  // One primary-key read on a five-row table, on a path that is already about
+  // to run a count — and the count below is the expensive half.
+  const settings = await appSettings();
+
+  if (!settings.ai_enabled) {
+    return { remaining: 0, limit: 0, isGuest, disabled: true };
+  }
+
+  const limit = isGuest
+    ? settings.guest_daily_calls
+    : settings.ai_daily_limits[feature];
 
   const query = supabase
     .from("ai_usage_logs")
@@ -89,7 +114,12 @@ export async function remainingCalls(
 
   const { count } = await (isGuest ? query : query.eq("feature", feature));
 
-  return { remaining: Math.max(0, limit - (count ?? 0)), limit, isGuest };
+  return {
+    remaining: Math.max(0, limit - (count ?? 0)),
+    limit,
+    isGuest,
+    disabled: false,
+  };
 }
 
 export type UsageRecord = {
