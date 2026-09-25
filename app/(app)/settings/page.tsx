@@ -1,4 +1,5 @@
-import { requireViewer } from "@/lib/auth";
+import { getSessionUser, requireViewer } from "@/lib/auth";
+import { isAdmin } from "@/lib/admin/claims";
 import { createClient } from "@/lib/supabase/server";
 import { listCategories } from "@/lib/queries/categories";
 import { listMissingOnboardingSteps } from "@/lib/queries/onboarding";
@@ -6,6 +7,7 @@ import { SettingsView } from "./settings-view";
 
 export default async function SettingsPage() {
   const viewer = await requireViewer();
+  const user = await getSessionUser();
   const supabase = await createClient();
 
   // Whether changing the base currency would strand anything. Counted rather
@@ -32,6 +34,7 @@ export default async function SettingsPage() {
       categories={categories}
       missingSteps={missingSteps}
       ledgerIsEmpty={ledgerIsEmpty}
+      isAdmin={isAdmin(user)}
     />
   );
 }

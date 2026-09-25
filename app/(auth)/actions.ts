@@ -199,16 +199,34 @@ async function markLinkIntent(intent: LinkIntent): Promise<void> {
   });
 }
 
-export async function signInWithGoogle(): Promise<ActionResult> {
+/**
+ * `next` is where the person was going when the gate sent them here.
+ *
+ * Only a path, and checked here rather than trusted: a `next` of
+ * `https://elsewhere.example` would turn the app's own login into an open
+ * redirect. /callback applies the same rule to what comes back.
+ */
+function safeNext(next: string | undefined): string | null {
+  if (!next || !next.startsWith("/") || next.startsWith("//")) return null;
+  return next;
+}
+
+export async function signInWithGoogle(next?: string): Promise<ActionResult> {
   const supabase = await createClient();
   const origin = await requestOrigin();
+
+  // The destination has to survive the trip to Google and back, and the only
+  // thing that comes back is the callback url — so it rides on that. Without
+  // this the middleware's `?next=` was dead for every signed-out deep link,
+  // because Google is the only door: you always landed on «/» instead of on
+  // the page you asked for.
+  const callback = new URL("/callback", origin ?? appUrl("/"));
+  const destination = safeNext(next);
+  if (destination) callback.searchParams.set("next", destination);
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
-    options: {
-      redirectTo: origin
-        ? new URL("/callback", origin).toString()
-        : appUrl("/callback"),
-    },
+    options: { redirectTo: callback.toString() },
   });
 
   if (error) return { error: translateAuthError(error.message) };

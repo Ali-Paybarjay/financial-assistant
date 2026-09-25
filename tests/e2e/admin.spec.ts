@@ -228,6 +228,55 @@ test.describe("the panel is sealed off from an ordinary account", () => {
     expect(insertError, "beta can create a system category").not.toBeNull();
   });
 
+  test("an admin can find the panel, and nobody else is shown it", async ({ page }) => {
+    test.setTimeout(120_000);
+
+    // The row in settings is the only link to /admin anywhere in the app.
+    // Without it the panel is reachable only by typing the address, which is
+    // how a finished feature comes to look missing to the person it was built
+    // for — so it is worth a test of its own.
+    await page.goto("/login?method=password");
+    await page.getByLabel("ایمیل").fill(ALPHA_EMAIL);
+    await page.getByLabel("رمز").fill(PASSWORD);
+    await page.getByRole("button", { name: "ورود", exact: true }).click();
+    await page.waitForURL((url) => !url.pathname.startsWith("/login"));
+
+    await page.goto("/settings");
+    await page.getByRole("link", { name: /پنل مدیریت/ }).click();
+    await page.waitForURL(/\/admin$/);
+    await expect(
+      page.getByRole("heading", { level: 1, name: "نمای کلی" }),
+    ).toBeVisible({ timeout: 20_000 });
+
+    // Hiding the row is not the boundary — middleware and requireAdmin() are,
+    // and the tests above cover those. This is about not advertising it.
+    await page.context().clearCookies();
+    await page.goto("/login?method=password");
+    await page.getByLabel("ایمیل").fill(BETA_EMAIL);
+    await page.getByLabel("رمز").fill(PASSWORD);
+    await page.getByRole("button", { name: "ورود", exact: true }).click();
+    await page.waitForURL((url) => !url.pathname.startsWith("/login"));
+
+    await page.goto("/settings");
+    await expect(page.getByRole("link", { name: /پنل مدیریت/ })).toHaveCount(0);
+  });
+
+  test("a signed-out link to /admin keeps its destination through the gate", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+
+    // Google is the only real door, and it used to drop `?next=` — so every
+    // signed-out deep link in the app landed on «/» instead of where it was
+    // pointing. The gate has to put the destination on the url, and the login
+    // page has to still be there to hand it to the action.
+    await page.goto("/admin", { waitUntil: "domcontentloaded" });
+
+    expect(new URL(page.url()).pathname).toBe("/login");
+    expect(new URL(page.url()).searchParams.get("next")).toBe("/admin");
+    await expect(page.getByRole("button", { name: "ورود با گوگل" })).toBeVisible();
+  });
+
   test("/admin is a 404 for an account without the claim", async ({ page }) => {
     test.setTimeout(120_000);
 

@@ -208,8 +208,11 @@ export async function GET(request: NextRequest) {
   }
 
   // Only same-origin relative paths, so a crafted link cannot bounce the user
-  // off-site with a fresh session in hand.
+  // off-site with a fresh session in hand. «//evil.example» starts with a
+  // slash and is not a relative path — the browser reads it as a protocol-
+  // relative url — so a bare startsWith("/") would have let it through.
   const next = searchParams.get("next") ?? "/";
-  const destination = next.startsWith("/") ? next : "/";
+  const destination =
+    next.startsWith("/") && !next.startsWith("//") ? next : "/";
   return land(destination);
 }
