@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Tray, WarningCircle } from "@phosphor-icons/react/dist/ssr";
+import { CheckCircle, Tray, WarningCircle } from "@phosphor-icons/react/dist/ssr";
 import { Money } from "@/components/money";
 import {
+  commitmentLeft,
   dailyAllowance,
   envelopeState,
   suggestedCeiling,
@@ -211,5 +212,118 @@ export function UnsetEnvelopeCard({
         سقف بگذار
       </button>
     </div>
+  );
+}
+
+
+/**
+ * A bill, drawn as a bill.
+ *
+ * Rent, the electricity, the loan instalment: the amount was decided by
+ * somebody else and the date was decided by somebody else, so there is no
+ * ceiling to set and no ceiling to be over. Every affordance this card does
+ * *not* have is the point — no «سقف بگذار», no red, no warning triangle.
+ *
+ * The one question a fixed cost raises is whether it has been paid, so that
+ * is what the big figure answers: what is still to pay, where the user told
+ * us what this costs each month, and what has gone out where they did not.
+ * Same grammar as the envelope beside it — «مانده» first, always — asked of
+ * the obligation instead of the allowance.
+ *
+ * Paying more than was declared is stated, not scolded. A bill that came in
+ * higher is news; it is not a failure of discipline, and colouring it as one
+ * would be the app telling somebody off for the electricity company's
+ * decision.
+ */
+export function FixedEnvelopeCard({
+  envelope,
+  currency,
+  href,
+}: {
+  envelope: EnvelopeRow;
+  currency: CurrencyCode;
+  /** The ledger, filtered to this category. */
+  href: string;
+}) {
+  const {
+    spent_minor: spent,
+    unconfirmed_minor: unconfirmed,
+    baseline_minor: committed,
+  } = envelope;
+
+  const left = commitmentLeft(envelope);
+  const outstanding = left !== null && left > 0;
+  const settled = left === 0;
+  const hasUnconfirmed = unconfirmed > 0;
+
+  // What is still to pay, where that is knowable; otherwise what has gone
+  // out. The figure never means both at once — the line under it says which.
+  const figure = outstanding ? left : spent;
+
+  const filled =
+    committed && committed > 0
+      ? Math.min(100, Math.round((spent / committed) * 100))
+      : 0;
+
+  return (
+    <Link
+      href={href}
+      className="flex flex-col rounded-well border border-hairline bg-surface p-3 transition-colors hover:border-hairline-strong"
+    >
+      <span className="flex items-center gap-1.5 truncate text-caption text-ink-muted">
+        {envelope.name_fa}
+        {settled && <CheckCircle size={13} weight="fill" className="text-positive" aria-hidden />}
+      </span>
+
+      <Money
+        minor={figure}
+        currency={currency}
+        className={cn(
+          "mt-1.5 w-fit text-figure-md font-bold text-ink",
+          hasUnconfirmed && "rule-guess",
+        )}
+      />
+
+      <span className="mt-0.5 text-micro text-ink-faint">
+        {hasUnconfirmed ? (
+          <>
+            شامل <Money minor={unconfirmed} currency={currency} /> تأییدنشده
+          </>
+        ) : outstanding && committed !== null ? (
+          <>
+            از <Money minor={committed} currency={currency} /> مانده
+          </>
+        ) : settled && committed !== null && spent > committed ? (
+          <>
+            بیشتر از <Money minor={committed} currency={currency} /> ماهانه
+          </>
+        ) : settled ? (
+          <>پرداخت شد</>
+        ) : (
+          <>این ماه پرداخت شده</>
+        )}
+      </span>
+
+      {/* Only where there is something to fill: a bill nobody declared has no
+          «out of how much», and a bar at zero would claim one. */}
+      {committed !== null && committed > 0 && (
+        <span
+          role="progressbar"
+          aria-valuenow={filled}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={`${envelope.name_fa} — ${settled ? "پرداخت‌شده" : "پرداخت‌نشده"}`}
+          className="mt-2.5 flex h-1.5 justify-end overflow-hidden rounded-full bg-paper"
+        >
+          <span
+            className={cn(
+              "h-full rounded-full",
+              settled ? "bg-positive" : "bg-ink-faint",
+            )}
+            style={{ width: `${Math.max(filled, 4)}%` }}
+          />
+        </span>
+      )}
+    </Link>
   );
 }

@@ -10,6 +10,7 @@ import {
 } from "@/lib/queries/transactions";
 import { ensureRecurringPosted, listMissedRecurring } from "@/lib/queries/recurring";
 import { listEnvelopes, suggestedBudgets } from "@/lib/queries/envelopes";
+import { isFixedCost } from "@/lib/envelopes";
 import {
   dismissedInsightKeys,
   oldestUnconfirmed,
@@ -22,7 +23,11 @@ import { DashboardView } from "./dashboard-view";
 
 const SERIES_MONTHS = 6;
 
-/** What to ask a brand-new account about, having no history to rank. */
+/**
+ * What to ask a brand-new account about, having no history to rank. All
+ * three are variable by definition — a ceiling is only worth proposing where
+ * the user could act on it.
+ */
 const INVITE_SLUGS = ["groceries", "dining", "transport"];
 
 export default async function DashboardPage({
@@ -152,7 +157,12 @@ export default async function DashboardPage({
    */
   const hasAnyBudget = envelopes.some((row) => row.budget_minor !== null);
   const inviteKey = `budget_invite:${range.month.slice(0, 7)}`;
-  const spentCandidates = envelopes.filter((row) => row.spent_minor > 0).slice(0, 3);
+  // Variable only. The month's biggest expense is very often the rent, and
+  // an invitation that opened with «سقف اجاره‌ات را بگذار» would be asking
+  // the user to budget for the one thing they cannot spend differently.
+  const spentCandidates = envelopes
+    .filter((row) => !isFixedCost(row) && row.spent_minor > 0)
+    .slice(0, 3);
   const fallbackCandidates = INVITE_SLUGS.flatMap((slug) => {
     const category = categories.find((entry) => entry.slug === slug);
     if (!category) return [];
@@ -160,6 +170,7 @@ export default async function DashboardPage({
       {
         category_id: category.id,
         name_fa: category.name_fa,
+        cost_kind: category.cost_kind,
         budget_minor: null,
         spent_minor: 0,
         remaining_minor: null,

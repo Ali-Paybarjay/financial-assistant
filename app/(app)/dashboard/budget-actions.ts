@@ -6,6 +6,7 @@ import { requireViewer } from "@/lib/auth";
 import { toMinor } from "@/lib/money";
 import { monthRange } from "@/lib/date";
 import { categoryBudgetFormSchema } from "@/lib/validation/records";
+import type { CostKind } from "@/lib/supabase/database.types";
 
 export type BudgetResult = { error: string } | { ok: true };
 
@@ -24,6 +25,10 @@ const GENERIC_ERROR = "ذخیره نشد. دوباره بزن؛ اگر باز ه
  * not expressible anyway (the column checks amount_minor > 0), and «no ceiling»
  * is a different statement from «a ceiling of nothing»: the board draws the
  * first as an open decision and the second would read as permanently over.
+ *
+ * A fixed cost is refused. The trigger in migration 0026 refuses it too — this
+ * is here so the refusal arrives as a sentence in the user's language instead
+ * of a database error the sheet would have to render as «ذخیره نشد».
  */
 export async function setCategoryBudget(raw: unknown): Promise<BudgetResult> {
   const parsed = categoryBudgetFormSchema.safeParse(raw);
@@ -32,6 +37,23 @@ export async function setCategoryBudget(raw: unknown): Promise<BudgetResult> {
   const viewer = await requireViewer();
   const supabase = await createClient();
   const { month } = monthRange(viewer.timeZone);
+
+  // Clearing is always allowed: whatever the category is now, a row that
+  // should not exist should be removable. Only writing one is gated.
+  if (parsed.data.amount) {
+    const { data: category } = await supabase
+      .from("categories")
+      .select("cost_kind")
+      .eq("id", parsed.data.categoryId)
+      .single();
+
+    if (category?.cost_kind === "fixed") {
+      return {
+        error:
+          "این یک هزینه‌ی ثابت است — مبلغش از قبل معلوم است و باید پرداخت شود. سقف گذاشتن برایش کاری از پیش نمی‌برد.",
+      };
+    }
+  }
 
   if (!parsed.data.amount) {
     const { error } = await supabase
@@ -108,13 +130,21 @@ export async function setEnvelopeOnBoard(
  * row the entry form and the ledger filter use — so a packet the user
  * invents here is a real category everywhere, not a board-only label that
  * nothing could ever be filed under.
+ *
+ * `costKind` is asked for because the system categories cannot answer it on
+ * a user's behalf: «قسط ماشین» is exactly as fixed as «اجاره», and without
+ * the question the app would go straight back to asking for a ceiling on it.
+ * It defaults to variable, which is what most invented packets are — a trip,
+ * a hobby, a month of something.
  */
 export async function createEnvelopeCategory(
   rawName: string,
+  costKind: CostKind = "variable",
 ): Promise<BudgetResult> {
   const name = rawName.trim();
   if (name.length < 2) return { error: "نام پاکت را بنویس." };
   if (name.length > 40) return { error: "نام پاکت خیلی بلند است." };
+  if (costKind !== "fixed" && costKind !== "variable") return { error: GENERIC_ERROR };
 
   const viewer = await requireViewer();
   const supabase = await createClient();
@@ -130,6 +160,7 @@ export async function createEnvelopeCategory(
       name_fa: name,
       slug,
       kind: "expense",
+      cost_kind: costKind,
       is_system: false,
       sort_order: 900,
     })

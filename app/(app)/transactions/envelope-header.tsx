@@ -7,8 +7,10 @@ import { BudgetSheet } from "@/components/dashboard/budget-sheet";
 import { setEnvelopeOnBoard } from "@/app/(app)/dashboard/budget-actions";
 import { faNumber } from "@/lib/format";
 import {
+  commitmentLeft,
   dailyAllowance,
   envelopeState,
+  isFixedCost,
   projectedSpend,
   type EnvelopeRow,
 } from "@/lib/envelopes";
@@ -68,6 +70,70 @@ export function EnvelopeHeader({
     </button>
   );
   const { budget_minor: budget, spent_minor: spent } = envelope;
+
+  /**
+   * A bill has no header about ceilings, because it has no ceiling and the
+   * page should not offer to give it one. What it gets instead is the only
+   * question it raises — has it been paid this month — and the reason there
+   * is no «سقف بگذار» button here, said once, so its absence reads as a
+   * decision rather than as something missing.
+   */
+  if (isFixedCost(envelope)) {
+    const committed = envelope.baseline_minor;
+    const left = commitmentLeft(envelope);
+    const outstanding = left !== null && left > 0;
+
+    return (
+      <section className="mt-4 rounded-card border border-hairline bg-surface p-4">
+        <div className="@container flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-caption text-ink-muted">
+              {outstanding ? "مانده برای پرداخت" : "پرداخت‌شده در این ماه"}
+            </p>
+            <span className="mt-0.5 block font-display text-[clamp(1.375rem,8cqw,2rem)] leading-[1.1] font-extrabold">
+              <Money
+                minor={outstanding ? left : spent}
+                currency={currency}
+                className="text-ink"
+              />
+            </span>
+          </div>
+          <span className="shrink-0 rounded-full bg-paper px-2.5 py-1 text-micro font-semibold text-ink-muted">
+            هزینه‌ی ثابت
+          </span>
+        </div>
+
+        {/* Only where it says something. «۱٬۷۷۷ از ۱٬۷۷۷» is the big figure
+            written out twice; that the bill came in at the usual amount is
+            the fact worth having, so that is what it says instead. */}
+        {committed !== null && committed > 0 && (
+          <p className="mt-1 text-caption text-ink-muted">
+            {spent === committed ? (
+              <>طبق همان مبلغ ماهانهٔ همیشگی.</>
+            ) : (
+              <>
+                <Money minor={spent} currency={currency} /> از{" "}
+                <Money minor={committed} currency={currency} /> ماهانه
+              </>
+            )}
+          </p>
+        )}
+
+        <p className="mt-3 border-t border-hairline pt-3 text-body text-ink">
+          مبلغ این دسته از قبل معلوم است و باید پرداخت شود، پس سقفی برایش
+          نمی‌گذاریم. فقط نشان می‌دهم پرداخت شده یا نه.
+        </p>
+
+        <div className="mt-3 flex items-center justify-between gap-3 border-t border-hairline pt-3">
+          <p className="text-caption font-semibold text-ink-muted">
+            {faNumber(rowCount)} ردیف در این دسته
+          </p>
+          {removeButton}
+        </div>
+      </section>
+    );
+  }
+
   const state = envelopeState(budget, spent);
   const perDay = dailyAllowance(budget, spent, daysLeft);
   const projected = projectedSpend(spent, daysGone, daysGone + daysLeft);

@@ -2,12 +2,16 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { EnvelopeCard, UnsetEnvelopeCard } from "@/components/dashboard/envelope-card";
+import {
+  EnvelopeCard,
+  FixedEnvelopeCard,
+  UnsetEnvelopeCard,
+} from "@/components/dashboard/envelope-card";
 import { BudgetSheet } from "@/components/dashboard/budget-sheet";
 import { BudgetInvite } from "@/components/dashboard/budget-invite";
 import { EnvelopePicker } from "@/components/dashboard/envelope-picker";
 import { dismissInsight } from "@/app/(app)/dashboard/insight-actions";
-import { envelopeState, type EnvelopeRow } from "@/lib/envelopes";
+import { envelopeState, isFixedCost, type EnvelopeRow } from "@/lib/envelopes";
 import type { CurrencyCode, Minor } from "@/lib/money";
 import type { CategoryRow } from "@/lib/supabase/database.types";
 
@@ -48,12 +52,19 @@ export function EnvelopeBoard({
   const [picking, setPicking] = useState(false);
   const [, startDismissing] = useTransition();
 
-  // `envelope_status()` already sorts the unset ones last; this splits them
-  // out because they are laid out differently, not to reorder them.
-  const withBudget = envelopes.filter(
+  // `envelope_status()` already sorts fixed costs last and the unset ones
+  // after the budgeted ones; this splits them out because the three are laid
+  // out differently, not to reorder them.
+  //
+  // Fixed first in the code, because it is the test that decides what the
+  // other two even mean: a bill has no ceiling and never will, so asking
+  // whether its ceiling is set is a question with no answer.
+  const fixed = envelopes.filter(isFixedCost);
+  const variable = envelopes.filter((envelope) => !isFixedCost(envelope));
+  const withBudget = variable.filter(
     (envelope) => envelopeState(envelope.budget_minor, envelope.spent_minor) !== "unset",
   );
-  const unset = envelopes.filter(
+  const unset = variable.filter(
     (envelope) => envelopeState(envelope.budget_minor, envelope.spent_minor) === "unset",
   );
 
@@ -118,6 +129,32 @@ export function EnvelopeBoard({
             />
           ))}
         </div>
+      )}
+
+      {/* Bills, under their own heading and after the envelopes.
+          Separate because they are a different kind of fact: an envelope
+          says what is left of a decision, a bill says whether an obligation
+          has been met, and a board that mixed the two would be asking the
+          reader to work out which each card meant. */}
+      {fixed.length > 0 && (
+        <>
+          <h3 className="mt-2 text-section font-semibold text-ink-muted">
+            هزینه‌های ثابت
+          </h3>
+          <p className="-mt-2 text-caption text-ink-faint">
+            مبلغشان معلوم است و باید پرداخت شوند — سقف نمی‌خواهند.
+          </p>
+          <div className="grid grid-cols-2 gap-2.5 min-[960px]:grid-cols-3">
+            {fixed.map((envelope) => (
+              <FixedEnvelopeCard
+                key={envelope.category_id}
+                envelope={envelope}
+                currency={currency}
+                href={`/transactions?category=${slugById[envelope.category_id] ?? ""}`}
+              />
+            ))}
+          </div>
+        </>
       )}
 
       <EnvelopePicker
