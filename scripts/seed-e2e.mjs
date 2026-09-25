@@ -97,6 +97,11 @@ async function recreate(email, fullName, { onboarded }) {
   // that has never finished — that is its whole subject — and isolation.spec
   // leans on the same fact when it checks that a half-set-up account is not
   // handed someone else's figures on the way past a redirect.
+  //
+  // beta stops at step 1 rather than at 0, because the flow refuses to let
+  // anyone skip ahead: from step 0 only step 1 is reachable, and two of
+  // onboarding.spec's tests open step 2 directly. «Abandoned partway» is the
+  // state that spec describes anyway.
   ok(
     `profile ${email}`,
     await db
@@ -106,7 +111,7 @@ async function recreate(email, fullName, { onboarded }) {
         country_code: "CA",
         timezone: "America/Toronto",
         base_currency: "CAD",
-        onboarding_step: onboarded ? 7 : 0,
+        onboarding_step: onboarded ? 6 : 1,
         onboarding_completed_at: onboarded ? new Date().toISOString() : null,
       })
       .eq("id", id),

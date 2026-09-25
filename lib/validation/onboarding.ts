@@ -6,7 +6,6 @@ import {
   FREQUENCY_OPTIONS,
   GOAL_TYPE_OPTIONS,
   INCOME_TYPE_OPTIONS,
-  RISK_QUESTIONS,
 } from "@/lib/onboarding/config";
 
 const currency = z.enum(CURRENCIES);
@@ -16,31 +15,30 @@ const amountText = z.string().trim().min(1, "مبلغ را بنویس");
 
 const currentYear = new Date().getFullYear();
 
+/**
+ * Onboarding's first step, and the only answer the app insists on.
+ *
+ * The birth year and the employment status used to be here too. They are
+ * still worth having — they are on the profile sheet in settings — but the
+ * step's own subtitle promises «فقط نامت لازم است», and a screen that then
+ * shows two more questions is arguing with itself. Asking for them later, in
+ * the place someone goes to fill things in, is the same data at a better
+ * moment.
+ */
 export const step1Schema = z.object({
   fullName: z.string().trim().min(2, "نامت را بنویس").max(80),
   countryCode: z.enum(COUNTRIES.map((c) => c.code)),
   baseCurrency: currency,
-  // Optional, since the flow stopped insisting on anything but the name. An
-  // unanswered field arrives as null, never as NaN — the form schema below
-  // maps it before anything is sent, because NaN has no JSON spelling.
-  birthYear: z
-    .number({ error: "سال تولد را با رقم بنویس، مثل 1990" })
-    .int()
-    .min(1930, "سال تولد را درست وارد کن")
-    // The 13-year floor depends on the current year, so it lives here rather
-    // than in a CHECK constraint, which Postgres requires to be immutable.
-    .max(currentYear - 13, "باید دست‌کم ۱۳ سال داشته باشی")
-    .nullable(),
-  employmentStatus: z.enum(EMPLOYMENT_OPTIONS.map((o) => o.value)).nullable(),
   // Read from the browser, not asked. "This month" is computed in it.
   timezone: z.string().min(1),
 });
 
+export const step1FormSchema = step1Schema.omit({ timezone: true });
+
 /**
- * What the two profile forms — step 1 and the sheet in settings — bind to.
- * The same rules as above, but the DOM hands over strings, and "" is what an
- * untouched optional field looks like; this turns it into the null the server
- * schema expects before the rules run.
+ * The sheet in settings. The DOM hands everything over as a string, and "" is
+ * what an untouched optional field looks like; these turn it into the null the
+ * database expects before the rules run.
  */
 const blankToNull = (value: unknown) =>
   value === "" || value === undefined ? null : value;
@@ -51,13 +49,29 @@ const blankToNullNumber = (value: unknown) =>
       : Number(value)
     : (value ?? null);
 
-export const step1FormSchema = step1Schema.omit({ timezone: true }).extend({
-  birthYear: z.preprocess(blankToNullNumber, step1Schema.shape.birthYear),
-  employmentStatus: z.preprocess(blankToNull, step1Schema.shape.employmentStatus),
+const birthYear = z
+  .number({ error: "سال تولد را با رقم بنویس، مثل 1990" })
+  .int()
+  .min(1930, "سال تولد را درست وارد کن")
+  // The 13-year floor depends on the current year, so it lives here rather
+  // than in a CHECK constraint, which Postgres requires to be immutable.
+  .max(currentYear - 13, "باید دست‌کم ۱۳ سال داشته باشی")
+  .nullable();
+
+const employmentStatus = z.enum(EMPLOYMENT_OPTIONS.map((o) => o.value)).nullable();
+
+/** What settings validates on the server. Currency is changed elsewhere. */
+export const profileSchema = z.object({
+  fullName: step1Schema.shape.fullName,
+  countryCode: step1Schema.shape.countryCode,
+  birthYear,
+  employmentStatus,
 });
 
-/** Settings changes the currency elsewhere, behind a warning of its own. */
-export const profileFormSchema = step1FormSchema.omit({ baseCurrency: true });
+export const profileFormSchema = profileSchema.extend({
+  birthYear: z.preprocess(blankToNullNumber, birthYear),
+  employmentStatus: z.preprocess(blankToNull, employmentStatus),
+});
 
 export type Step1FormInput = z.input<typeof step1FormSchema>;
 export type Step1FormOutput = z.output<typeof step1FormSchema>;
@@ -109,12 +123,6 @@ export const step5Schema = z.object({
 });
 
 export const step6Schema = z.object({
-  answers: z
-    .array(z.number().int().min(1).max(4))
-    .length(RISK_QUESTIONS.length, "به همه‌ی سؤال‌ها جواب بده"),
-});
-
-export const step7Schema = z.object({
   hasDebt: z.boolean(),
   debtAmount: z.string().trim().optional(),
   emergencyFundMonths: z.number().min(0).max(60),
@@ -127,4 +135,3 @@ export type Step3Input = z.infer<typeof step3Schema>;
 export type Step4Input = z.infer<typeof step4Schema>;
 export type Step5Input = z.infer<typeof step5Schema>;
 export type Step6Input = z.infer<typeof step6Schema>;
-export type Step7Input = z.infer<typeof step7Schema>;

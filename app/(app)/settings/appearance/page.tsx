@@ -20,7 +20,7 @@ export default async function AppearancePage() {
   return (
     // The package wrapped this in a <PageSheet> that does not exist in this
     // repo — the brief assumed a shell that was never built. This is the
-    // wrapper settings/risk already uses, rather than a component invented to
+    // wrapper the settings sub-pages already use, rather than a component invented to
     // satisfy one import.
     <div className="mx-auto w-full max-w-[480px] bg-surface min-h-dvh">
       <div className="flex flex-col gap-5 px-4 py-4">

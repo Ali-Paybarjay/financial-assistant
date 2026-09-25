@@ -13,7 +13,6 @@ import { CURRENCIES } from "@/lib/money";
 import {
   COUNTRIES,
   CURRENCY_LABELS,
-  EMPLOYMENT_OPTIONS,
   type StepMeta,
 } from "@/lib/onboarding/config";
 import {
@@ -80,10 +79,6 @@ export function Step1({
       baseCurrency: savedCountry
         ? ((profile.base_currency as Step1FormInput["baseCurrency"]) ?? "CAD")
         : currencyForCountry(initialCountry),
-      // The DOM hands these over as strings, and "" is what an untouched
-      // optional field looks like; the form schema turns it into null.
-      birthYear: profile.birth_year ?? "",
-      employmentStatus: profile.employment_status ?? "",
     },
   });
 
@@ -192,38 +187,6 @@ export function Step1({
               {CURRENCIES.map((code) => (
                 <option key={code} value={code}>
                   {CURRENCY_LABELS[code]} ({code})
-                </option>
-              ))}
-            </NativeSelect>
-          </Field>
-
-          <Field
-            label="سال تولد"
-            htmlFor="birthYear"
-            optional
-            error={errors.birthYear?.message}
-          >
-            <Input
-              id="birthYear"
-              dir="ltr"
-              inputMode="numeric"
-              placeholder="1990"
-              className="tabular-nums"
-              {...register("birthYear")}
-            />
-          </Field>
-
-          <Field
-            label="وضعیت اشتغال"
-            htmlFor="employmentStatus"
-            optional
-            error={errors.employmentStatus?.message}
-          >
-            <NativeSelect id="employmentStatus" {...register("employmentStatus")}>
-              <option value="">بعداً می‌گویم</option>
-              {EMPLOYMENT_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
                 </option>
               ))}
             </NativeSelect>

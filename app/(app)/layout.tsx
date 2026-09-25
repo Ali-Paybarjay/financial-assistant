@@ -10,7 +10,7 @@ import { monthRange, todayInTimeZone } from "@/lib/date";
 import { AppShell } from "@/components/app-shell/shell";
 import { GuestProvider } from "@/components/guest/guest-provider";
 import { GuestWelcome } from "@/components/guest/guest-welcome";
-import { COUNTRIES } from "@/lib/onboarding/config";
+import { COUNTRIES, TOTAL_STEPS } from "@/lib/onboarding/config";
 
 /**
  * The protected shell. Middleware has already guaranteed a session; this layer
@@ -32,12 +32,13 @@ export default async function AppLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    // `risk_label` was here until migration 0025 dropped the column. A select
-    // that names a column which no longer exists does not return a row with a
-    // hole in it — PostgREST refuses the whole request, `profile` comes back
-    // null, and the guard three lines down reads that as «not signed in» and
-    // sends the user to /login, which sends them straight back here. Every
-    // signed-in page in the app answered ERR_TOO_MANY_REDIRECTS.
+    // No `risk_label` here. It was dropped in migration 0025 along with the
+    // questions that filled it, and while the column was gone but this select
+    // still named it, PostgREST refused the whole request rather than
+    // returning a row with a hole in it: `profile` came back null, the guard
+    // three lines down read that as «not signed in», and every signed-in page
+    // answered ERR_TOO_MANY_REDIRECTS. A column drop ships after the code that
+    // stops reading it, not before.
     .select("full_name, country_code, base_currency, onboarding_step, onboarding_completed_at")
     .eq("id", user.id)
     .single();
@@ -45,7 +46,7 @@ export default async function AppLayout({
   if (!profile) redirect("/login");
 
   if (!profile.onboarding_completed_at) {
-    const step = Math.min(Math.max(profile.onboarding_step + 1, 1), 7);
+    const step = Math.min(Math.max(profile.onboarding_step + 1, 1), TOTAL_STEPS);
     redirect(`/onboarding/${step}`);
   }
 

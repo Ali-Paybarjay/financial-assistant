@@ -22,12 +22,7 @@ export type OnboardingCounts = {
 
 export type CompletenessProfile = Pick<
   ProfileRow,
-  | "birth_year"
-  | "employment_status"
-  | "risk_label"
-  | "has_debt"
-  | "emergency_fund_months"
-  | "savings_rate_estimate"
+  "has_debt" | "emergency_fund_months" | "savings_rate_estimate"
 >;
 
 export function missingOnboardingSteps(
@@ -35,15 +30,16 @@ export function missingOnboardingSteps(
   counts: OnboardingCounts,
 ): StepMeta[] {
   const isMissing: Record<number, boolean> = {
-    // Country and currency are always there — step 1 guesses them — so the
-    // step is only «missing» for the two answers it stopped insisting on.
-    1: profile.birth_year === null || profile.employment_status === null,
+    // Step 1 can never be outstanding: it asks for a name, which the flow
+    // does not let past, and a country and currency it guesses. The birth
+    // year and the job it used to ask for are on the profile sheet in
+    // settings now — a form, not an unfinished step.
+    1: false,
     2: counts.incomeSources === 0,
     3: counts.recurringExpenses === 0,
     4: counts.variableBaselines === 0,
     5: counts.goals === 0,
-    6: profile.risk_label === null,
-    7:
+    6:
       profile.has_debt === null ||
       profile.emergency_fund_months === null ||
       profile.savings_rate_estimate === null,

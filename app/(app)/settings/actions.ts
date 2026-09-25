@@ -9,20 +9,11 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireViewer } from "@/lib/auth";
 import { CURRENCIES } from "@/lib/money";
-import { step1Schema } from "@/lib/validation/onboarding";
+import { profileSchema } from "@/lib/validation/onboarding";
 
 export type SettingsResult = { error: string } | { ok: true };
 
 const GENERIC_ERROR = "ذخیره نشد. دوباره بزن؛ اگر باز هم نشد، صفحه را تازه کن.";
-
-// The same rules as onboarding's first step, so the two forms cannot drift:
-// what may be left blank there may be left blank here.
-const profileSchema = step1Schema.pick({
-  fullName: true,
-  countryCode: true,
-  birthYear: true,
-  employmentStatus: true,
-});
 
 export async function updateProfile(raw: unknown): Promise<SettingsResult> {
   const parsed = profileSchema.safeParse(raw);
@@ -122,24 +113,6 @@ export async function deleteCategory(id: string): Promise<SettingsResult> {
   return { ok: true };
 }
 
-/** Sends the user back through the risk questions without losing anything else. */
-export async function resetRiskAnswers(): Promise<never> {
-  const viewer = await requireViewer();
-  const supabase = await createClient();
-
-  await supabase
-    .from("profiles")
-    .update({ risk_score: null, risk_label: null })
-    .eq("id", viewer.userId);
-
-  revalidatePath("/settings");
-  redirect("/settings/risk");
-}
-
-/**
- * Irreversible, and gated on the user typing their own name. Deleting the auth
- * user cascades through every table, so there is nothing left to clean up.
- */
 export async function deleteAccount(confirmation: string): Promise<SettingsResult> {
   const viewer = await requireViewer();
 

@@ -1,6 +1,6 @@
 import { CURRENCIES } from "@/lib/money";
 
-export const TOTAL_STEPS = 7;
+export const TOTAL_STEPS = 6;
 
 export type StepMeta = {
   step: number;
@@ -53,13 +53,6 @@ export const STEPS: StepMeta[] = [
   },
   {
     step: 6,
-    kicker: "ریسک‌پذیری",
-    title: "اگر این اتفاق بیفتد، چه می‌کنی؟",
-    subtitle: "جواب درست و غلط ندارد؛ فقط می‌خواهم بدانم با نوسان چطور کنار می‌آیی.",
-    skippable: true,
-  },
-  {
-    step: 7,
     kicker: "وضعیت فعلی",
     title: "الان کجای کار هستی؟",
     subtitle: "این سه عدد تصویر مالی‌ات را کامل می‌کند.",
@@ -197,76 +190,17 @@ export const GOAL_TYPE_OPTIONS = [
   { value: "other", label: "چیز دیگر" },
 ] as const;
 
-export type RiskQuestion = {
-  id: string;
-  prompt: string;
-  /** Options are ordered least to most risk-tolerant; index + 1 is the score. */
-  options: string[];
-};
-
-export const RISK_QUESTIONS: RiskQuestion[] = [
-  {
-    id: "drawdown",
-    prompt: "سرمایه‌ات در یک ماه ۲۰٪ افت می‌کند. چه می‌کنی؟",
-    options: [
-      "همه را می‌فروشم تا بیشتر از این ضرر نکنم",
-      "بخشی را می‌فروشم و بقیه را نگه می‌دارم",
-      "دست نمی‌زنم و صبر می‌کنم برگردد",
-      "بیشتر می‌خرم، چون ارزان شده",
-    ],
-  },
-  {
-    id: "windfall",
-    prompt: "ناگهان معادل شش ماه حقوقت به دستت می‌رسد. کجا می‌گذاری‌اش؟",
-    options: [
-      "حساب پس‌انداز با سود تضمینی",
-      "بیشترش پس‌انداز، کمی سرمایه‌گذاری",
-      "نصف‌نصف بین پس‌انداز و بازار",
-      "بیشترش را سرمایه‌گذاری می‌کنم",
-    ],
-  },
-  {
-    id: "job_loss",
-    prompt: "اگر همین فردا درآمدت قطع شود، چند ماه دوام می‌آوری؟",
-    options: [
-      "کمتر از یک ماه",
-      "یک تا سه ماه",
-      "سه تا شش ماه",
-      "بیشتر از شش ماه",
-    ],
-  },
-  {
-    id: "horizon",
-    prompt: "پولی که کنار می‌گذاری را کِی لازم داری؟",
-    options: [
-      "همین امسال",
-      "یکی دو سال دیگر",
-      "سه تا پنج سال دیگر",
-      "بیشتر از پنج سال دیگر",
-    ],
-  },
-  {
-    id: "comfort",
-    prompt: "کدام جمله بیشتر شبیه توست؟",
-    options: [
-      "ترجیح می‌دهم سود کم بگیرم ولی خوابم راحت باشد",
-      "کمی نوسان را تحمل می‌کنم",
-      "برای سود بیشتر، نوسان را می‌پذیرم",
-      "نوسان برایم مسئله نیست، بازده مهم است",
-    ],
-  },
-];
-
-/** Five answers of 1–4 map onto the 1–10 scale the profile stores. */
-export function scoreRisk(answers: number[]): { score: number; label: string } {
-  const raw = answers.reduce((total, value) => total + value, 0); // 5..20
-  const score = Math.max(1, Math.min(10, Math.round(((raw - 5) / 15) * 9 + 1)));
-  const label = score <= 3 ? "conservative" : score <= 7 ? "balanced" : "growth";
-  return { score, label };
-}
-
-export const RISK_LABELS: Record<string, string> = {
-  conservative: "محافظه‌کار",
-  balanced: "متعادل",
-  growth: "رشدمحور",
-};
+/*
+ * There were five risk-tolerance questions here — «your portfolio drops 20%,
+ * what do you do» and four more of that kind — scored onto a 1–10 scale and
+ * filed as «محافظه‌کار» / «متعادل» / «رشدمحور».
+ *
+ * Nothing ever read the answer. The label was displayed in the sidebar's
+ * subtitle, on a settings row and on the onboarding summary, and that was the
+ * whole of it: no figure on any screen moved because of it, no budget, no
+ * goal plan, no insight, no prompt. A step out of seven, five screens of
+ * personal questions, to produce one word that only ever described itself.
+ *
+ * So the step is gone and the two profile columns with it. If a risk profile
+ * is ever wanted again, it should arrive with the thing that uses it.
+ */

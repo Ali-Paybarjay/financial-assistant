@@ -13,9 +13,6 @@ import {
  */
 
 const answered: CompletenessProfile = {
-  birth_year: 1990,
-  employment_status: "employed",
-  risk_label: "balanced",
   has_debt: false,
   emergency_fund_months: 3,
   savings_rate_estimate: 10,
@@ -36,10 +33,12 @@ describe("missingOnboardingSteps", () => {
     expect(steps(answered, filled)).toEqual([]);
   });
 
-  it("names step 1 only for the two answers it stopped insisting on", () => {
-    // Country and currency are guessed, so they never make the step «missing».
-    expect(steps({ ...answered, birth_year: null }, filled)).toEqual([1]);
-    expect(steps({ ...answered, employment_status: null }, filled)).toEqual([1]);
+  it("never names step 1, because there is nothing there to be missing", () => {
+    // It asks for a name, which the flow does not let past, and a country and
+    // currency it guesses. The birth year and the job it used to ask for are a
+    // form in settings now, not an unfinished step.
+    const empty = { incomeSources: 0, recurringExpenses: 0, variableBaselines: 0, goals: 0 };
+    expect(steps(answered, empty)).not.toContain(1);
   });
 
   it("judges the list steps on rows, not on how far the pointer got", () => {
@@ -47,24 +46,21 @@ describe("missingOnboardingSteps", () => {
     expect(steps(answered, empty)).toEqual([2, 3, 4, 5]);
   });
 
-  it("treats step 7 as missing while any of its three answers is", () => {
-    expect(steps({ ...answered, has_debt: null }, filled)).toEqual([7]);
-    expect(steps({ ...answered, emergency_fund_months: null }, filled)).toEqual([7]);
-    expect(steps({ ...answered, savings_rate_estimate: null }, filled)).toEqual([7]);
+  it("treats the last step as missing while any of its three answers is", () => {
+    expect(steps({ ...answered, has_debt: null }, filled)).toEqual([6]);
+    expect(steps({ ...answered, emergency_fund_months: null }, filled)).toEqual([6]);
+    expect(steps({ ...answered, savings_rate_estimate: null }, filled)).toEqual([6]);
   });
 
   it("keeps flow order, so the first entry is where to send them", () => {
     const blank: CompletenessProfile = {
-      birth_year: null,
-      employment_status: null,
-      risk_label: null,
       has_debt: null,
       emergency_fund_months: null,
       savings_rate_estimate: null,
     };
     const result = missingOnboardingSteps(blank, { ...filled, goals: 0 });
-    expect(result.map((step) => step.step)).toEqual([1, 5, 6, 7]);
+    expect(result.map((step) => step.step)).toEqual([5, 6]);
     // Each entry carries the flow's own label, which is what the card shows.
-    expect(result[0]?.kicker).toBe("آشنایی");
+    expect(result[0]?.kicker).toBe("اهداف");
   });
 });
