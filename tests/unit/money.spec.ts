@@ -76,6 +76,21 @@ describe("toMinor", () => {
     expect(toMinor("۴۵٬۰۰۰", "IRT")).toBe(45000);
   });
 
+  /**
+   * A card's balance is the one amount allowed below zero, and it makes the
+   * trip twice: out of formatMoney with a true minus (U+2212) into the edit
+   * form, and back in with the ASCII hyphen the field's sign key writes.
+   * Both have to land on the same number.
+   */
+  it("carries a minus through, in either shape", () => {
+    expect(toMinor("-1500", "IRT")).toBe(-1500);
+    expect(toMinor("−1500", "IRT")).toBe(-1500);
+    expect(toMinor("-1,234.50", "CAD")).toBe(-123450);
+    expect(toMinor("−۴۵٬۰۰۰", "IRT")).toBe(-45000);
+    // A sign with nothing after it is not an amount.
+    expect(() => toMinor("-", "CAD")).toThrow(MoneyParseError);
+  });
+
   it("rejects anything that is not a plain amount", () => {
     expect(() => toMinor("", "CAD")).toThrow(MoneyParseError);
     expect(() => toMinor("abc", "CAD")).toThrow(MoneyParseError);

@@ -139,6 +139,7 @@ export function BalanceStep({
         <AmountInput
           id="statement-balance"
           currency={currency}
+          allowNegative
           value={balance}
           onChange={(event) => {
             setTouched(true);
