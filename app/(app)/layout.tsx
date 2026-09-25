@@ -10,7 +10,6 @@ import { monthRange, todayInTimeZone } from "@/lib/date";
 import { AppShell } from "@/components/app-shell/shell";
 import { GuestProvider } from "@/components/guest/guest-provider";
 import { GuestWelcome } from "@/components/guest/guest-welcome";
-import { RISK_LABELS } from "@/lib/onboarding/config";
 import { COUNTRIES } from "@/lib/onboarding/config";
 
 /**
@@ -33,7 +32,13 @@ export default async function AppLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, country_code, base_currency, risk_label, onboarding_step, onboarding_completed_at")
+    // `risk_label` was here until migration 0025 dropped the column. A select
+    // that names a column which no longer exists does not return a row with a
+    // hole in it — PostgREST refuses the whole request, `profile` comes back
+    // null, and the guard three lines down reads that as «not signed in» and
+    // sends the user to /login, which sends them straight back here. Every
+    // signed-in page in the app answered ERR_TOO_MANY_REDIRECTS.
+    .select("full_name, country_code, base_currency, onboarding_step, onboarding_completed_at")
     .eq("id", user.id)
     .single();
 
@@ -58,11 +63,7 @@ export default async function AppLayout({
   ]);
 
   const country = COUNTRIES.find((entry) => entry.code === profile.country_code);
-  const subtitle = [
-    country?.name,
-    profile.base_currency,
-    profile.risk_label ? RISK_LABELS[profile.risk_label] : null,
-  ]
+  const subtitle = [country?.name, profile.base_currency]
     .filter(Boolean)
     .join(" · ");
 
