@@ -19,6 +19,11 @@ const MERCHANT = "خرید تست موجودی";
 const AMOUNT = "37.25";
 const AMOUNT_MINOR = 3725;
 
+/** The credit card the sign-key test makes and unmakes, and what it owes. */
+const CARD = "کارت تست منفی";
+const CARD_BALANCE = "1500";
+const CARD_BALANCE_MINOR = 150_000;
+
 async function login(page: Page) {
   await page.goto("/login?method=password");
   await page.getByLabel("ایمیل").fill(EMAIL);
@@ -101,6 +106,51 @@ test("an expense posted to an account comes off its balance, and undoing it puts
   await expect(page.getByText(/حذف شد/)).toBeVisible({ timeout: 30_000 });
 
   expect(await balanceOf(page, ACCOUNT)).toBe(before);
+});
+
+/**
+ * A credit card holds debt, so its balance is the one amount in the app that
+ * is allowed to be below zero — and the keypad inputmode="decimal" raises on a
+ * phone has no minus key at all. The field carries its own sign key, and this
+ * is the whole round trip: press it, type, save, and read a negative balance
+ * back off the row.
+ */
+test("a card's debt can be entered on a keypad with no minus key", async ({ page }) => {
+  test.setTimeout(120_000);
+
+  await login(page);
+  await ensureAccount(page);
+  await page.goto("/accounts");
+
+  await page.getByRole("button", { name: "افزودن حساب" }).click();
+  await page.getByLabel("اسم حساب").fill(CARD);
+
+  // The order a phone forces: the sign first, then the digits — there is no
+  // minus to type, and fill() would overwrite one anyway.
+  const balance = page.getByLabel("موجودی", { exact: true });
+  const sign = page.getByRole("button", { name: "منفی کردن مبلغ" });
+  await sign.click();
+  await balance.pressSequentially(CARD_BALANCE);
+
+  await expect(sign).toHaveAttribute("aria-pressed", "true");
+  await expect(balance).toHaveValue(`-${CARD_BALANCE}`);
+
+  await page.getByRole("button", { name: "ذخیره" }).click();
+
+  const row = page.getByRole("button", { name: new RegExp(CARD) });
+  await expect(row).toBeVisible({ timeout: 30_000 });
+  expect(await balanceOf(page, CARD)).toBe(-CARD_BALANCE_MINOR);
+
+  // Reopened for editing, the stored minus reads back onto the key.
+  await row.click();
+  await expect(page.getByRole("button", { name: "منفی کردن مبلغ" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+
+  // The account carries no transactions, so the run ends where it started.
+  await page.getByRole("button", { name: "پاک کردن حساب" }).click();
+  await expect(row).toBeHidden({ timeout: 30_000 });
 });
 
 test("the accounts page does not overflow at 375px", async ({ page }) => {

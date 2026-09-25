@@ -164,11 +164,12 @@ export function AccountSheet({
           label="موجودی"
           htmlFor="account-balance"
           error={errors.balance?.message}
-          hint="اگر کارت اعتباری است و بدهکاری، با علامت منفی بنویس."
+          hint="اگر کارت اعتباری است و بدهکاری، اول دکمه‌ی − را بزن تا عدد منفی شود."
         >
           <AmountInput
             id="account-balance"
             currency={currency}
+            allowNegative
             placeholder="0"
             {...register("balance")}
           />
@@ -296,6 +297,7 @@ function RestateBalance({
         <AmountInput
           id="restate-balance"
           currency={currency}
+          allowNegative
           value={balance}
           onChange={(event) => setBalance(event.target.value)}
         />
