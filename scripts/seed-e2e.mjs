@@ -106,7 +106,7 @@ async function recreate(email, fullName, { onboarded }) {
         country_code: "CA",
         timezone: "America/Toronto",
         base_currency: "CAD",
-        onboarding_step: onboarded ? 7 : 0,
+        onboarding_step: onboarded ? 6 : 0,
         onboarding_completed_at: onboarded ? new Date().toISOString() : null,
       })
       .eq("id", id),
