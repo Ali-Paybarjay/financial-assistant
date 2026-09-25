@@ -28,7 +28,8 @@ test("onboarding saves each step and resumes where the user stopped", async ({ p
   await page.goto("/onboarding/1");
   await expect(page.getByRole("progressbar")).toBeVisible();
   await page.getByLabel("نام").fill("کاربر الف");
-  await page.getByLabel("سال تولد").fill("1990");
+  // A name and a guessed country is the whole of step 1 now. The birth year
+  // and the job it used to ask for are on the profile sheet in settings.
   await page.getByRole("button", { name: "ادامه" }).click();
 
   await page.waitForURL("**/onboarding/2");
