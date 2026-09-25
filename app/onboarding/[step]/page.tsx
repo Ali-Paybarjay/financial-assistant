@@ -10,7 +10,6 @@ import { Step3 } from "./steps/step-3";
 import { Step4 } from "./steps/step-4";
 import { Step5 } from "./steps/step-5";
 import { Step6 } from "./steps/step-6";
-import { Step7 } from "./steps/step-7";
 
 export default async function OnboardingStepPage({
   params,
@@ -98,10 +97,7 @@ export default async function OnboardingStepPage({
       return <Step5 meta={meta} currency={viewer.currency} goals={data ?? []} />;
     }
 
-    case 6:
-      return <Step6 meta={meta} />;
-
     default:
-      return <Step7 meta={meta} currency={viewer.currency} profile={viewer.profile} />;
+      return <Step6 meta={meta} currency={viewer.currency} profile={viewer.profile} />;
   }
 }

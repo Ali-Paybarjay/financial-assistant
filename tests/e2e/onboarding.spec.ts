@@ -32,7 +32,7 @@ test("onboarding saves each step and resumes where the user stopped", async ({ p
   await page.getByRole("button", { name: "ادامه" }).click();
 
   await page.waitForURL("**/onboarding/2");
-  await expect(page.getByText("گام ۲ از ۷")).toBeVisible();
+  await expect(page.getByText("گام ۲ از ۶")).toBeVisible();
 
   // Walk away mid-flow, then come back: the dashboard must bounce us back in.
   await page.goto("/dashboard");

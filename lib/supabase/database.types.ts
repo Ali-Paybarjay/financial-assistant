@@ -52,7 +52,6 @@ export type CostKind = "fixed" | "variable";
 export type MediaKind = "image" | "document";
 export type MediaStatus = "uploaded" | "processing" | "parsed" | "failed";
 export type GoalStatus = "active" | "achieved" | "paused" | "cancelled";
-export type RiskLabel = "conservative" | "balanced" | "growth";
 /** The two sides of the app. Mirrors WorkspaceId in lib/workspaces.ts. */
 export type WorkspaceId = "personal" | "dong";
 export type StatementImportStatus =
@@ -81,8 +80,6 @@ export type ProfileRow = {
   base_currency: string;
   birth_year: number | null;
   employment_status: string | null;
-  risk_score: number | null;
-  risk_label: RiskLabel | null;
   monthly_income_estimate: number | null;
   has_debt: boolean | null;
   debt_amount: number | null;

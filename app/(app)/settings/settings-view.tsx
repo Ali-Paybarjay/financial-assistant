@@ -9,6 +9,7 @@ import {
   ArrowsClockwise,
   Bank,
   CaretLeft,
+  CheckCircle,
   Coins,
   CreditCard,
   ListChecks,
@@ -36,7 +37,6 @@ import {
   COUNTRIES,
   CURRENCY_LABELS,
   EMPLOYMENT_OPTIONS,
-  RISK_LABELS,
   type StepMeta,
 } from "@/lib/onboarding/config";
 import {
@@ -49,7 +49,6 @@ import type { CategoryRow, ProfileRow } from "@/lib/supabase/database.types";
 import {
   deleteAccount,
   deleteCategory,
-  resetRiskAnswers,
   saveCategory,
   setDefaultWorkspace,
   updateCurrency,
@@ -64,12 +63,15 @@ export function SettingsView({
   currency,
   categories,
   missingSteps,
+  ledgerIsEmpty,
 }: {
   profile: ProfileRow;
   email: string | null;
   currency: CurrencyCode;
   categories: CategoryRow[];
   missingSteps: StepMeta[];
+  /** Nothing recorded and no account, so nothing could be stranded. */
+  ledgerIsEmpty: boolean;
 }) {
   const [sheet, setSheet] = useState<Sheet>(null);
   const isGuest = useIsGuest();
@@ -78,7 +80,6 @@ export function SettingsView({
   const subtitle = [
     country?.name,
     currency,
-    profile.risk_label ? RISK_LABELS[profile.risk_label] : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -145,7 +146,6 @@ export function SettingsView({
           icon={<UserCircle size={20} />}
           label="نام، کشور، سال تولد"
         />
-        <RiskRow label={profile.risk_label ? RISK_LABELS[profile.risk_label] : "پاسخ نداده‌ای"} />
       </Group>
 
       <Group title="حساب">
@@ -186,6 +186,7 @@ export function SettingsView({
         open={sheet === "currency"}
         onClose={() => setSheet(null)}
         current={currency}
+        ledgerIsEmpty={ledgerIsEmpty}
       />
       <CategoriesSheet
         open={sheet === "categories"}
@@ -286,31 +287,6 @@ function StartRow({ current }: { current: "personal" | "dong" | null }) {
   );
 }
 
-function RiskRow({ label }: { label: string }) {
-  const [isPending, startTransition] = useTransition();
-  return (
-    <button
-      type="button"
-      disabled={isPending}
-      onClick={() => startTransition(() => resetRiskAnswers())}
-      className="flex h-14 w-full items-center gap-3 px-4 text-start hover:bg-paper disabled:opacity-50"
-    >
-      <Target size={20} className="text-action" />
-      <span className="flex-1 text-[14px] text-ink">
-        {isPending ? "دارم آماده می‌کنم…" : "پاسخ دوباره به سؤال‌های ریسک"}
-      </span>
-      <span className="text-caption text-ink-muted">{label}</span>
-      <CaretLeft size={16} className="text-ink-faint" />
-    </button>
-  );
-}
-
-/**
- * The standing offer, at the top of settings, for as long as the account is a
- * guest one. Between the notice on the way in and the warning on the way out,
- * this is the only place the user can come looking for it on their own — so it
- * leads with what they get, not with what they lose.
- */
 function GuestCard() {
   const isGuest = useIsGuest();
   if (!isGuest) return null;
@@ -502,10 +478,12 @@ function CurrencySheet({
   open,
   onClose,
   current,
+  ledgerIsEmpty,
 }: {
   open: boolean;
   onClose: () => void;
   current: CurrencyCode;
+  ledgerIsEmpty: boolean;
 }) {
   const router = useRouter();
   const [choice, setChoice] = useState<CurrencyCode>(current);
@@ -521,11 +499,22 @@ function CurrencySheet({
       <div className="flex flex-col gap-4">
         <FormError>{error}</FormError>
 
-        {/* Stated before the tap, not after it. */}
-        <p className="flex items-start gap-2 rounded-control border border-guess-border bg-guess-tint px-3 py-2.5 text-caption font-medium text-guess-text">
-          <WarningCircle size={16} className="mt-0.5 shrink-0" />
-          مبالغ قبلی تبدیل نمی‌شوند و با ارز قدیم می‌مانند.
-        </p>
+        {/* Stated before the tap, not after it — and only while it is true.
+            The currency is guessed from the country on the very first screen,
+            so the person most likely to want it changed is the one who has
+            just arrived and has nothing to strand. Warning them anyway taught
+            them to be afraid of the one correction they should make early. */}
+        {ledgerIsEmpty ? (
+          <p className="flex items-start gap-2 rounded-control border border-positive/25 bg-positive-tint px-3 py-2.5 text-caption font-medium text-positive">
+            <CheckCircle size={16} className="mt-0.5 shrink-0" />
+            هنوز چیزی ثبت نکرده‌ای، پس چیزی برای تبدیل نیست. راحت عوضش کن.
+          </p>
+        ) : (
+          <p className="flex items-start gap-2 rounded-control border border-guess-border bg-guess-tint px-3 py-2.5 text-caption font-medium text-guess-text">
+            <WarningCircle size={16} className="mt-0.5 shrink-0" />
+            مبالغ قبلی تبدیل نمی‌شوند و با ارز قدیم می‌مانند.
+          </p>
+        )}
 
         <NativeSelect
           aria-label="ارز پایه"

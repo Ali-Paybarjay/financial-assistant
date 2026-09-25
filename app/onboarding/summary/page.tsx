@@ -2,7 +2,6 @@ import { requireViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Money } from "@/components/money";
 import { declaredSurplus, monthlyFixed, monthlyIncome, monthlyVariable } from "@/lib/cashflow";
-import { RISK_LABELS } from "@/lib/onboarding/config";
 import { ExitButton } from "@/components/onboarding/exit-button";
 import { FinishButton } from "./finish-button";
 
@@ -37,10 +36,6 @@ export default async function SummaryPage() {
     recurring: recurring ?? [],
     baselines: baselines ?? [],
   }).amount;
-
-  const riskLabel = viewer.profile.risk_label
-    ? RISK_LABELS[viewer.profile.risk_label]
-    : null;
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[480px] flex-col bg-surface px-4 pb-6 pt-4">
@@ -100,13 +95,8 @@ export default async function SummaryPage() {
         </p>
       )}
 
-      {(riskLabel || (goals && goals.length > 0)) && (
+      {goals && goals.length > 0 && (
         <div className="mt-6 flex flex-wrap gap-2">
-          {riskLabel && (
-            <span className="inline-flex h-8 items-center rounded-full bg-action-tint px-3 text-caption font-medium text-action">
-              ریسک‌پذیری: {riskLabel}
-            </span>
-          )}
           {goals?.map((goal) => (
             <span
               key={goal.title}

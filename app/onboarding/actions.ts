@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireViewer } from "@/lib/auth";
 import { categoryIdsBySlug } from "@/lib/queries/categories";
 import { toMinor, type CurrencyCode } from "@/lib/money";
-import { scoreRisk, TOTAL_STEPS } from "@/lib/onboarding/config";
+import { TOTAL_STEPS } from "@/lib/onboarding/config";
 import {
   step1Schema,
   step2Schema,
@@ -14,7 +14,6 @@ import {
   step4Schema,
   step5Schema,
   step6Schema,
-  step7Schema,
 } from "@/lib/validation/onboarding";
 
 export type StepResult = { error: string } | { ok: true };
@@ -61,8 +60,6 @@ export async function saveStep1(
       full_name: parsed.data.fullName,
       country_code: parsed.data.countryCode,
       base_currency: parsed.data.baseCurrency,
-      birth_year: parsed.data.birthYear,
-      employment_status: parsed.data.employmentStatus,
       timezone: parsed.data.timezone,
       onboarding_step: Math.max(1, viewer.profile.onboarding_step),
       // A date already set is kept: someone back from settings to fill in a
@@ -226,28 +223,6 @@ export async function saveStep5(raw: unknown): Promise<StepResult> {
 
 export async function saveStep6(raw: unknown): Promise<StepResult> {
   const parsed = step6Schema.safeParse(raw);
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? GENERIC_ERROR };
-
-  const viewer = await requireViewer();
-  const supabase = await createClient();
-  const { score, label } = scoreRisk(parsed.data.answers);
-
-  const { error } = await supabase
-    .from("profiles")
-    .update({
-      risk_score: score,
-      risk_label: label as "conservative" | "balanced" | "growth",
-      onboarding_step: Math.max(6, viewer.profile.onboarding_step),
-    })
-    .eq("id", viewer.userId);
-
-  if (error) return { error: GENERIC_ERROR };
-  revalidatePath("/onboarding", "layout");
-  goNext(6);
-}
-
-export async function saveStep7(raw: unknown): Promise<StepResult> {
-  const parsed = step7Schema.safeParse(raw);
   if (!parsed.success) return { error: GENERIC_ERROR };
 
   const viewer = await requireViewer();

@@ -103,13 +103,6 @@ const SIGNED_IN_ROUTES: Route[] = [
     landmark: heading("صورت‌حساب بانکی"),
   },
   { path: "/settings", shows: "تنظیمات", landmark: heading("تنظیمات") },
-  {
-    path: "/settings/risk",
-    // The heading here is whichever question comes next, so the landmark is
-    // the label above it.
-    shows: "ریسک‌پذیری",
-    landmark: (page) => page.getByText("ریسک‌پذیری").first(),
-  },
   { path: "/dong", shows: "دنگ و دونگ", landmark: heading("دنگ و دونگ") },
 ];
 
