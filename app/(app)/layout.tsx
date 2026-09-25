@@ -11,6 +11,7 @@ import { AppShell } from "@/components/app-shell/shell";
 import { GuestProvider } from "@/components/guest/guest-provider";
 import { GuestWelcome } from "@/components/guest/guest-welcome";
 import { COUNTRIES, TOTAL_STEPS } from "@/lib/onboarding/config";
+import { appSettings } from "@/lib/settings-server";
 
 /**
  * The protected shell. Middleware has already guaranteed a session; this layer
@@ -56,11 +57,15 @@ export default async function AppLayout({
   const today = todayInTimeZone(viewer.timeZone);
   const month = monthRange(viewer.timeZone, today).month;
 
-  const [categories, accounts, goals, envelopes] = await Promise.all([
+  const [categories, accounts, goals, envelopes, settings] = await Promise.all([
     listCategories(),
     listAccountsWithBalances(),
     listGoalsWithProgress(),
     listEnvelopes(month),
+    // Five rows on a primary key, alongside four reads that were happening
+    // anyway. It carries the maintenance sentence an operator can put above
+    // the app from /admin/settings without a deploy.
+    appSettings(),
   ]);
 
   const country = COUNTRIES.find((entry) => entry.code === profile.country_code);
@@ -73,6 +78,7 @@ export default async function AppLayout({
       <AppShell
         name={profile.full_name ?? "حساب من"}
         subtitle={subtitle}
+        banner={settings.maintenance_banner}
         entry={{
           currency: viewer.currency,
           categories,

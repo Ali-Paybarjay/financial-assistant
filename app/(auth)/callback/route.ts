@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { accountIsEmpty, purgeGuest } from "@/lib/guests";
+import { accountIsEmpty, purgeUser } from "@/lib/guests";
 import {
   LINK_INTENT_COOKIE,
   LINK_INTENT_MAX_AGE,
@@ -173,7 +173,7 @@ export async function GET(request: NextRequest) {
     // the row stays — a stray account is a mess, a deleted one is a loss.
     if (stray !== leaving && (await accountIsEmpty(stray))) {
       try {
-        await purgeGuest(stray);
+        await purgeUser(stray);
       } catch {
         // Leaving it behind is untidy, not harmful.
       }
@@ -190,7 +190,7 @@ export async function GET(request: NextRequest) {
     // the guest they agreed to give up can go. Same as every other sign-out in
     // this app, which takes a guest's data with it.
     try {
-      await purgeGuest(leaving);
+      await purgeUser(leaving);
     } catch {
       // Not worth failing the sign-in over. purge_stale_guests() sweeps.
     }

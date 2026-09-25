@@ -16,7 +16,8 @@
     "test:e2e": "playwright test",
     "test:smoke": "playwright test tests/e2e/smoke.spec.ts",
     "gen:types": "supabase gen types typescript --linked > lib/supabase/database.types.ts",
-    "seed:e2e": "node scripts/seed-e2e.mjs"
+    "seed:e2e": "node scripts/seed-e2e.mjs",
+    "admin:grant": "node scripts/grant-admin.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",

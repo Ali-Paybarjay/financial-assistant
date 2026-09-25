@@ -8,6 +8,7 @@ import { Composer } from "@/components/entry/composer";
 import type { CaptureData } from "@/components/entry/capture-sheet";
 import { SignOutButton } from "@/components/sign-out";
 import { GuestBanner } from "@/components/guest/guest-banner";
+import { MaintenanceBanner } from "@/components/maintenance-banner";
 import { isCapturePath, workspaceForPath } from "@/lib/workspaces";
 import { cn } from "@/lib/utils";
 
@@ -26,11 +27,18 @@ import { cn } from "@/lib/utils";
 export function AppShell({
   name,
   subtitle,
+  banner,
   entry,
   children,
 }: {
   name: string;
   subtitle: string;
+  /**
+   * The operator's maintenance sentence; empty when there is none. Read in the
+   * layout rather than here: this is a client component, and the setting lives
+   * behind `server-only`.
+   */
+  banner: string;
   /**
    * What the composer needs to record a purchase. Read once in the layout
    * rather than per page, because the bar is on every page — that is the
@@ -57,6 +65,9 @@ export function AppShell({
         {/* Beside <main> rather than above the whole row: the sidebar is a
             sticky full-height column, and a banner spanning both would push
             it down the page. */}
+        {/* Above the guest banner: «the app is down at eleven» outranks «your
+            data is temporary», and the two stack rather than compete. */}
+        <MaintenanceBanner text={banner} />
         <GuestBanner />
 
         {/* The phone's version of the sidebar's header. Sticky, because

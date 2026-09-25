@@ -5,7 +5,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { purgeGuest } from "@/lib/guests";
+import { purgeUser } from "@/lib/guests";
 import {
   LINK_INTENT_COOKIE,
   LINK_INTENT_MAX_AGE,
@@ -427,7 +427,7 @@ export async function logout(): Promise<never> {
   // this missed.
   if (user?.is_anonymous) {
     try {
-      await purgeGuest(user.id);
+      await purgeUser(user.id);
     } catch {
       // Deliberately silent. Nothing the user could do with this.
     }

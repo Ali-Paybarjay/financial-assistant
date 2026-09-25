@@ -104,6 +104,34 @@ const SIGNED_IN_ROUTES: Route[] = [
   },
   { path: "/settings", shows: "تنظیمات", landmark: heading("تنظیمات") },
   { path: "/dong", shows: "دنگ و دونگ", landmark: heading("دنگ و دونگ") },
+
+  // The admin panel. alpha carries app_metadata.role = admin, set by
+  // scripts/seed-e2e.mjs, which is the only reason these are reachable at all
+  // — for any other account the middleware rewrites them to a 404, and
+  // tests/e2e/admin.spec.ts asserts exactly that with beta.
+  { path: "/admin", shows: "نمای کلی", landmark: heading("نمای کلی") },
+  { path: "/admin/users", shows: "کاربران", landmark: heading("کاربران") },
+  { path: "/admin/ai", shows: "هوش مصنوعی", landmark: heading("هوش مصنوعی") },
+  {
+    path: "/admin/imports",
+    shows: "صورت‌حساب‌ها",
+    landmark: heading("صورت‌حساب‌ها"),
+  },
+  { path: "/admin/guests", shows: "مهمان‌ها", landmark: heading("مهمان‌ها") },
+  { path: "/admin/categories", shows: "دسته‌ها", landmark: heading("دسته‌ها") },
+  {
+    path: "/admin/settings",
+    // Two pages answer to «تنظیمات» and this one is under /admin, so the
+    // landmark is the panel's own nav, which the app's settings page has not.
+    shows: "تنظیمات پنل",
+    landmark: (page) =>
+      page.getByRole("navigation", { name: "ناوبری پنل مدیریت" }).first(),
+  },
+  {
+    path: "/admin/audit",
+    shows: "گزارش اقدام‌ها",
+    landmark: heading("گزارش اقدام‌ها"),
+  },
 ];
 
 async function login(page: Page) {
@@ -203,6 +231,31 @@ test("every page comes up", async ({ page }) => {
       failures.push(`a group's page threw in the browser: ${crashes[0]}`);
     }
   }
+
+  // One user's own page in the panel, when there is a row to open. Same rule
+  // as the dong group above: this suite writes nothing, so it opens whatever
+  // happens to be there rather than creating a target.
+  await page.goto("/admin/users");
+  const firstUser = page.locator('main a[href^="/admin/users/"]').first();
+  if ((await firstUser.count()) > 0) {
+    crashes.length = 0;
+    await firstUser.click();
+    if ((await page.getByText(ERROR_BOUNDARY).count()) > 0) {
+      failures.push("a user's admin page rendered the error boundary");
+    } else {
+      try {
+        await expect(page.getByText("حجم — شمارش، نه مبلغ")).toBeVisible({
+          timeout: 15_000,
+        });
+      } catch {
+        failures.push(`a user's admin page never came up — ended at ${page.url()}`);
+      }
+    }
+    if (crashes.length > 0) {
+      failures.push(`a user's admin page threw in the browser: ${crashes[0]}`);
+    }
+  }
+
 
   expect(failures.join("\n") || "every page came up").toBe("every page came up");
 });
