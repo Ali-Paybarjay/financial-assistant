@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { useQueryClient } from "@tanstack/react-query";
 import { Warning } from "@phosphor-icons/react/dist/ssr";
 import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/field";
@@ -36,7 +35,6 @@ export function AccountExistsChoice({
   /** Set when a previous attempt came back from Google without finishing. */
   returnError?: string;
 }) {
-  const queryClient = useQueryClient();
   const [error, setError] = useState<string | undefined>(returnError);
   const [confirming, setConfirming] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -47,7 +45,10 @@ export function AccountExistsChoice({
   const go = () =>
     startTransition(async () => {
       setError(undefined);
-      queryClient.clear();
+      // No cache to clear: this used to call `queryClient.clear()` over a React
+      // Query store nothing ever wrote to. Handing the guest's data over is the
+      // action's job, and dropping the guest's rendered pages is the
+      // `revalidatePath` inside it. See app/providers.tsx.
       const result = await signInToExistingGoogleAccount();
       if (result && "error" in result) {
         setConfirming(false);

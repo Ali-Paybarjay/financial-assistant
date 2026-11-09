@@ -15,12 +15,19 @@ import { NativeSelect } from "@/components/native-select";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { TransactionRowItem } from "@/components/transactions/transaction-row";
 import { CategoryDonut, type CategorySlice } from "@/components/dashboard/category-donut";
+import { CurrencyNotice } from "@/components/currency-notice";
 import { EnvelopeHeader } from "./envelope-header";
 import { EditTransactionSheet } from "./edit-sheet";
 import { faNumber } from "@/lib/format";
 import { formatDayMonthFa, shiftMonth, formatMonthFa } from "@/lib/date";
 import type { EnvelopeRow } from "@/lib/envelopes";
-import type { CurrencyCode, Minor } from "@/lib/money";
+import {
+  canConvert,
+  convertMinor,
+  isCurrencyCode,
+  type CurrencyCode,
+  type Minor,
+} from "@/lib/money";
 import type {
   AccountRow,
   CategoryRow,
@@ -52,6 +59,9 @@ export function TransactionsView({
   envelopeSuggestion,
   daysGone,
   daysLeft,
+  otherCurrencies,
+  page,
+  hasMore,
 }: {
   currency: CurrencyCode;
   today: string;
@@ -69,6 +79,12 @@ export function TransactionsView({
   envelopeSuggestion: Minor | null;
   daysGone: number;
   daysLeft: number;
+  /** Currencies in this month that the totals could not take in. F01. */
+  otherCurrencies: string[];
+  /** Which page of the ledger these rows are. 1-based. */
+  page: number;
+  /** Whether another page exists after this one. F10. */
+  hasMore: boolean;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -100,6 +116,10 @@ export function TransactionsView({
     const next = new URLSearchParams(searchParams.toString());
     if (value) next.set(key, value);
     else next.delete(key);
+    // Any change but the page itself starts over at page 1. Narrowing a filter
+    // while sitting on page 4 would otherwise show an empty page and a pager
+    // offering to go further into nothing.
+    if (key !== "page") next.delete("page");
     router.push(`/transactions?${next.toString()}`);
   }
 
@@ -111,17 +131,39 @@ export function TransactionsView({
 
   const visible = transactions.filter((row) => row.id !== pendingDelete?.id);
 
-  // Transfers are left out on purpose: the same money would count as a loss
-  // here and a gain nowhere, and "جمع" is meant to read as what this filter is
-  // worth, not as an artefact of moving money between one's own pockets.
-  const filteredTotal = visible.reduce(
-    (total, row) =>
-      row.type === "transfer"
-        ? total
-        : total + (row.type === "income" ? row.amount : -row.amount),
-    0,
-  );
+  /**
+   * Transfers are left out on purpose: the same money would count as a loss
+   * here and a gain nowhere, and «جمع» is meant to read as what this filter is
+   * worth, not as an artefact of moving money between one's own pockets.
+   *
+   * So is any row in a currency this app has no rate for. It used to be added
+   * in at face value and printed with the profile's symbol, so a month holding
+   * 100 CAD and 50 USD summed to «۱۵۰» of whatever the profile said. F01.
+   */
+  const { filteredTotal, skippedCurrencies } = useMemo(() => {
+    const skipped = new Set<string>();
+    let total = 0;
+
+    for (const row of visible) {
+      if (row.type === "transfer") continue;
+
+      const from = isCurrencyCode(row.currency) ? row.currency : currency;
+      if (!canConvert(from, currency)) {
+        skipped.add(from);
+        continue;
+      }
+
+      const amount = convertMinor(row.amount, from, currency);
+      total += row.type === "income" ? amount : -amount;
+    }
+
+    return { filteredTotal: total, skippedCurrencies: [...skipped].sort() };
+  }, [visible, currency]);
+
   const transferCount = visible.filter((row) => row.type === "transfer").length;
+  // The month's own excluded currencies plus whatever this filter can see. A
+  // filter can narrow to rows the month-wide probe did not report on.
+  const unconverted = [...new Set([...otherCurrencies, ...skippedCurrencies])].sort();
 
   const groups = useMemo(() => {
     const byDay = new Map<string, TransactionRow[]>();
@@ -233,6 +275,12 @@ export function TransactionsView({
         </span>
       </div>
 
+      {unconverted.length > 0 && (
+        <div className="mt-2">
+          <CurrencyNotice currencies={unconverted} />
+        </div>
+      )}
+
       {/* The ceiling this category is measured against, above the rows that
           made it. Only when the filter names one category — a header saying
           «over by $34» above a mixed list would be describing something the
@@ -262,7 +310,9 @@ export function TransactionsView({
         <p className="mt-6 rounded-card border border-hairline bg-surface p-6 text-center text-body text-ink-muted">
           {chips.length > 0
             ? "در این بازه چیزی ثبت نشده. بازه را عوض کن یا فیلتر را بردار."
-            : "این ماه هنوز چیزی ثبت نکرده‌ای."}
+            : page > 1
+              ? "این صفحه خالی است. به صفحه‌ی قبل برگرد."
+              : "این ماه هنوز چیزی ثبت نکرده‌ای."}
         </p>
       ) : (
         <div className="mt-4 flex flex-col gap-4">
@@ -329,6 +379,35 @@ export function TransactionsView({
             }}
           />
         </div>
+      )}
+
+      {/* The pager, and it only appears when there is somewhere to go. A month
+          used to arrive as one unpaginated select, which meant a heavy month
+          arrived as however many rows the API felt like returning, with nothing
+          saying the rest existed. F10. */}
+      {(page > 1 || hasMore) && (
+        <nav
+          aria-label="صفحه‌های تراکنش"
+          className="mt-4 flex items-center justify-between gap-2"
+        >
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => setParam("page", page > 2 ? String(page - 1) : undefined)}
+          >
+            صفحه‌ی قبل
+          </Button>
+          <span className="text-caption text-ink-muted">صفحه‌ی {faNumber(page)}</span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!hasMore}
+            onClick={() => setParam("page", String(page + 1))}
+          >
+            صفحه‌ی بعد
+          </Button>
+        </nav>
       )}
 
       <p className="mt-4 text-center text-caption text-ink-muted">

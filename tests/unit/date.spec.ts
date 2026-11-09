@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   daysLeftInMonth,
   formatDateFa,
+  isIsoDate,
+  monthKeyFromParam,
   monthRange,
   shiftMonth,
   todayInTimeZone,
@@ -68,5 +70,70 @@ describe("formatDateFa", () => {
   it("does not drift a day when formatting a date-only value", () => {
     expect(formatDateFa("2026-01-01")).toContain("۲۰۲۶");
     expect(formatDateFa("2026-12-31")).toContain("۳۱");
+  });
+});
+
+/* ------------------------------------------- a month out of a query string -- */
+
+describe("isIsoDate", () => {
+  it("accepts a real calendar date", () => {
+    expect(isIsoDate("2026-09-26")).toBe(true);
+    expect(isIsoDate("2024-02-29")).toBe(true);
+  });
+
+  it("rejects a date that matches the shape but is not a day", () => {
+    // Date() rolls both of these forward rather than refusing them, which is
+    // what makes the shape check on its own insufficient.
+    expect(isIsoDate("2026-02-30")).toBe(false);
+    expect(isIsoDate("2026-13-01")).toBe(false);
+    expect(isIsoDate("2025-02-29")).toBe(false);
+  });
+
+  it("rejects everything that is not a YYYY-MM-DD string", () => {
+    for (const value of ["bad-date", "2026-9-1", "2026-09", "", null, undefined, 20260926]) {
+      expect(isIsoDate(value)).toBe(false);
+    }
+  });
+});
+
+describe("monthKeyFromParam", () => {
+  const NOW = new Date("2026-09-26T12:00:00Z");
+
+  it("keeps a valid month", () => {
+    expect(monthKeyFromParam("2026-08-14", "UTC", NOW)).toBe("2026-08-01");
+  });
+
+  /**
+   * F13: `/dashboard?month=bad-date` reached monthRange unchecked, where
+   * `"bad-date".split("-").map(Number)` produced NaN and the range came out as
+   * "NaN-NaN-01" — which travelled into Postgres as a date literal and surfaced
+   * as the error page.
+   */
+  it("falls back to this month for anything unparseable", () => {
+    for (const value of ["bad-date", "2026-13-01", "", "../../etc/passwd", undefined]) {
+      expect(monthKeyFromParam(value, "UTC", NOW)).toBe("2026-09-01");
+    }
+  });
+
+  it("does not open a month that has not happened", () => {
+    // The stepper disables «next» at the current month, so a hand-typed future
+    // month would be an empty page with no way forward.
+    expect(monthKeyFromParam("2027-03-04", "UTC", NOW)).toBe("2026-09-01");
+  });
+
+  it("reads «this month» in the user's zone, not UTC's", () => {
+    // 2026-10-01T02:00Z is still September in Toronto.
+    const instant = new Date("2026-10-01T02:00:00Z");
+    expect(monthKeyFromParam("nonsense", "America/Toronto", instant)).toBe("2026-09-01");
+    expect(monthKeyFromParam("nonsense", "UTC", instant)).toBe("2026-10-01");
+  });
+});
+
+describe("monthRange", () => {
+  it("throws rather than inventing a NaN month", () => {
+    // A caller holding a real date wants to hear that it is not one; a caller
+    // holding user input wants monthKeyFromParam, which has a fallback.
+    expect(() => monthRange("UTC", "bad-date")).toThrow(RangeError);
+    expect(() => monthRange("UTC", "2026-02-30")).toThrow(RangeError);
   });
 });

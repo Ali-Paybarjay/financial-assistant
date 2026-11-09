@@ -38,7 +38,7 @@ export default async function SwitchPage() {
 
   const [accounts, totals, dongGroups] = await Promise.all([
     listAccountsWithBalances(),
-    monthTotals(month.from, month.to),
+    monthTotals(month.from, month.to, viewer.currency),
     listOpenDongGroups(),
   ]);
 
@@ -88,7 +88,7 @@ export default async function SwitchPage() {
               <>
                 موجودی {faNumber(accounts.filter((a) => a.is_active).length)} حساب:{" "}
                 <Money
-                  minor={totalBalance(accounts)}
+                  minor={totalBalance(accounts, viewer.currency).total}
                   currency={viewer.currency}
                   omitSymbol
                 />

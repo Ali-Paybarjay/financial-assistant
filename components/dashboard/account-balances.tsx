@@ -39,7 +39,13 @@ export function AccountBalances({
       >
         <span className="flex items-center gap-2">
           <Wallet size={18} className="text-action" />
-          <h2 className="text-[15px] font-semibold text-ink">موجودی حساب‌ها</h2>
+          {/* «الان», not «this month»: the one thing that distinguishes this
+              figure from the balance card above it is that it has no month in
+              it at all. Naming the three money concepts apart is what stops
+              the main figure being read as spendable cash. */}
+          <h2 className="text-[15px] font-semibold text-ink">
+            موجودی فعلی حساب‌ها
+          </h2>
         </span>
         <span className="flex items-center gap-1.5">
           <Money minor={total} currency={currency} size="kpi" tone="auto" />

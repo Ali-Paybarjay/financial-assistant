@@ -4,7 +4,7 @@ import { getViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { listCategories, categoryIdsBySlug } from "@/lib/queries/categories";
-import { listTransactions } from "@/lib/queries/transactions";
+import { listAllTransactions } from "@/lib/queries/transactions";
 import { addDays, todayInTimeZone } from "@/lib/date";
 import { isCurrencyCode } from "@/lib/money";
 import { MAX_IMPORT_LINES, readStatementFile } from "@/lib/ai/statement";
@@ -19,6 +19,7 @@ import {
   ledgerForAccount,
   reconcile,
   summarise,
+  toLedgerEntry,
   type ReconcilableLine,
 } from "@/lib/import/reconcile";
 
@@ -125,7 +126,6 @@ export async function POST(request: NextRequest) {
     await markAsset(asset.id, "processing", null);
 
     const outcome = await readStatementFile({
-      userId: viewer.userId,
       timeZone: viewer.timeZone,
       today,
       statementCurrency: statementImport.source_currency,
@@ -180,9 +180,14 @@ export async function POST(request: NextRequest) {
     amount: line.amount,
   }));
 
+  // Every row in the window, paged until they run out — not one page of them.
+  // Reconciliation reports a line as new when it fails to find its match, so a
+  // ledger that was quietly cut off at the API's row ceiling would offer money
+  // the user has already recorded as money to import again. F10.
+  //
   // Widened by the match window at both ends: a purchase on the first day of
   // the statement may have been logged in the app three days earlier.
-  const ledger = await listTransactions({
+  const ledger = await listAllTransactions({
     from: addDays(periodFrom, -MATCH_WINDOW_DAYS),
     to: addDays(periodTo, MATCH_WINDOW_DAYS),
   });
@@ -190,16 +195,10 @@ export async function POST(request: NextRequest) {
   const results = reconcile(
     reconcilable,
     // A statement of one account is not evidence about another one's rows.
-    ledgerForAccount(
-      ledger.map((row) => ({
-        id: row.id,
-        type: row.type,
-        amount: row.amount,
-        occurredOn: row.occurred_on,
-        accountId: row.account_id,
-      })),
-      statementImport.account_id,
-    ),
+    // The mapping is `toLedgerEntry` rather than an object literal written
+    // here, because the literal that used to be here silently omitted
+    // `to_account_id` — see F03 and the note on that function.
+    ledgerForAccount(ledger.map(toLedgerEntry), statementImport.account_id),
   );
   const summary = summarise(reconcilable, results);
 

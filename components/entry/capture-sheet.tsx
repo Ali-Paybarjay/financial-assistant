@@ -1,15 +1,32 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import dynamic from "next/dynamic";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { Money } from "@/components/money";
 import { ManualForm } from "./manual-form";
-import { ReceiptTab } from "./receipt-tab";
 import { ConfirmCard, type DraftTransaction } from "./confirm-card";
 import type { CurrencyCode } from "@/lib/money";
 import type { EnvelopeRow } from "@/lib/envelopes";
 import type { AccountRow, CategoryRow, GoalRow } from "@/lib/supabase/database.types";
 import { saveParsedTransactions } from "@/app/(app)/transactions/actions";
+
+/**
+ * The photo form, fetched when a photo is actually being recorded.
+ *
+ * It is one of three ways into this sheet and the heaviest by far — it owns the
+ * upload flow, the Supabase browser client and, behind its own dynamic import,
+ * the image compressor. The other two (a typed line, a form) are what the sheet
+ * opens as nearly every time. Static-importing this put all of it in the bundle
+ * of every personal page, because the composer is on every personal page.
+ *
+ * No placeholder: the sheet's own title is already on screen and this is inside
+ * it, so the space is not empty while the module lands.
+ */
+const ReceiptTab = dynamic(
+  () => import("./receipt-tab").then((module) => module.ReceiptTab),
+  { ssr: false },
+);
 
 /**
  * Everything a purchase needs to be written down, read once in the layout.

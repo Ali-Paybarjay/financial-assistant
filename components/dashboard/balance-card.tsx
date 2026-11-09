@@ -16,6 +16,19 @@ import type { CurrencyCode, Minor } from "@/lib/money";
  * same kind of statement as a guessed merchant name: nobody has lived those
  * days yet. Past months have no days left to guess about and show no
  * forecast at all.
+ *
+ * The label names what the figure is, and the disclosure under it says what the
+ * figure is not. Three different numbers in this product could be called «what
+ * I have left», and this is only the first of them:
+ *
+ *   1. this month's income minus this month's spending — the figure here;
+ *   2. what the accounts hold right now — «موجودی حساب‌ها», its own card;
+ *   3. what is free to spend after the month's remaining commitments — which
+ *      this app does not compute, and must therefore not imply.
+ *
+ * It used to be labelled «ماندهٔ سپتامبر» with nothing beside it, which reads as
+ * (3) and is (1). A user with rent still to pay on the 28th was being shown a
+ * number they could not actually spend.
  */
 export function BalanceCard({
   balance,
@@ -55,7 +68,9 @@ export function BalanceCard({
     <section className="@container rounded-card border border-action-tint-edge bg-action-tint p-4">
       <div className="flex items-end justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-caption text-ink-muted">ماندهٔ {monthLabel}</p>
+          <p className="text-caption text-ink-muted">
+            ماندهٔ درآمد و هزینهٔ {monthLabel}
+          </p>
           {/* Size on the wrapper, colour inside <Money>: tailwind-merge
               cannot tell a custom colour from a font size, so the two in one
               className would silently lose one of them. */}
@@ -112,6 +127,26 @@ export function BalanceCard({
           تندتر از سهم روز خرج می‌کنی.
         </p>
       )}
+
+      {/* Closed by default: the arithmetic is one tap away for the person who
+          wants it and out of the way of the person who does not. A `details`
+          rather than a tooltip, because it has to work on a phone and be
+          reachable from the keyboard without any of this being a component. */}
+      <details className="group mt-2">
+        <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-micro font-medium text-action [&::-webkit-details-marker]:hidden">
+          این عدد از کجا می‌آید؟
+        </summary>
+        <div className="mt-1.5 flex flex-col gap-1 border-t border-hairline pt-1.5 text-micro text-ink-muted">
+          <p>
+            درآمدِ ثبت‌شدهٔ این ماه منهای هزینهٔ ثبت‌شدهٔ این ماه. انتقال بین حساب‌های
+            خودت در آن نیست.
+          </p>
+          <p>
+            این «موجودی حساب‌هایت» نیست — آن را در کارت موجودی حساب‌ها ببین. تعهدهای
+            باقی‌ماندهٔ همین ماه هم از آن کم نشده، پس همه‌اش لزوماً قابل‌خرج نیست.
+          </p>
+        </div>
+      </details>
     </section>
   );
 }

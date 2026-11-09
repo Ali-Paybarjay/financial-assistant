@@ -122,6 +122,8 @@ export type CategoryRow = {
   updated_at: string;
 };
 
+export type BalanceBasis = "start_of_day" | "end_of_day";
+
 export type AccountRow = {
   id: string;
   user_id: string;
@@ -131,6 +133,16 @@ export type AccountRow = {
   /** May be negative: a credit card at 1,200 owed is -1200. */
   opening_balance: number;
   opening_balance_on: string;
+  /**
+   * Which side of `opening_balance_on` the stated figure sits on.
+   *
+   * `start_of_day` — the balance before that day's transactions, which is what
+   * the account form asks for and what every row written before migration 0028
+   * meant. `end_of_day` — the balance after them, which is what a bank
+   * statement's closing figure is. `account_balances()` reads this to decide
+   * whether the anchor day's rows still move the balance. See F02.
+   */
+  opening_balance_basis: BalanceBasis;
   institution: string | null;
   reference: string | null;
   is_default: boolean;
@@ -140,6 +152,29 @@ export type AccountRow = {
   last_reconciled_at: string | null;
   created_at: string;
   updated_at: string;
+};
+
+/**
+ * One row of month_totals(). `kind` is the transaction type, so a category's
+ * spending and a category's income are separate rows; transfers are excluded in
+ * SQL. `unconfirmed_count` is only meaningful on an expense row.
+ */
+export type MonthTotalRow = {
+  currency: string;
+  kind: "income" | "expense";
+  category_id: string | null;
+  amount: number;
+  unconfirmed_count: number;
+};
+
+/** One row of monthly_series(): one month, one currency. */
+export type MonthSeriesRow = {
+  month: string;
+  currency: string;
+  income: number;
+  expense: number;
+  /** Rows the user recorded, excluding ones generated from a fixed bill. */
+  logged: number;
 };
 
 /** One row of account_balances(). Derived on read, never stored. */
@@ -733,6 +768,23 @@ export type AdminGuestRow = {
   total_count: number;
 };
 
+/**
+ * One user's uploads, as the panel is allowed to see them.
+ *
+ * No `storage_path` and no `extracted`: the first is the key to the file, the
+ * second is the purchase written out in fields. The shape is enforced by
+ * `admin_user_media`'s signature rather than by a select list. See F06.
+ */
+export type AdminUserMediaRow = {
+  id: string;
+  kind: string;
+  mime_type: string;
+  size_bytes: number;
+  status: string;
+  error_message: string | null;
+  created_at: string;
+};
+
 /** Across every user, which is why the function needs definer rights. */
 export type AdminCategoryUsageRow = {
   category_id: string;
@@ -798,6 +850,20 @@ export type Database = {
         Args: { p_before: string };
         Returns: MissedRecurringRow[];
       };
+      /**
+       * One row per (currency, income/expense, category) over an inclusive
+       * range. Grouped in SQL because summing the month in JavaScript meant
+       * summing however much of it fitted under PostgREST's row ceiling. F10.
+       */
+      month_totals: {
+        Args: { p_from: string; p_to: string };
+        Returns: MonthTotalRow[];
+      };
+      /** The same, grouped by month instead of by category. */
+      monthly_series: {
+        Args: { p_from: string; p_to: string };
+        Returns: MonthSeriesRow[];
+      };
       account_balances: {
         Args: Record<never, never>;
         Returns: AccountBalanceRow[];
@@ -832,6 +898,111 @@ export type Database = {
         Args: { max_age?: string };
         Returns: string[];
       };
+      // ------------------------------------------------------- onboarding ---
+      // One function per collection step, each replacing that step's rows in a
+      // single transaction: validated before the first write, existing rows
+      // updated by id, and only rows the user removed from the form deleted.
+      // Migration 0029 explains what the delete-then-insert they replace cost.
+
+      replace_income_sources: {
+        Args: {
+          p_monthly_estimate: number;
+          p_currency: string;
+          p_sources: {
+            /** Absent or "" means a row the user just added. */
+            id?: string | null;
+            title: string;
+            type: string;
+            amount: number;
+            frequency: string;
+          }[];
+        };
+        Returns: undefined;
+      };
+      replace_recurring_expenses: {
+        Args: {
+          p_currency: string;
+          p_expenses: {
+            id?: string | null;
+            title: string;
+            category_id: string | null;
+            amount: number;
+            due_day: number;
+          }[];
+        };
+        Returns: undefined;
+      };
+      replace_expense_baselines: {
+        Args: {
+          /** Keyed by category, which is this table's own unique constraint. */
+          p_baselines: { category_id: string; monthly_estimate: number }[];
+        };
+        Returns: undefined;
+      };
+      replace_goals: {
+        Args: {
+          p_goals: {
+            id?: string | null;
+            title: string;
+            type: string;
+            target_amount: number;
+            target_date: string | null;
+            priority: number;
+          }[];
+        };
+        Returns: undefined;
+      };
+
+      // ------------------------------------------------ statement import ---
+
+      /**
+       * Applies a statement import in one transaction: repairs lines left
+       * marked imported with no transaction behind them, writes one transaction
+       * per chosen line, skips the rest and closes the report. Migration 0030
+       * explains what the four separate writes it replaces cost. F05.
+       */
+      apply_statement_lines: {
+        Args: {
+          p_import_id: string;
+          p_lines: {
+            row_index: number;
+            /** Resolved from the review card's slug before the call. */
+            category_id: string | null;
+            merchant: string | null;
+            occurred_on: string;
+            /** Fields the user looked at and accepted or corrected. */
+            resolved: string[];
+          }[];
+        };
+        Returns: { imported: number; skipped: number }[];
+      };
+
+      /** Lines marked imported with nothing behind them, grouped by import. */
+      orphaned_statement_lines: {
+        Args: Record<never, never>;
+        Returns: { import_id: string; line_count: number }[];
+      };
+
+      // -------------------------------------------------------- ai quota ---
+
+      /**
+       * Counts this user's calls since `p_since` and writes the usage row in the
+       * same transaction, under a per-user advisory lock. `reservation_id` is
+       * null when the call is refused, and the function has already written the
+       * `rejected` row in that case. See migration 0033 and F12.
+       */
+      reserve_ai_call: {
+        Args: {
+          p_feature: string;
+          p_limit: number;
+          p_since: string;
+          /** False for a guest, who is capped across all features at once. */
+          p_per_feature?: boolean;
+          p_model?: string;
+        };
+        Returns: { reservation_id: string | null; used: number; allowed: boolean }[];
+      };
+
       /** Writes an expense and its shares in one transaction. Returns the id. */
       dong_save_expense: {
         Args: {
@@ -909,6 +1080,11 @@ export type Database = {
       admin_guests: {
         Args: { p_retention_days?: number; p_limit?: number };
         Returns: AdminGuestRow[];
+      };
+      /** Metadata only. The excluded columns are named in the function. */
+      admin_user_media: {
+        Args: { p_user_id: string; p_limit?: number };
+        Returns: AdminUserMediaRow[];
       };
       admin_category_usage: {
         Args: Record<never, never>;

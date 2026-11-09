@@ -15,6 +15,7 @@ import { AccountBalances } from "@/components/dashboard/account-balances";
 import { ReconcileBanner } from "@/components/accounts/reconcile-banner";
 import { TransactionRowItem } from "@/components/transactions/transaction-row";
 import { MissedBanner, MissedReview } from "./missed-review";
+import { CurrencyNotice } from "@/components/currency-notice";
 import { faPercent } from "@/lib/format";
 import { formatMonthFa, shiftMonth } from "@/lib/date";
 import { requiredMonthly, type GoalWithProgress } from "@/lib/goals";
@@ -57,6 +58,7 @@ export function DashboardView({
   accounts,
   accountsTotal,
   accountsDue,
+  otherCurrencies,
 }: {
   currency: CurrencyCode;
   name: string;
@@ -90,6 +92,12 @@ export function DashboardView({
   accountsTotal: number;
   /** Open accounts not yet checked against the bank this month. */
   accountsDue: AccountWithBalance[];
+  /**
+   * Currencies this month's figures could not take in, because this app has no
+   * rate for them. Said once, under the balance card, rather than beside each
+   * total it is missing from. F01.
+   */
+  otherCurrencies: string[];
 }) {
   const router = useRouter();
   const [missedOpen, setMissedOpen] = useState(false);
@@ -125,7 +133,10 @@ export function DashboardView({
         type="button"
         aria-label="ماه قبل"
         onClick={() => goToMonth(-1)}
-        className="flex size-7 items-center justify-center rounded-full text-ink-muted hover:text-action"
+        // 28px of paint inside a 36px pill, and a 44px target around it. The
+        // `after` box carries the pointer area so the control keeps the size
+        // the design drew it at.
+        className="relative flex size-7 items-center justify-center rounded-full text-ink-muted after:absolute after:-inset-2 after:content-[''] hover:text-action"
       >
         <CaretRight size={14} />
       </button>
@@ -137,7 +148,7 @@ export function DashboardView({
         aria-label="ماه بعد"
         disabled={isCurrentMonth}
         onClick={() => goToMonth(1)}
-        className="flex size-7 items-center justify-center rounded-full text-ink-muted hover:text-action disabled:text-hairline-strong disabled:hover:text-hairline-strong"
+        className="relative flex size-7 items-center justify-center rounded-full text-ink-muted after:absolute after:-inset-2 after:content-[''] hover:text-action disabled:text-hairline-strong disabled:hover:text-hairline-strong"
       >
         <CaretLeft size={14} />
       </button>
@@ -164,6 +175,11 @@ export function DashboardView({
         action="/transactions"
         className="flex items-center gap-2 px-4 pt-3 min-[960px]:px-0 min-[960px]:pt-0 min-[960px]:pb-3"
       >
+        {/* The month the user is looking at, carried over. Without it a search
+            made from August landed on /transactions?q=… with no month, which
+            the ledger reads as «this month» — so searching a past month
+            silently answered about a different one. F13. */}
+        <input type="hidden" name="month" value={month} />
         <label htmlFor="dashboard-search" className="sr-only">
           جست‌وجو در تراکنش‌ها
         </label>
@@ -213,6 +229,9 @@ export function DashboardView({
             monthLabel={formatMonthFa(month)}
           />
         )}
+
+        {/* Under the figure it qualifies, not at the bottom of the page. */}
+        <CurrencyNotice currencies={otherCurrencies} />
       </div>
 
       <div className="flex flex-col gap-3 p-4 min-[960px]:mt-3 min-[960px]:p-0">
@@ -247,16 +266,15 @@ export function DashboardView({
               available={availableCategories}
             />
 
-
-            <MonthBars series={series} currency={currency} />
-
-            <KpiCards
-              totals={totals}
-              previous={previousTotals}
-              currency={currency}
-              hasUnconfirmed={totals.unconfirmedCount > 0}
-            />
-
+            {/* The page reads in the order the next decision is made in: the
+                figure, then anything wrong, then the packets the user is about
+                to spend from, then where the money actually is, and only then
+                what the last six months looked like. The six-month chart and
+                the month-over-month cards used to sit in the middle, between
+                the packets and the accounts — history interrupting the thing
+                the user opened the app to do. They are at the bottom now, and
+                folded away, because nobody opens a budgeting app to find out
+                about June. */}
             <div className="flex flex-col gap-3 min-[960px]:grid min-[960px]:grid-cols-[1fr_1.25fr] min-[960px]:items-start">
               {openGoals.length > 0 && (
                 <section className="rounded-card border border-hairline bg-surface p-4">
@@ -362,8 +380,35 @@ export function DashboardView({
               </section>
             </div>
 
-            {/* Last on the page, and deliberately: this is a feature beside
-                the month the rest of the dashboard is about, not part of it. */}
+            {/* Last on the page, and folded, deliberately: history is context,
+                not the decision. It used to sit between the packets and the
+                accounts, which put four screens of «what June looked like»
+                between the user and the thing they opened the app to do.
+                Folded at every width rather than open on desktop — `open` is an
+                attribute, not a style, so making it depend on the viewport
+                means rendering different HTML on the server than the client
+                and paying for a hydration mismatch to save one tap. */}
+            <details className="group rounded-card border border-hairline bg-surface open:pb-4">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-2 p-4 text-[15px] font-semibold text-ink [&::-webkit-details-marker]:hidden">
+                روند ماه‌های گذشته
+                <span className="text-caption font-medium text-action group-open:hidden">
+                  نشان بده
+                </span>
+                <span className="hidden text-caption font-medium text-action group-open:inline">
+                  ببند
+                </span>
+              </summary>
+
+              <div className="flex flex-col gap-3 px-4">
+                <KpiCards
+                  totals={totals}
+                  previous={previousTotals}
+                  currency={currency}
+                  hasUnconfirmed={totals.unconfirmedCount > 0}
+                />
+                <MonthBars series={series} currency={currency} />
+              </div>
+            </details>
           </>
         )}
       </div>

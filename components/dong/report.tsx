@@ -1,6 +1,6 @@
 "use client";
 
-import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
+import { DonutRing } from "@/components/charts/lazy";
 import { ArrowLeft, CheckCircle, Handshake } from "@phosphor-icons/react/dist/ssr";
 import { Money } from "@/components/money";
 import { Button } from "@/components/ui/button";
@@ -197,23 +197,7 @@ function TagBreakdown({
 
       <div className="flex items-center gap-4">
         <div className="size-[118px] shrink-0">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={data}
-                dataKey="amount"
-                innerRadius={36}
-                outerRadius={59}
-                paddingAngle={1.6}
-                stroke="none"
-                isAnimationActive={false}
-              >
-                {data.map((slice) => (
-                  <Cell key={slice.key} fill={slice.fill} />
-                ))}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
+          <DonutRing slices={data} />
         </div>
 
         <ul className="flex min-w-0 flex-1 flex-col gap-1.5">

@@ -9,7 +9,7 @@ import {
   type StatementLine,
 } from "./schemas";
 import { statementParsePrompt } from "./prompts";
-import { logUsage, remainingCalls, type Allowance } from "./usage";
+import { reserveCall, settleCall, type Allowance } from "./usage";
 import {
   normalise,
   latestBalance,
@@ -98,7 +98,6 @@ export function isPdf(mimeType: string): boolean {
  * one is guesswork and a row read twice is worse than a row read late.
  */
 export async function readStatementFile({
-  userId,
   file,
   timeZone,
   today,
@@ -106,7 +105,15 @@ export async function readStatementFile({
   baseCurrency,
   categories,
 }: {
-  userId: string;
+  /**
+   * No `userId`.
+   *
+   * It used to be passed in so the usage row could be written with it. The
+   * reservation function takes the user from `auth.uid()` instead, because a
+   * caller that supplies its own user id is a caller that can write somebody
+   * else's quota — and the count that authorises a call now happens inside the
+   * same transaction as the row. F12.
+   */
   file: StatementFile;
   timeZone: string;
   today: IsoDate;
@@ -136,17 +143,20 @@ export async function readStatementFile({
   let truncated = chunks.length > MAX_CALLS_PER_FILE;
 
   for (const chunk of chunks.slice(0, MAX_CALLS_PER_FILE)) {
-    const allowance = await remainingCalls(timeZone, "parse_statement");
-    if (allowance.remaining <= 0) {
-      await logUsage({ userId, feature: "parse_statement", model: MODEL, status: "rejected" });
+    // One reservation per chunk, because one chunk is one model call. Taken
+    // inside the loop so a long statement cannot reserve once and then spend
+    // five times. F12.
+    const reservation = await reserveCall(timeZone, "parse_statement", MODEL);
+    if (!reservation.id) {
+      // The refusal row is written by the reservation function itself.
       // Whatever was read before the ceiling is still worth offering.
       return lines.length > 0
         ? { ok: true, lines, truncated: true, closingBalance: latestBalance(balances) }
-        : { ok: false, error: importLimitReached(allowance) };
+        : { ok: false, error: importLimitReached(reservation.allowance) };
     }
 
     const outcome = await readOnce({
-      userId,
+      reservationId: reservation.id,
       system,
       content: chunk === null ? fileContent(file) : [{ type: "text", text: chunk }],
     });
@@ -188,11 +198,12 @@ type ReadOnceOutcome =
 
 /** One model call, validated twice — the provider schema, then Zod. */
 async function readOnce({
-  userId,
+  reservationId,
   system,
   content,
 }: {
-  userId: string;
+  /** The usage row this call was claimed against, settled below. */
+  reservationId: string;
   system: string;
   content: ChatContent[];
 }): Promise<ReadOnceOutcome> {
@@ -208,8 +219,7 @@ async function readOnce({
 
       const parsed = statementResultSchema.safeParse(safeJson(result.content));
 
-      await logUsage({
-        userId,
+      await settleCall(reservationId, {
         feature: "parse_statement",
         model: MODEL,
         inputTokens: result.inputTokens,
@@ -230,7 +240,11 @@ async function readOnce({
       return { ok: false, error: FAILURE_MESSAGES.malformed };
     } catch (error) {
       const kind = error instanceof ModelError ? error.kind : "provider";
-      await logUsage({ userId, feature: "parse_statement", model: MODEL, status: kind });
+      await settleCall(reservationId, {
+        feature: "parse_statement",
+        model: MODEL,
+        status: kind,
+      });
       // A timeout or an outage will not be fixed by trying again immediately.
       if (kind !== "malformed" || attempt === 1) {
         return { ok: false, error: FAILURE_MESSAGES[kind] };

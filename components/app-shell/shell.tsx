@@ -40,11 +40,14 @@ export function AppShell({
    */
   banner: string;
   /**
-   * What the composer needs to record a purchase. Read once in the layout
-   * rather than per page, because the bar is on every page — that is the
-   * whole point of it replacing a button that was only on two of them.
+   * What the composer needs to record a purchase, or null on a page that has no
+   * composer. Read once in the layout rather than per page, because the bar is
+   * on every *personal* page — that is the point of it replacing a button that
+   * was on two of them — and read not at all on the pages that have no bar. The
+   * layout decides which from the path middleware forwards; see
+   * PATHNAME_HEADER in lib/workspaces.ts.
    */
-  entry: CaptureData;
+  entry: CaptureData | null;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -55,7 +58,12 @@ export function AppShell({
   // ambiguous and the field unfocusable by id, which is how the dashboard's
   // empty state puts the cursor in it.
   const capturing = workspace === "personal" && isCapturePath(pathname);
-  const docked = workspace === "personal" && !capturing;
+  // `entry !== null` rather than an assertion: the workspace is decided here on
+  // the client and the data was decided on the server from the forwarded path,
+  // and if those two ever disagree the bar is simply absent rather than throwing
+  // halfway through a render. The capture screen above needs no such guard —
+  // it renders the composer itself, from its own page's data.
+  const docked = workspace === "personal" && !capturing && entry !== null;
 
   return (
     <div className="flex min-h-dvh bg-paper">

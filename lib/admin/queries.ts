@@ -12,6 +12,7 @@ import type {
   AdminOverviewRow,
   AdminSignupDayRow,
   AdminUserDetailRow,
+  AdminUserMediaRow,
   AdminUserRow,
   CategoryRow,
   CronRunRow,
@@ -29,11 +30,19 @@ import type {
  *     footprint does not grow by a page.
  *
  *  2. **Explicit columns, never `select("*")`.** A row-level policy cannot hide
- *     a column, so the four tables an admin may read still contain figures that
- *     belong to the user. `select("*")` on `profiles` would pull
- *     `monthly_income_estimate` and `debt_amount` into the panel's props and
- *     into its HTML. Listing columns is how the privacy line in migration 0027
- *     is actually enforced — a star would quietly undo it.
+ *     a column, so a table an admin may read still contains figures that belong
+ *     to the user. `select("*")` on `ai_usage_logs` is harmless and `select("*")`
+ *     on `profiles` would have pulled `monthly_income_estimate` and
+ *     `debt_amount` into the panel's props and into its HTML.
+ *
+ *     That rule used to be the *only* thing standing between an admin and those
+ *     columns, which is not a place to keep a privacy guarantee: it binds this
+ *     file and PostgREST answers requests this file did not write. Migration
+ *     0031 dropped the broad read policies on `profiles`, `statement_imports`
+ *     and `media_assets` for exactly that reason, so the guarantee now lives in
+ *     the signature of each `security definer` report. This rule stays anyway —
+ *     `ai_usage_logs` still has a policy, and a habit that only sometimes
+ *     matters is not a habit worth breaking. F06.
  */
 
 /** What every list needs back: the page, and how many pages there are. */
@@ -191,21 +200,24 @@ export async function adminUserUsage(
 /**
  * One user's uploads, as metadata.
  *
- * Never `storage_path` (the key to the file) and never `extracted` (what the
- * model read off the receipt, which is the purchase). Size, type and whether
- * it parsed is the whole of what an operator needs.
+ * An RPC rather than a select, and that is the point of it. This used to read
+ * `media_assets` through an admin policy that granted the whole row, with the
+ * column list here as the only thing keeping `storage_path` (the key to the
+ * file) and `extracted` (what the model read off the receipt, which is the
+ * purchase) out of the panel. That list binds this function and nothing else:
+ * PostgREST is a public API, so an admin's own token could ask for those columns
+ * directly. The policy is gone in migration 0031 and the column list now lives
+ * in the function signature, where it holds for every caller. F06.
  */
-export async function adminUserMedia(userId: string, limit = 20) {
+export async function adminUserMedia(
+  userId: string,
+  limit = 20,
+): Promise<AdminUserMediaRow[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("media_assets")
-    .select("id, kind, mime_type, size_bytes, status, error_message, created_at")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(limit);
-
-  if (error) throw new Error(`media_assets: ${error.message}`);
-  return data ?? [];
+  return unwrap(
+    "admin_user_media",
+    await supabase.rpc("admin_user_media", { p_user_id: userId, p_limit: limit }),
+  );
 }
 
 // ---------------------------------------------------------------------- ai ---

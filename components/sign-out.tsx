@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { useQueryClient } from "@tanstack/react-query";
 import { SignOut } from "@phosphor-icons/react/dist/ssr";
 import { Button } from "@/components/ui/button";
 import { BottomSheet } from "@/components/bottom-sheet";
@@ -14,19 +13,17 @@ import { cn } from "@/lib/utils";
  * Signing out, written once for the three places that offer it: the hub, the
  * row in settings, and the way out of onboarding.
  *
- * The cache clear is the half that is easy to leave out and impossible to see
- * missing — React Query still holds the previous account's numbers in memory,
- * and on a shared device the next person to sign in would be shown them.
+ * It used to clear a React Query cache first, against the risk that on a shared
+ * device the next person to sign in would be shown the previous account's
+ * numbers. The risk is real; the cache was not — nothing in this app ever read
+ * through React Query, so the clear ran over an empty store. What actually keeps
+ * the promise is `revalidatePath("/", "layout")` inside `logout()`, which drops
+ * the rendered pages out of the client router cache before the redirect.
  */
 export function useSignOut() {
-  const queryClient = useQueryClient();
   const [isPending, startTransition] = useTransition();
 
-  const signOut = () =>
-    startTransition(() => {
-      queryClient.clear();
-      return logout();
-    });
+  const signOut = () => startTransition(() => logout());
 
   return { signOut, isPending };
 }

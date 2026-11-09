@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireViewer } from "@/lib/auth";
 import { categoryIdsBySlug } from "@/lib/queries/categories";
+import { hasRecordedMoney } from "@/lib/queries/money-data";
+import { CURRENCY_LOCKED_ERROR } from "@/lib/currency-lock";
 import { toMinor, type CurrencyCode } from "@/lib/money";
 import { TOTAL_STEPS } from "@/lib/onboarding/config";
 import {
@@ -54,6 +56,15 @@ export async function saveStep1(
   const viewer = await requireViewer();
   const supabase = await createClient();
 
+  // The same lock settings has. A completed user can come back to this step
+  // from settings to fix a name, and the currency select sits on the same
+  // form — so without this, the one door that was closed in settings stayed
+  // open here. F01.
+  const currencyChanged = parsed.data.baseCurrency !== viewer.currency;
+  if (currencyChanged && (await hasRecordedMoney(viewer.userId))) {
+    return { error: CURRENCY_LOCKED_ERROR };
+  }
+
   const { error } = await supabase
     .from("profiles")
     .update({
@@ -89,35 +100,33 @@ export async function saveStep2(raw: unknown): Promise<StepResult> {
   const currency = viewer.currency as CurrencyCode;
 
   let monthlyEstimate: number;
-  let rows;
+  let sources;
   try {
     monthlyEstimate = toMinor(parsed.data.monthlyIncomeEstimate, currency);
-    rows = parsed.data.sources.map((source) => ({
-      user_id: viewer.userId,
+    sources = parsed.data.sources.map((source) => ({
+      id: source.id ?? null,
       title: source.title,
       type: source.type,
       amount: toMinor(source.amount, currency),
-      currency,
       frequency: source.frequency,
     }));
   } catch {
     return { error: "یکی از مبلغ‌ها عدد نیست. فقط رقم بنویس، مثل ۴۵۰۰." };
   }
 
-  // Replace rather than append: re-submitting this step means "these are my
-  // sources", not "add these again".
-  await supabase.from("income_sources").delete().eq("user_id", viewer.userId);
+  if (sources.some((source) => source.amount < 0)) {
+    return { error: "مبلغ درآمد نمی‌تواند منفی باشد." };
+  }
 
-  const { error } = await supabase.from("income_sources").insert(rows);
+  // One transaction: rows the user kept are updated by id, rows they removed
+  // are deleted, and a refusal anywhere leaves everything as it was. See
+  // migration 0029. F04.
+  const { error } = await supabase.rpc("replace_income_sources", {
+    p_monthly_estimate: monthlyEstimate,
+    p_currency: currency,
+    p_sources: sources,
+  });
   if (error) return { error: GENERIC_ERROR };
-
-  await supabase
-    .from("profiles")
-    .update({
-      monthly_income_estimate: monthlyEstimate,
-      onboarding_step: Math.max(2, viewer.profile.onboarding_step),
-    })
-    .eq("id", viewer.userId);
 
   revalidatePath("/onboarding", "layout");
   goNext(2);
@@ -132,27 +141,32 @@ export async function saveStep3(raw: unknown): Promise<StepResult> {
   const currency = viewer.currency as CurrencyCode;
   const categories = await categoryIdsBySlug();
 
-  let rows;
+  let expenses;
   try {
-    rows = parsed.data.expenses.map((expense) => ({
-      user_id: viewer.userId,
+    expenses = parsed.data.expenses.map((expense) => ({
+      id: expense.id ?? null,
       title: expense.title,
       category_id: categories.get(expense.categorySlug) ?? null,
       amount: toMinor(expense.amount, currency),
-      currency,
-      frequency: "monthly" as const,
       due_day: expense.dueDay,
     }));
   } catch {
     return { error: "یکی از مبلغ‌ها عدد نیست. فقط رقم بنویس، مثل ۱۲۰۰." };
   }
 
-  await supabase.from("recurring_expenses").delete().eq("user_id", viewer.userId);
+  if (expenses.some((expense) => expense.amount < 0)) {
+    return { error: "مبلغ هزینه‌ی ثابت نمی‌تواند منفی باشد." };
+  }
 
-  const { error } = await supabase.from("recurring_expenses").insert(rows);
+  // A fixed cost is the parent of every transaction this app generated for it,
+  // so re-creating one loses that history and re-posts the month. F04.
+  const { error } = await supabase.rpc("replace_recurring_expenses", {
+    p_currency: currency,
+    p_expenses: expenses,
+  });
   if (error) return { error: GENERIC_ERROR };
 
-  await markStepDone(3);
+  revalidatePath("/onboarding", "layout");
   goNext(3);
 }
 
@@ -170,23 +184,27 @@ export async function saveStep4(raw: unknown): Promise<StepResult> {
     rows = parsed.data.baselines
       .filter((baseline) => baseline.amount.trim() !== "")
       .map((baseline) => ({
-        user_id: viewer.userId,
-        category_id: categories.get(baseline.categorySlug)!,
+        category_id: categories.get(baseline.categorySlug) ?? "",
         monthly_estimate: toMinor(baseline.amount, currency),
       }))
-      .filter((row) => row.category_id);
+      .filter((row) => row.category_id !== "");
   } catch {
     return { error: "یکی از مبلغ‌ها عدد نیست. فقط رقم بنویس." };
   }
 
-  await supabase.from("variable_expense_baselines").delete().eq("user_id", viewer.userId);
-
-  if (rows.length > 0) {
-    const { error } = await supabase.from("variable_expense_baselines").insert(rows);
-    if (error) return { error: GENERIC_ERROR };
+  if (rows.some((row) => row.monthly_estimate < 0)) {
+    return { error: "مبلغ نمی‌تواند منفی باشد." };
   }
 
-  await markStepDone(4);
+  // An estimate the user cleared is removed and the rest are upserted on
+  // (user_id, category_id), in one transaction. The old version emptied the
+  // table first, so a refused insert left the whole step blank. F04.
+  const { error } = await supabase.rpc("replace_expense_baselines", {
+    p_baselines: rows,
+  });
+  if (error) return { error: GENERIC_ERROR };
+
+  revalidatePath("/onboarding", "layout");
   goNext(4);
 }
 
@@ -198,10 +216,10 @@ export async function saveStep5(raw: unknown): Promise<StepResult> {
   const supabase = await createClient();
   const currency = viewer.currency as CurrencyCode;
 
-  let rows;
+  let goals;
   try {
-    rows = parsed.data.goals.map((goal) => ({
-      user_id: viewer.userId,
+    goals = parsed.data.goals.map((goal) => ({
+      id: goal.id ?? null,
       title: goal.title,
       type: goal.type,
       target_amount: toMinor(goal.targetAmount, currency),
@@ -212,12 +230,21 @@ export async function saveStep5(raw: unknown): Promise<StepResult> {
     return { error: "مبلغ هدف عدد نیست. فقط رقم بنویس، مثل ۱۰۰۰۰." };
   }
 
-  await supabase.from("goals").delete().eq("user_id", viewer.userId);
+  /**
+   * Checked here as well as in SQL, and that is not belt and braces: the
+   * database CHECK is `> 0`, and a target of «۰» used to reach it *after* every
+   * existing goal had already been deleted. The rule now holds in three places —
+   * the form, this action and the function — and the function is the one that
+   * makes it safe, because it validates before it writes. F04.
+   */
+  if (goals.some((goal) => goal.target_amount <= 0)) {
+    return { error: "مبلغ هدف باید بزرگ‌تر از صفر باشد." };
+  }
 
-  const { error } = await supabase.from("goals").insert(rows);
+  const { error } = await supabase.rpc("replace_goals", { p_goals: goals });
   if (error) return { error: GENERIC_ERROR };
 
-  await markStepDone(5);
+  revalidatePath("/onboarding", "layout");
   goNext(5);
 }
 

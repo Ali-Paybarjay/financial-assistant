@@ -1,6 +1,13 @@
 import { monthRange, monthsBetween, todayInTimeZone, type IsoDate } from "@/lib/date";
 import type { AccountRow } from "@/lib/supabase/database.types";
-import type { Minor } from "@/lib/money";
+import {
+  canConvert,
+  convertMinor,
+  isCurrencyCode,
+  type CurrencyCode,
+  type CurrencyTotal,
+  type Minor,
+} from "@/lib/money";
 
 /**
  * What an account is, once its balance has been worked out, and the few rules
@@ -45,11 +52,33 @@ export function preferredAccountId(accounts: readonly AccountRow[]): string | nu
   );
 }
 
-/** What the open accounts hold between them. A card's debt subtracts itself. */
-export function totalBalance(accounts: readonly AccountWithBalance[]): Minor {
-  return accounts
-    .filter((account) => account.is_active)
-    .reduce((total, account) => total + account.balance, 0);
+/**
+ * What the open accounts hold between them. A card's debt subtracts itself.
+ *
+ * Only accounts whose currency this app can convert exactly are in the figure —
+ * the currency itself, or its sibling unit. An account in a currency with no
+ * rate is named in `otherCurrencies` instead of being added, so the screen can
+ * say «plus an account in USD» rather than quietly folding it in at 1:1. F01.
+ */
+export function totalBalance(
+  accounts: readonly AccountWithBalance[],
+  currency: CurrencyCode,
+): CurrencyTotal {
+  const other = new Set<CurrencyCode>();
+  let total = 0;
+
+  for (const account of accounts) {
+    if (!account.is_active) continue;
+
+    const from = isCurrencyCode(account.currency) ? account.currency : currency;
+    if (!canConvert(from, currency)) {
+      other.add(from);
+      continue;
+    }
+    total += convertMinor(account.balance, from, currency);
+  }
+
+  return { total, otherCurrencies: [...other].sort() };
 }
 
 /* --------------------------------------------- checking against the bank -- */

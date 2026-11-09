@@ -29,12 +29,22 @@ export const listGoalsWithProgress = cache(async function listGoalsWithProgress(
 > {
   const supabase = await createClient();
 
-  const [{ data: goals, error }, { data: progress }] = await Promise.all([
+  const [
+    { data: goals, error: goalsError },
+    { data: progress, error: progressError },
+  ] = await Promise.all([
     supabase.from("goals").select("*").order("priority").order("created_at"),
     supabase.rpc("goal_progress"),
   ]);
 
-  if (error) throw error;
+  if (goalsError) throw goalsError;
+  /**
+   * The same hole `listAccountsWithBalances` had, with the same shape: the
+   * fallbacks below are right for a goal nothing has been put into yet, and
+   * indistinguishable from a failed read. A goal at 60% would have shown its
+   * opening figure and a progress bar to match. F08.
+   */
+  if (progressError) throw progressError;
 
   const byGoal = new Map<string, GoalProgressRow>(
     ((progress ?? []) as GoalProgressRow[]).map((row) => [row.goal_id, row]),

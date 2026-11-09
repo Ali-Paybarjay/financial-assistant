@@ -33,12 +33,27 @@ export const listAccountsWithBalances = cache(async function listAccountsWithBal
 > {
   const supabase = await createClient();
 
-  const [{ data: accounts, error }, { data: balances }] = await Promise.all([
+  const [
+    { data: accounts, error: accountsError },
+    { data: balances, error: balancesError },
+  ] = await Promise.all([
     supabase.from("accounts").select("*"),
     supabase.rpc("account_balances"),
   ]);
 
-  if (error) throw error;
+  if (accountsError) throw accountsError;
+  /**
+   * The balance function's error used to be discarded.
+   *
+   * The fallbacks below are there for an account with no rows against it yet,
+   * which genuinely holds exactly what was typed into it — but they read the
+   * same when the function itself failed, so a broken RPC showed every account
+   * at its opening balance, with a movement of zero and a plausible total on the
+   * dashboard. A wrong number nobody can tell is wrong is worse than an error
+   * page: the user acts on it. Nothing here can distinguish «no rows» from «no
+   * answer», so the answer has to arrive or the read has to fail. F08.
+   */
+  if (balancesError) throw balancesError;
 
   const byAccount = new Map<string, AccountBalanceRow>(
     ((balances ?? []) as AccountBalanceRow[]).map((row) => [row.account_id, row]),

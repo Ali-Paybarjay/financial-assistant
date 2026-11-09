@@ -54,6 +54,9 @@ export function Step2({
       sources:
         sources.length > 0
           ? sources.map((source) => ({
+              // The row's own id, so re-saving updates it rather than
+              // replacing the table. F04.
+              id: source.id,
               title: source.title,
               type: source.type as Step2Input["sources"][number]["type"],
               amount: minorToText(source.amount, currency),

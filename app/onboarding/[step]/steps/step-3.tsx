@@ -40,6 +40,10 @@ export function Step3({
     resolver: zodResolver(step3Schema),
     defaultValues: {
       expenses: expenses.map((expense) => ({
+        // Carried so the save updates this bill instead of deleting it. A fixed
+        // cost is the parent of every transaction this app generated for it, so
+        // re-creating one loses that history and posts the month twice. F04.
+        id: expense.id,
         title: expense.title,
         categorySlug: expense.category_id
           ? (slugById.get(expense.category_id) ?? "misc")

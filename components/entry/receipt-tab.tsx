@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import imageCompression from "browser-image-compression";
 import { Camera, Images, Receipt } from "@phosphor-icons/react/dist/ssr";
 import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/field";
@@ -62,6 +61,17 @@ export function ReceiptTab({
     startReading(async () => {
       try {
         setStatus("دارم عکس را کوچک می‌کنم…");
+        /**
+         * Loaded here rather than at the top of the file.
+         *
+         * `browser-image-compression` carries its own web-worker payload, and it
+         * is needed exactly once per receipt — after the user has picked a photo.
+         * A static import put it in the bundle of every page the composer is on,
+         * which is every personal page, to be used by the small minority of
+         * visits that photograph something.
+         */
+        const { default: imageCompression } = await import("browser-image-compression");
+
         const compressed = await imageCompression(file, {
           maxWidthOrHeight: 1500,
           initialQuality: 0.8,

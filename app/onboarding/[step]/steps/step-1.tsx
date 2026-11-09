@@ -48,10 +48,17 @@ export function Step1({
   meta,
   profile,
   prefill,
+  currencyLocked,
 }: {
   meta: StepMeta;
   profile: ProfileRow;
   prefill: Step1Prefill;
+  /**
+   * True once an amount has been recorded in the current base currency. The
+   * server refuses the change either way; this stops the form offering a choice
+   * it is going to reject. F01.
+   */
+  currencyLocked: boolean;
 }) {
   const [formError, setFormError] = useState<string>();
   const [isPending, startTransition] = useTransition();
@@ -157,8 +164,10 @@ export function Step1({
               {...register("countryCode", {
                 onChange: (event) => {
                   setCountryIsGuess(false);
-                  // Picking a country is almost always picking its currency.
-                  if (isSupportedCountry(event.target.value)) {
+                  // Picking a country is almost always picking its currency —
+                  // but not once amounts exist in the old one, or moving house
+                  // would relabel every purchase already recorded.
+                  if (!currencyLocked && isSupportedCountry(event.target.value)) {
                     setValue("baseCurrency", currencyForCountry(event.target.value));
                   }
                 },
@@ -175,13 +184,22 @@ export function Step1({
           <Field
             label="ارز پایه"
             htmlFor="baseCurrency"
-            note={countryIsGuess ? "از روی کشور" : undefined}
-            hint="در این نسخه همه‌ی مبلغ‌ها با همین ارز ثبت می‌شوند."
+            note={countryIsGuess && !currencyLocked ? "از روی کشور" : undefined}
+            hint={
+              currencyLocked
+                ? "مبلغ‌هایی با این ارز ثبت شده و تبدیل نمی‌شوند، پس این گزینه بسته است."
+                : "در این نسخه همه‌ی مبلغ‌ها با همین ارز ثبت می‌شوند."
+            }
             error={errors.baseCurrency?.message}
           >
             <NativeSelect
               id="baseCurrency"
-              className={countryIsGuess ? "border-dashed border-guess" : undefined}
+              disabled={currencyLocked}
+              className={
+                countryIsGuess && !currencyLocked
+                  ? "border-dashed border-guess"
+                  : undefined
+              }
               {...register("baseCurrency", { onChange: () => setCountryIsGuess(false) })}
             >
               {CURRENCIES.map((code) => (

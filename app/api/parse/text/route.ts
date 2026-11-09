@@ -37,7 +37,6 @@ export async function POST(request: NextRequest) {
   const categories = await listCategories();
 
   const outcome = await runParse({
-    userId: viewer.userId,
     timeZone: viewer.timeZone,
     currency: viewer.currency,
     categories,

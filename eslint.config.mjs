@@ -26,6 +26,14 @@ const eslintConfig = [
       "design_handoff_financial_assistant/**",
       "design_handoff_v2/**",
       "design_handoff_v3/**",
+      // Review evidence: the scripts that reproduced the findings in
+      // audits/*/REPORT.md, kept so a fix can be checked against the thing it
+      // fixes. They are throwaway harnesses written against the module graph
+      // with CommonJS requires, not product source, and linting them as if
+      // they were is how a real finding gets buried under eight style errors.
+      "audits/**",
+      // Playwright's own output, written by a run rather than by anyone.
+      "test-results/**",
     ],
   },
 ];

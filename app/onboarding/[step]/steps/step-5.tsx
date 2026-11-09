@@ -40,6 +40,10 @@ export function Step5({
       goals:
         goals.length > 0
           ? goals.map((goal) => ({
+              // Carried through the form so the save updates this goal rather
+              // than deleting it and minting a new one — which is what took
+              // every funding transfer's label with it. F04.
+              id: goal.id,
               title: goal.title,
               type: goal.type as Step5Input["goals"][number]["type"],
               targetAmount: formatMoney(goal.target_amount, currency, {

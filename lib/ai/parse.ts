@@ -2,7 +2,7 @@ import "server-only";
 
 import { complete, MODEL, ModelError, type ChatContent } from "./openrouter";
 import { PARSE_JSON_SCHEMA, parseResultSchema, type ParsedTransaction } from "./schemas";
-import { logUsage, remainingCalls, type Allowance, type UsageRecord } from "./usage";
+import { reserveCall, settleCall, type Allowance, type UsageRecord } from "./usage";
 import { faNumber } from "@/lib/format";
 import type { CategoryRow } from "@/lib/supabase/database.types";
 
@@ -43,7 +43,6 @@ const FAILURE_MESSAGES: Record<ModelError["kind"], string> = {
  * written as null.
  */
 export async function runParse({
-  userId,
   timeZone,
   currency,
   categories,
@@ -52,7 +51,15 @@ export async function runParse({
   content,
   emptyMessage,
 }: {
-  userId: string;
+  /**
+   * No `userId`.
+   *
+   * It used to be passed in so the usage row could be written with it. The
+   * reservation function takes the user from `auth.uid()` instead, because a
+   * caller that supplies its own user id is a caller that can write somebody
+   * else's quota — and the count that authorises a call now happens inside the
+   * same transaction as the row. F12.
+   */
   timeZone: string;
   currency: string;
   categories: CategoryRow[];
@@ -62,11 +69,21 @@ export async function runParse({
   /** Shown when the model read the input but found nothing to record. */
   emptyMessage: string;
 }): Promise<ParseOutcome> {
-  const allowance = await remainingCalls(timeZone, feature);
-  if (allowance.remaining <= 0) {
-    await logUsage({ userId, feature, model: MODEL, status: "rejected" });
-    return { ok: false, error: limitReachedMessage(allowance) };
+  /**
+   * Claimed before the call, not counted before it.
+   *
+   * The reservation and the count that authorised it share one transaction, so
+   * two requests arriving together cannot both be told there is room. The row it
+   * returns is the one settled below with what the call cost. F12.
+   */
+  const reservation = await reserveCall(timeZone, feature, MODEL);
+  if (!reservation.id) {
+    // The refusal is already recorded by the reservation function — it writes a
+    // `rejected` row, because «how often do people hit the ceiling» cannot be
+    // answered from calls that were never made.
+    return { ok: false, error: limitReachedMessage(reservation.allowance) };
   }
+  const reservationId = reservation.id;
 
   const allowedSlugs = new Set(categories.map((category) => category.slug));
 
@@ -83,8 +100,7 @@ export async function runParse({
       const parsed = parseResultSchema.safeParse(safeJson(result.content));
 
       if (!parsed.success) {
-        await logUsage({
-          userId,
+        await settleCall(reservationId, {
           feature,
           model: MODEL,
           inputTokens: result.inputTokens,
@@ -97,8 +113,7 @@ export async function runParse({
         return { ok: false, error: FAILURE_MESSAGES.malformed };
       }
 
-      await logUsage({
-        userId,
+      await settleCall(reservationId, {
         feature,
         model: MODEL,
         inputTokens: result.inputTokens,
@@ -121,7 +136,7 @@ export async function runParse({
       return { ok: true, transactions };
     } catch (error) {
       const kind = error instanceof ModelError ? error.kind : "provider";
-      await logUsage({ userId, feature, model: MODEL, status: kind });
+      await settleCall(reservationId, { feature, model: MODEL, status: kind });
       // A timeout or an outage will not be fixed by trying again immediately.
       if (kind !== "malformed" || attempt === 1) {
         return { ok: false, error: FAILURE_MESSAGES[kind] };

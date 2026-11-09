@@ -20,6 +20,12 @@ const BANNED = [
   { pattern: /(?<![\w-])(rounded-[tb]?[lr])(?![\w-])/g, hint: "use the logical corner (rounded-s/e)" },
 ];
 
+/** 1-based line number of the first line containing `needle`, or 1. */
+function firstMatchingLine(source, needle) {
+  const index = source.split(/\r?\n/).findIndex((line) => line.includes(needle));
+  return index < 0 ? 1 : index + 1;
+}
+
 async function* walk(dir) {
   let entries;
   try {
@@ -56,6 +62,37 @@ for (const dir of SCAN_DIRS) {
         }
       }
     });
+  }
+}
+
+/**
+ * A physical horizontal translate with no RTL counterpart.
+ *
+ * This is the shape of F07: `start-1/2` flips with the document and
+ * `-translate-x-1/2` does not, so in RTL the two pulled the same way and every
+ * form sheet in the app walked off the left edge of a desktop screen. Nothing
+ * above catches it, because neither utility is physical on its own.
+ *
+ * The rule is per file rather than per line: the pair is usually written on one
+ * line, but a long class list gets wrapped by the formatter.
+ */
+for (const dir of SCAN_DIRS) {
+  for await (const file of walk(join(ROOT, dir))) {
+    const source = await readFile(file, "utf8");
+    if (source.includes("rtl-ok")) continue;
+
+    const centres = /(?<![\w-])(?:start|end)-1\/2(?![\w-])/.test(source);
+    const translates = /(?<![\w-])-?translate-x-[\w.[\]/-]+/.test(source);
+    const flipped = /(?<![\w-])rtl:-?translate-x-[\w.[\]/-]+/.test(source);
+
+    if (centres && translates && !flipped) {
+      findings.push({
+        file: relative(ROOT, file),
+        line: firstMatchingLine(source, "-1/2"),
+        token: "start/end-1/2 + translate-x",
+        hint: "add the rtl: counterpart (rtl:translate-x-1/2) or centre with auto margins",
+      });
+    }
   }
 }
 

@@ -452,6 +452,11 @@ export async function logout(): Promise<never> {
   }
 
   await supabase.auth.signOut();
+  // Not housekeeping. This is what stops the next person on a shared device
+  // being served the previous account's pages out of the client router cache,
+  // which holds rendered RSC payloads across a navigation. Three sign-out
+  // buttons used to clear a React Query store for the same reason, over a cache
+  // nothing wrote to; this is the line that was doing the work.
   revalidatePath("/", "layout");
   redirect("/login");
 }
