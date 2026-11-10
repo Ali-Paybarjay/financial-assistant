@@ -1,6 +1,6 @@
 "use client";
 
-import { Bar, BarChart, Cell, ResponsiveContainer, XAxis } from "recharts";
+import { MonthColumns } from "@/components/charts/lazy";
 import { formatMonthFa } from "@/lib/date";
 import { toMajor, type CurrencyCode } from "@/lib/money";
 import type { MonthPoint } from "@/lib/queries/transactions";
@@ -42,27 +42,15 @@ export function MonthBars({
         </div>
       </div>
 
+      {/* The drawing arrives behind a lazy boundary; the heading and legend
+          above it do not. See components/charts/lazy.tsx. */}
       <div className="h-[110px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} barGap={2} margin={{ top: 4, bottom: 0 }}>
-            {/* Time runs left to right even in an RTL page: the design puts the
-                oldest month on the left, and an SVG axis does not flip with
-                the document direction anyway. */}
-            <XAxis
-              dataKey="label"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 10, fill: "var(--ink-muted)" }}
-            />
-            <Bar dataKey="income" fill={INCOME_FILL} radius={[2, 2, 0, 0]} maxBarSize={9} />
-            <Bar dataKey="expense" radius={[2, 2, 0, 0]} maxBarSize={9}>
-              {data.map((point) => (
-                // A border, so the two series stay distinguishable in greyscale.
-                <Cell key={point.label} fill={EXPENSE_FILL} stroke={EXPENSE_STROKE} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        <MonthColumns
+          data={data}
+          incomeFill={INCOME_FILL}
+          expenseFill={EXPENSE_FILL}
+          expenseStroke={EXPENSE_STROKE}
+        />
       </div>
     </section>
   );

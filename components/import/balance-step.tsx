@@ -148,7 +148,11 @@ export function BalanceStep({
         />
       </Field>
 
-      <Field label="این عدد مالِ چه تاریخی است" htmlFor="statement-balance-on">
+      <Field
+        label="این عدد مالِ چه تاریخی است"
+        htmlFor="statement-balance-on"
+        hint="مانده‌ی پایان همان روز. تراکنش‌های همان روز داخل این عدد حساب شده‌اند و دوباره کم و زیاد نمی‌شوند."
+      >
         <Input
           id="statement-balance-on"
           type="date"
@@ -163,8 +167,8 @@ export function BalanceStep({
           {difference > 0
             ? "بانک بیشتر از دفترِ من نشان می‌دهد — یعنی پولی وارد شده که ثبت نشده."
             : "بانک کمتر از دفترِ من نشان می‌دهد — یعنی خرجی شده که ثبت نشده."}{" "}
-          با زدن دکمه، مبنای شمارش به {formatDateFa(balanceOn)} می‌آید و این اختلاف
-          جذب می‌شود. هیچ تراکنشی پاک یا ساخته نمی‌شود.
+          با زدن دکمه، مبنای شمارش به پایانِ {formatDateFa(balanceOn)} می‌آید و این
+          اختلاف جذب می‌شود. هیچ تراکنشی پاک یا ساخته نمی‌شود.
         </p>
       )}
 

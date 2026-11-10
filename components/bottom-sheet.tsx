@@ -31,7 +31,15 @@ export function BottomSheet({
             "fixed inset-x-0 bottom-0 z-50 max-h-[92dvh] overflow-y-auto rounded-t-[20px] bg-surface p-4 pb-6 shadow-lift",
             "data-[state=open]:animate-in data-[state=open]:slide-in-from-bottom data-[state=open]:duration-[220ms]",
             "data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom",
-            "min-[960px]:inset-x-auto min-[960px]:bottom-auto min-[960px]:start-1/2 min-[960px]:top-1/2 min-[960px]:w-[440px] min-[960px]:-translate-x-1/2 min-[960px]:-translate-y-1/2 min-[960px]:rounded-card",
+            // `start-1/2` is logical and `-translate-x-1/2` is physical, so in
+            // an RTL document both pulled the same way: the right edge landed
+            // on the centre line and the translate then pushed the sheet
+            // *further left*, off the screen. A 440px sheet started at x=-148
+            // on a 1024px viewport and at x=-180 on a 960px one, and at 1440px
+            // it sat at x=60 where the centre is 500. The fix is the same one
+            // components/ui/dialog.tsx already carries — flip the translate
+            // with the direction. F07.
+            "min-[960px]:inset-x-auto min-[960px]:bottom-auto min-[960px]:start-1/2 min-[960px]:top-1/2 min-[960px]:w-[440px] min-[960px]:-translate-x-1/2 min-[960px]:rtl:translate-x-1/2 min-[960px]:-translate-y-1/2 min-[960px]:rounded-card",
           )}
         >
           <div
@@ -49,9 +57,13 @@ export function BottomSheet({
                 </DialogPrimitive.Description>
               )}
             </div>
+            {/* 32px of paint, 44px of target: the ring stays the size the
+                design drew and `after` widens what a thumb has to hit. Growing
+                the circle instead would have put a 44px grey disc beside a
+                17px title. */}
             <DialogPrimitive.Close
               aria-label="بستن"
-              className="flex size-8 shrink-0 items-center justify-center rounded-full bg-paper text-ink-muted hover:text-ink"
+              className="relative flex size-8 shrink-0 items-center justify-center rounded-full bg-paper text-ink-muted after:absolute after:-inset-1.5 after:content-[''] hover:text-ink"
             >
               <X size={16} />
             </DialogPrimitive.Close>

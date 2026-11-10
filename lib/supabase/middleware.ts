@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isAdmin, isAdminPath } from "@/lib/admin/claims";
+import { PATHNAME_HEADER } from "@/lib/workspaces";
 import type { Database } from "./database.types";
 
 const PUBLIC_PATHS = [
@@ -34,7 +35,23 @@ function isPublic(pathname: string): boolean {
  * hand and no query is added.
  */
 export async function updateSession(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  const { pathname } = request.nextUrl;
+
+  /**
+   * Carries the path forward so a server layout can read it.
+   *
+   * Built fresh on every call rather than once, because Supabase's `setAll`
+   * writes refreshed cookies onto `request.cookies` — which writes through to
+   * the `cookie` header — and then needs a new response carrying them. Copying
+   * the headers after that is what keeps both the rotated session and the path.
+   */
+  const forward = () => {
+    const headers = new Headers(request.headers);
+    headers.set(PATHNAME_HEADER, pathname);
+    return NextResponse.next({ request: { headers } });
+  };
+
+  let response = forward();
 
   const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -48,7 +65,7 @@ export async function updateSession(request: NextRequest) {
           for (const { name, value } of cookiesToSet) {
             request.cookies.set(name, value);
           }
-          response = NextResponse.next({ request });
+          response = forward();
           for (const { name, value, options } of cookiesToSet) {
             response.cookies.set(name, value, options);
           }
@@ -62,8 +79,6 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  const { pathname } = request.nextUrl;
 
   if (!user && !isPublic(pathname)) {
     const url = request.nextUrl.clone();

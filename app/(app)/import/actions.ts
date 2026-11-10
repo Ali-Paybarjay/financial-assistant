@@ -201,10 +201,15 @@ export type ApplyResult =
 /**
  * Write the rows the user chose.
  *
- * The line's status is what makes this safe to call twice: flipping it from
- * "new" to "imported" is a conditional update, so a second request finds
- * nothing left to claim and writes nothing. The unique index on
- * transactions.statement_line_id is the backstop under that.
+ * One RPC, because the four writes this used to make were four commits with no
+ * transaction around them — and the first of them was "mark these lines
+ * imported". A failure after it left lines claimed with no transaction behind
+ * them, and the retry, which only looks at rows still marked new, found nothing
+ * to do and reported the import applied with zero rows imported. See migration
+ * 0030 and F05.
+ *
+ * Still safe to call twice, and now for a better reason: the claim and the
+ * insert share a commit, so a second call sees either both or neither.
  */
 export async function applyStatementImport(raw: unknown): Promise<ApplyResult> {
   const parsed = applySchema.safeParse(raw);
@@ -226,103 +231,33 @@ export async function applyStatementImport(raw: unknown): Promise<ApplyResult> {
     };
   }
 
-  const edits = new Map(parsed.data.lines.map((line) => [line.rowIndex, line]));
-
-  // Claim the rows. Whatever comes back is what this request is responsible
-  // for; anything already imported by an earlier attempt is not in it.
-  const { data: claimed, error: claimError } = await supabase
-    .from("statement_lines")
-    .update({ match_status: "imported" })
-    .eq("import_id", statementImport.id)
-    .eq("match_status", "new")
-    .in("row_index", [...edits.keys()])
-    .select("*");
-
-  if (claimError) return { error: GENERIC_ERROR };
-
+  // Slugs are resolved to ids out here, because the review card speaks slugs
+  // and the ledger speaks ids. Read before the write rather than between two
+  // halves of it: this is the read whose failure used to strand claimed lines.
   const categories = await categoryIdsBySlug();
 
-  const rows = (claimed ?? []).map((line) => {
-    const edit = edits.get(line.row_index)!;
-    const needsReview = line.needs_review.filter(
-      (field) => !edit.resolved.includes(field as (typeof REVIEWABLE_FIELDS)[number]),
-    );
-
-    return {
-      user_id: viewer.userId,
-      type: line.direction === "in" ? ("income" as const) : ("expense" as const),
-      // From the stored line, never from the request.
-      amount: line.amount,
-      currency: statementImport.target_currency,
-      category_id: categories.get(edit.categorySlug) ?? null,
-      // From the import, never from the request: the user chose the account
-      // when they said whose statement this was.
-      account_id: statementImport.account_id,
-      merchant: edit.merchant || line.merchant,
-      // The bank's own wording is the note, so the row can always be traced
-      // back to the statement it came from.
-      note: line.description,
-      occurred_on: edit.occurredOn,
-      source: "statement" as const,
-      statement_line_id: line.id,
-      ai_confidence: line.ai_confidence,
-      is_confirmed: needsReview.length === 0,
-      needs_review: needsReview,
-    };
+  const { data, error } = await supabase.rpc("apply_statement_lines", {
+    p_import_id: statementImport.id,
+    p_lines: parsed.data.lines.map((line) => ({
+      row_index: line.rowIndex,
+      category_id: categories.get(line.categorySlug) ?? null,
+      merchant: line.merchant,
+      occurred_on: line.occurredOn,
+      resolved: line.resolved,
+    })),
   });
 
-  if (rows.length > 0) {
-    const { error: insertError } = await supabase.from("transactions").insert(rows);
-    if (insertError) {
-      // Hand the rows back so the user can try again rather than losing them.
-      await supabase
-        .from("statement_lines")
-        .update({ match_status: "new" })
-        .eq("import_id", statementImport.id)
-        .in(
-          "row_index",
-          (claimed ?? []).map((line) => line.row_index),
-        );
-      return { error: GENERIC_ERROR };
-    }
-  }
+  if (error) return { error: GENERIC_ERROR };
 
-  // Everything still unclaimed is a row the user chose to leave.
-  const { data: skipped } = await supabase
-    .from("statement_lines")
-    .update({ match_status: "skipped" })
-    .eq("import_id", statementImport.id)
-    .eq("match_status", "new")
-    .select("row_index");
-
-  const appliedAt = new Date().toISOString();
-
-  await supabase
-    .from("statement_imports")
-    .update({
-      status: "applied",
-      imported_count: rows.length,
-      applied_at: appliedAt,
-    })
-    .eq("id", statementImport.id);
-
-  // The account has now been checked against the bank, whether or not that
-  // added anything. An import that finds nothing missing is the best possible
-  // outcome, and it would be perverse for it to leave the account still
-  // nagging the user to do what they just did.
-  if (statementImport.account_id) {
-    await supabase
-      .from("accounts")
-      .update({ last_reconciled_at: appliedAt })
-      .eq("id", statementImport.account_id);
-  }
+  const outcome = data?.[0];
+  if (!outcome) return { error: GENERIC_ERROR };
 
   refresh();
 
   return {
     ok: true,
-    imported: rows.length,
-    skipped: skipped?.length ?? 0,
+    imported: outcome.imported,
+    skipped: outcome.skipped,
     balance: await balanceStep(statementImport),
   };
 }
@@ -408,7 +343,22 @@ export async function applyStatementBalance(input: {
 
   const { error } = await supabase
     .from("accounts")
-    .update({ opening_balance: balance, opening_balance_on: input.balanceOn })
+    .update({
+      opening_balance: balance,
+      opening_balance_on: input.balanceOn,
+      /**
+       * A statement's closing figure is the end of its last day: that day's
+       * transactions are already inside it.
+       *
+       * This used to be written with no basis at all, so it inherited the
+       * start-of-day reading the account form uses — and the balance function
+       * then subtracted the anchor day's rows a second time. An account at 100
+       * with a 20 expense on 30 September and a printed closing balance of 80
+       * came out at 60 the moment the user confirmed that the bank agreed with
+       * them. F02.
+       */
+      opening_balance_basis: "end_of_day" as const,
+    })
     .eq("id", statementImport.account_id);
 
   if (error) return { error: GENERIC_ERROR };

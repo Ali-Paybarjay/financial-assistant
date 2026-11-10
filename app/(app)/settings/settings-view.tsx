@@ -534,15 +534,23 @@ function CurrencySheet({
             هنوز چیزی ثبت نکرده‌ای، پس چیزی برای تبدیل نیست. راحت عوضش کن.
           </p>
         ) : (
+          /* Not a warning any more, a refusal. The old sentence said existing
+             amounts «keep their old currency» — true of the database, false of
+             the screen, which rendered every one of them with the new symbol
+             and added them together. Until this app can convert with a rate and
+             a date, the honest answer is that the switch is closed. F01. */
           <p className="flex items-start gap-2 rounded-control border border-guess-border bg-guess-tint px-3 py-2.5 text-caption font-medium text-guess-text">
             <WarningCircle size={16} className="mt-0.5 shrink-0" />
-            مبالغ قبلی تبدیل نمی‌شوند و با ارز قدیم می‌مانند.
+            مبلغ‌هایی با {CURRENCY_LABELS[current]} ثبت شده‌اند. عوض‌کردن ارز پایه
+            آن‌ها را تبدیل نمی‌کند، پس تا زمانی که تبدیل ارز با نرخ و تاریخ اضافه
+            نشود این گزینه بسته است.
           </p>
         )}
 
         <NativeSelect
           aria-label="ارز پایه"
           value={choice}
+          disabled={!ledgerIsEmpty}
           onChange={(event) => setChoice(event.target.value as CurrencyCode)}
         >
           {CURRENCIES.map((code) => (
@@ -554,7 +562,7 @@ function CurrencySheet({
 
         <Button
           size="lg"
-          disabled={isPending || choice === current}
+          disabled={isPending || choice === current || !ledgerIsEmpty}
           onClick={() =>
             startTransition(async () => {
               const result = await updateCurrency(choice);

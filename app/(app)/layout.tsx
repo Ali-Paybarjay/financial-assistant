@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionUser, requireViewer } from "@/lib/auth";
@@ -8,9 +9,11 @@ import { listEnvelopes } from "@/lib/queries/envelopes";
 import { preferredAccountId } from "@/lib/accounts";
 import { monthRange, todayInTimeZone } from "@/lib/date";
 import { AppShell } from "@/components/app-shell/shell";
+import type { CaptureData } from "@/components/entry/capture-sheet";
 import { GuestProvider } from "@/components/guest/guest-provider";
 import { GuestWelcome } from "@/components/guest/guest-welcome";
 import { COUNTRIES, TOTAL_STEPS } from "@/lib/onboarding/config";
+import { PATHNAME_HEADER, workspaceForPath } from "@/lib/workspaces";
 import { appSettings } from "@/lib/settings-server";
 
 /**
@@ -18,7 +21,9 @@ import { appSettings } from "@/lib/settings-server";
  * adds the onboarding gate, which needs the profile row.
  *
  * Which of the two workspaces the chrome belongs to is decided inside
- * <AppShell>, from the url — a server layout is not told the path.
+ * <AppShell>, from the url — a server layout is not told the path, so the chrome
+ * is drawn on the client. What the layout *fetches* is decided here, from the
+ * path middleware wrote onto the request: see PATHNAME_HEADER.
  */
 export default async function AppLayout({
   children,
@@ -51,27 +56,30 @@ export default async function AppLayout({
     redirect(`/onboarding/${step}`);
   }
 
-  // Everything the composer needs, read once here. The bar is on every page,
-  // which is the point of it replacing a button that was on two of them.
   const viewer = await requireViewer();
-  const today = todayInTimeZone(viewer.timeZone);
-  const month = monthRange(viewer.timeZone, today).month;
 
-  const [categories, accounts, goals, envelopes, settings] = await Promise.all([
-    listCategories(),
-    listAccountsWithBalances(),
-    listGoalsWithProgress(),
-    listEnvelopes(month),
-    // Five rows on a primary key, alongside four reads that were happening
-    // anyway. It carries the maintenance sentence an operator can put above
-    // the app from /admin/settings without a deploy.
-    appSettings(),
-  ]);
+  /**
+   * Whether this page has a composer on it, and therefore whether the composer's
+   * four queries are worth making.
+   *
+   * They used to be made on every signed-in page. «دنگ و دونگ» has no composer —
+   * rule 11: a free-text bar that writes to the personal ledger has no business
+   * on a page about other people's money — and the chooser has no nav at all, so
+   * both of them were paying for this month's envelopes, every account's derived
+   * balance and every goal's progress in order to render none of it.
+   *
+   * A path the header did not arrive on falls back to fetching, which is what
+   * every page did before. Getting this wrong in the cheap direction costs four
+   * queries; getting it wrong in the other direction costs a missing composer.
+   */
+  const pathname = (await headers()).get(PATHNAME_HEADER);
+  const wantsComposer = pathname === null || workspaceForPath(pathname) === "personal";
+
+  const settings = await appSettings();
+  const entry = wantsComposer ? await captureData(viewer.currency, viewer.timeZone) : null;
 
   const country = COUNTRIES.find((entry) => entry.code === profile.country_code);
-  const subtitle = [country?.name, profile.base_currency]
-    .filter(Boolean)
-    .join(" · ");
+  const subtitle = [country?.name, profile.base_currency].filter(Boolean).join(" · ");
 
   return (
     <GuestProvider isGuest={user.is_anonymous === true}>
@@ -79,19 +87,41 @@ export default async function AppLayout({
         name={profile.full_name ?? "حساب من"}
         subtitle={subtitle}
         banner={settings.maintenance_banner}
-        entry={{
-          currency: viewer.currency,
-          categories,
-          accounts,
-          goals: goals.filter((goal) => goal.status === "active"),
-          envelopes,
-          defaultAccountId: preferredAccountId(accounts),
-          today,
-        }}
+        entry={entry}
       >
         {children}
       </AppShell>
       <GuestWelcome />
     </GuestProvider>
   );
+}
+
+/**
+ * Everything the composer needs to record a purchase, read once for the whole
+ * personal side rather than per page — the bar is on every one of them, which is
+ * the point of it replacing a button that was on two.
+ */
+async function captureData(
+  currency: CaptureData["currency"],
+  timeZone: string,
+): Promise<CaptureData> {
+  const today = todayInTimeZone(timeZone);
+  const month = monthRange(timeZone, today).month;
+
+  const [categories, accounts, goals, envelopes] = await Promise.all([
+    listCategories(),
+    listAccountsWithBalances(),
+    listGoalsWithProgress(),
+    listEnvelopes(month),
+  ]);
+
+  return {
+    currency,
+    categories,
+    accounts,
+    goals: goals.filter((goal) => goal.status === "active"),
+    envelopes,
+    defaultAccountId: preferredAccountId(accounts),
+    today,
+  };
 }

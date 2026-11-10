@@ -22,6 +22,11 @@ const TONES: Record<string, Tone> = {
   // ai_usage_logs
   ok: "ok",
   rejected: "wait",
+  // A call that was claimed and never settled: the request died between
+  // reserving the quota and recording what it cost, so the money may have been
+  // spent and nothing here knows what it was. It still counts against the day.
+  // See migration 0033 and F12.
+  reserved: "bad",
   rate_limit: "wait",
   timeout: "bad",
   provider: "bad",
@@ -56,6 +61,7 @@ export function statusTone(status: string | null | undefined): Tone {
 const LABELS: Record<string, string> = {
   ok: "سالم",
   rejected: "ردشده",
+  reserved: "نیمه‌تمام",
   rate_limit: "سقف",
   timeout: "تایم‌اوت",
   provider: "ارائه‌دهنده",
@@ -98,7 +104,16 @@ export function featureLabel(feature: string): string {
  * Exported because both the overview RPC and the AI page's fold have to agree
  * on this list, and the SQL side has it written out in `admin_overview`.
  */
-export const FAILURE_STATUSES = ["timeout", "rate_limit", "provider", "malformed"] as const;
+export const FAILURE_STATUSES = [
+  "timeout",
+  "rate_limit",
+  "provider",
+  "malformed",
+  // A reservation nobody closed. Not a provider failure, but not a healthy call
+  // either — it is a request that vanished mid-flight, and the operator wants to
+  // see it rise. F12.
+  "reserved",
+] as const;
 
 export function isFailure(status: string): boolean {
   return (FAILURE_STATUSES as readonly string[]).includes(status);

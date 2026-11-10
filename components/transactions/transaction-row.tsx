@@ -15,7 +15,7 @@ import {
 import type { Icon } from "@phosphor-icons/react";
 import { Money } from "@/components/money";
 import { formatDateFa } from "@/lib/date";
-import type { CurrencyCode } from "@/lib/money";
+import { isCurrencyCode, type CurrencyCode } from "@/lib/money";
 import type { CategoryRow, TransactionRow } from "@/lib/supabase/database.types";
 import { cn } from "@/lib/utils";
 
@@ -59,6 +59,12 @@ export function TransactionRowItem({
   toAccountTitle?: string;
   /** The goal this row funded or spent, when it names one. */
   goalTitle?: string;
+  /**
+   * The profile's base currency, used only when the row does not name a valid
+   * one of its own. The row's own `currency` column wins — it is what the
+   * amount was actually recorded in, and rendering 100 CAD as «۱۰۰ تومان»
+   * because the profile changed is exactly the lie F01 was about.
+   */
   currency: CurrencyCode;
   /** Where the row goes. Given, the row is a link and Cmd-click works. */
   href?: string;
@@ -66,6 +72,11 @@ export function TransactionRowItem({
   onSelect?: () => void;
 }) {
   const isTransfer = transaction.type === "transfer";
+  // Stored on the row at insert, from the profile at the time. A profile whose
+  // base currency later changed must not relabel history.
+  const rowCurrency = isCurrencyCode(transaction.currency)
+    ? transaction.currency
+    : currency;
   // A transfer's icon names what happened, not how it was entered: "I moved
   // money" is the fact, and which of three forms it was typed into is not.
   const SourceIcon = isTransfer
@@ -155,7 +166,7 @@ export function TransactionRowItem({
                 ? transaction.amount
                 : -transaction.amount
           }
-          currency={currency}
+          currency={rowCurrency}
           size="row"
           className={
             isTransfer

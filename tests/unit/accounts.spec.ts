@@ -21,6 +21,7 @@ function account(over: Partial<AccountRow> = {}): AccountRow {
     currency: "CAD",
     opening_balance: 0,
     opening_balance_on: "2026-09-01",
+    opening_balance_basis: "start_of_day",
     institution: null,
     reference: null,
     is_default: false,
@@ -99,19 +100,57 @@ describe("preferredAccountId", () => {
 
 describe("totalBalance", () => {
   it("sums the open accounts and subtracts what is owed", () => {
-    const total = totalBalance([
-      withBalance({ id: "a", balance: 500_00 }),
-      withBalance({ id: "b", kind: "card", balance: -120_00 }),
-    ]);
-    expect(total).toBe(380_00);
+    const total = totalBalance(
+      [
+        withBalance({ id: "a", balance: 500_00 }),
+        withBalance({ id: "b", kind: "card", balance: -120_00 }),
+      ],
+      "CAD",
+    );
+    expect(total.total).toBe(380_00);
+    expect(total.otherCurrencies).toEqual([]);
   });
 
   it("leaves closed accounts out of the total", () => {
-    const total = totalBalance([
-      withBalance({ id: "a", balance: 500_00 }),
-      withBalance({ id: "b", balance: 999_00, is_active: false }),
-    ]);
-    expect(total).toBe(500_00);
+    const total = totalBalance(
+      [
+        withBalance({ id: "a", balance: 500_00 }),
+        withBalance({ id: "b", balance: 999_00, is_active: false }),
+      ],
+      "CAD",
+    );
+    expect(total.total).toBe(500_00);
+  });
+
+  /**
+   * F01: the total used to be a bare `+` over every open account's balance,
+   * with the profile's current symbol printed beside it — so an account in USD
+   * was added to one in CAD at 1:1 and the answer was labelled whichever
+   * currency the profile happened to hold.
+   */
+  it("refuses to add a currency it has no rate for, and says which", () => {
+    const total = totalBalance(
+      [
+        withBalance({ id: "a", currency: "CAD", balance: 100_00 }),
+        withBalance({ id: "b", currency: "USD", balance: 50_00 }),
+      ],
+      "CAD",
+    );
+    expect(total.total).toBe(100_00);
+    expect(total.otherCurrencies).toEqual(["USD"]);
+  });
+
+  /** The one conversion this app does have: ten rial to the toman. */
+  it("folds in the sibling unit, because that rate is not a guess", () => {
+    const total = totalBalance(
+      [
+        withBalance({ id: "a", currency: "IRT", balance: 1_000_000 }),
+        withBalance({ id: "b", currency: "IRR", balance: 5_000_000 }),
+      ],
+      "IRT",
+    );
+    expect(total.total).toBe(1_500_000);
+    expect(total.otherCurrencies).toEqual([]);
   });
 });
 

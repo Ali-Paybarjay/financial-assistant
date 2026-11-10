@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { ledgerForAccount, reconcile, type LedgerEntry } from "@/lib/import/reconcile";
+import {
+  ledgerForAccount,
+  reconcile,
+  toLedgerEntry,
+  type LedgerEntry,
+} from "@/lib/import/reconcile";
 import { reconcileState, accountsDue } from "@/lib/accounts";
 import type { AccountRow } from "@/lib/supabase/database.types";
 
@@ -53,6 +58,46 @@ describe("a transfer on a statement", () => {
     expect(results[0].match).toBeNull();
   });
 
+  /**
+   * The wiring, not the rule.
+   *
+   * Every test above hands `ledgerForAccount` a destination directly, so all of
+   * them passed while the statement route was building its ledger entries
+   * without one — and a transfer into B was offered as new income on B's
+   * statement. These two go through the same mapping the route uses. F03.
+   */
+  it("keeps the destination when a stored row is mapped for reconciliation", () => {
+    const entry = toLedgerEntry({
+      id: "t",
+      type: "transfer",
+      amount: 25000,
+      occurred_on: "2026-09-08",
+      account_id: A,
+      to_account_id: B,
+    });
+    expect(entry.toAccountId).toBe(B);
+  });
+
+  it("recognises a transfer on the destination's statement through that mapping", () => {
+    const ledger = [
+      {
+        id: "t",
+        type: "transfer" as const,
+        amount: 25000,
+        occurred_on: "2026-09-08",
+        account_id: A,
+        to_account_id: B,
+      },
+    ].map(toLedgerEntry);
+
+    const results = reconcile(
+      [{ rowIndex: 0, occurredOn: "2026-09-08", direction: "in", amount: 25000 }],
+      ledgerForAccount(ledger, B),
+    );
+
+    expect(results[0].match).toEqual({ transactionId: "t", dayGap: 0 });
+  });
+
   it("reads as an outflow when the import names no account", () => {
     // Every import made before accounts existed. It left somewhere, and an
     // outflow is the only reading available.
@@ -72,6 +117,7 @@ function account(over: Partial<AccountRow> = {}): AccountRow {
     currency: "CAD",
     opening_balance: 0,
     opening_balance_on: "2026-01-01",
+    opening_balance_basis: "start_of_day",
     institution: null,
     reference: null,
     is_default: false,

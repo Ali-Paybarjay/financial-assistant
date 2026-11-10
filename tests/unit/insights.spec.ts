@@ -72,6 +72,7 @@ function account(over: Partial<AccountRow> = {}): AccountRow {
     currency: "CAD",
     opening_balance: 0,
     opening_balance_on: "2026-09-01",
+    opening_balance_basis: "start_of_day",
     institution: null,
     reference: null,
     is_default: true,

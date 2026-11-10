@@ -2,10 +2,27 @@ import { requireViewer } from "@/lib/auth";
 import { listCategories } from "@/lib/queries/categories";
 import { listAccounts } from "@/lib/queries/accounts";
 import { listGoalsWithProgress } from "@/lib/queries/goals";
-import { listTransactions, monthTotals } from "@/lib/queries/transactions";
+import { listTransactionPage, monthTotals } from "@/lib/queries/transactions";
 import { listEnvelopes, suggestedBudgets } from "@/lib/queries/envelopes";
-import { daysLeftInMonth, monthRange, todayInTimeZone } from "@/lib/date";
+import {
+  daysLeftInMonth,
+  monthKeyFromParam,
+  monthRange,
+  todayInTimeZone,
+} from "@/lib/date";
 import { TransactionsView } from "./transactions-view";
+
+/**
+ * A page number out of a query string.
+ *
+ * Anything that is not a whole number at or above 1 is page 1, which is the
+ * same posture `monthKeyFromParam` takes in lib/date.ts: a hand-edited URL is
+ * answered with the sensible page, not with an error screen. F13.
+ */
+function pageNumber(raw: string | undefined): number {
+  const parsed = Number(raw);
+  return Number.isSafeInteger(parsed) && parsed >= 1 ? parsed : 1;
+}
 
 export default async function TransactionsPage({
   searchParams,
@@ -16,13 +33,19 @@ export default async function TransactionsPage({
     account?: string;
     type?: string;
     q?: string;
+    page?: string;
   }>;
 }) {
   const params = await searchParams;
   const viewer = await requireViewer();
 
   const today = todayInTimeZone(viewer.timeZone);
-  const range = monthRange(viewer.timeZone, params.month ?? today);
+  // Same parser the dashboard uses: a month that is not a date is this month,
+  // not a stack trace. F13.
+  const range = monthRange(
+    viewer.timeZone,
+    monthKeyFromParam(params.month, viewer.timeZone),
+  );
   const type =
     params.type === "income" || params.type === "expense" || params.type === "transfer"
       ? params.type
@@ -42,19 +65,26 @@ export default async function TransactionsPage({
   const accountId = accounts.find((entry) => entry.id === params.account)?.id;
 
   const [totals, envelopes, suggestions] = await Promise.all([
-    monthTotals(range.from, range.to),
+    monthTotals(range.from, range.to, viewer.currency),
     listEnvelopes(range.month),
     suggestedBudgets(range.month, viewer.currency),
   ]);
 
-  const transactions = await listTransactions({
-    from: range.from,
-    to: range.to,
-    type,
-    query: params.q,
-    categoryIds: categoryId ? [categoryId] : undefined,
-    accountIds: accountId ? [accountId] : undefined,
-  });
+  // Paged, so a heavy month is a page the user can walk through rather than a
+  // list that silently stops at whatever the API was willing to return. The
+  // totals above it come from SQL and cover the whole month regardless. F10.
+  const page = pageNumber(params.page);
+  const ledger = await listTransactionPage(
+    {
+      from: range.from,
+      to: range.to,
+      type,
+      query: params.q,
+      categoryIds: categoryId ? [categoryId] : undefined,
+      accountIds: accountId ? [accountId] : undefined,
+    },
+    page,
+  );
 
   const byCategory = [...totals.byCategory.entries()]
     .map(([id, amount]) => ({
@@ -76,7 +106,9 @@ export default async function TransactionsPage({
       currency={viewer.currency}
       today={today}
       month={range.month}
-      transactions={transactions}
+      transactions={ledger.rows}
+      page={ledger.page}
+      hasMore={ledger.hasMore}
       categories={categories}
       accounts={accounts}
       goals={goals}
@@ -91,6 +123,7 @@ export default async function TransactionsPage({
       envelopeSuggestion={(categoryId && suggestions.get(categoryId)) || null}
       daysGone={daysInMonth - daysLeft}
       daysLeft={daysLeft}
+      otherCurrencies={totals.otherCurrencies}
     />
   );
 }

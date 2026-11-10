@@ -66,7 +66,6 @@ export async function POST(request: NextRequest) {
     .eq("id", asset.id);
 
   const outcome = await runParse({
-    userId: viewer.userId,
     timeZone: viewer.timeZone,
     currency: viewer.currency,
     categories,

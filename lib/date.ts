@@ -45,12 +45,79 @@ function pad(value: number): string {
   return String(value).padStart(2, "0");
 }
 
+const ISO_SHAPE = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/**
+ * Whether a string is a calendar date this module can work with.
+ *
+ * Shape *and* arithmetic: "2026-13-01" and "2026-02-30" both match the pattern
+ * and neither is a day. Checked by round-tripping through UTC, because that is
+ * the one operation every helper here depends on being meaningful.
+ */
+export function isIsoDate(value: unknown): value is IsoDate {
+  if (typeof value !== "string") return false;
+  const match = ISO_SHAPE.exec(value);
+  if (!match) return false;
+
+  const [, year, month, day] = match;
+  const parsed = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) return false;
+
+  // Date rolls 31 February forward into March rather than rejecting it, so the
+  // parts have to come back out the same as they went in.
+  return (
+    parsed.getUTCFullYear() === Number(year) &&
+    parsed.getUTCMonth() + 1 === Number(month) &&
+    parsed.getUTCDate() === Number(day)
+  );
+}
+
+/**
+ * A month key out of a URL, or this month.
+ *
+ * `/dashboard?month=bad-date` used to reach `monthRange` unchecked, where
+ * `"bad-date".split("-").map(Number)` produced NaN, the range came out as
+ * `"NaN-NaN-01"`, and the page answered with the error screen. A query string is
+ * the most-edited input in any web app — a link somebody shortened, a bookmark
+ * from a version that named the parameter differently, a crawler — and the right
+ * answer to one that makes no sense is the sensible page, not a crash. F13.
+ *
+ * Every page that reads a month from its query string goes through here, so
+ * «what does an unparseable month mean» has one answer.
+ */
+export function monthKeyFromParam(
+  raw: unknown,
+  timeZone: string,
+  now?: Date,
+): IsoDate {
+  const today = todayInTimeZone(timeZone, now);
+  if (!isIsoDate(raw)) return monthRange(timeZone, today).month;
+
+  const { month } = monthRange(timeZone, raw);
+  // A month in the future is not browsable — the stepper's «next» is disabled at
+  // the current month — so a hand-typed one lands on this month rather than on an
+  // empty page with no way forward.
+  return month > monthRange(timeZone, today).month
+    ? monthRange(timeZone, today).month
+    : month;
+}
+
 /**
  * The calendar month containing `anchor` (default: today in `timeZone`).
  * Both bounds are inclusive.
+ *
+ * Throws on anything that is not a calendar date. It used to produce
+ * `"NaN-NaN-01"` instead, which travelled into a Postgres query as a date
+ * literal and surfaced three layers away as an unexplained page error. A caller
+ * holding user input wants `monthKeyFromParam`, which has a fallback; a caller
+ * holding a date wants to hear about it if that turns out to be false.
  */
 export function monthRange(timeZone: string, anchor?: IsoDate, now?: Date): MonthRange {
   const base = anchor ?? todayInTimeZone(timeZone, now);
+  if (!isIsoDate(base)) {
+    throw new RangeError(`monthRange needs a YYYY-MM-DD date, got ${String(base)}`);
+  }
+
   const [year, month] = base.split("-").map(Number);
   const last = daysInMonth(year, month);
   return {

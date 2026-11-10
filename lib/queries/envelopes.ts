@@ -2,10 +2,17 @@ import "server-only";
 
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { monthRange, shiftMonth, type IsoDate } from "@/lib/date";
+import { addDays, monthRange, shiftMonth, type IsoDate } from "@/lib/date";
 import { suggestBudget } from "@/lib/envelopes";
+import { listAllTransactions } from "@/lib/queries/transactions";
 import type { EnvelopeRow } from "@/lib/envelopes";
-import type { CurrencyCode, Minor } from "@/lib/money";
+import {
+  canConvert,
+  convertMinor,
+  isCurrencyCode,
+  type CurrencyCode,
+  type Minor,
+} from "@/lib/money";
 import type { CategoryBudgetRow, EnvelopeStatusRow } from "@/lib/supabase/database.types";
 
 /**
@@ -74,28 +81,41 @@ export async function suggestedBudgets(
   month: IsoDate,
   currency: CurrencyCode,
 ): Promise<Map<string, Minor>> {
-  const supabase = await createClient();
   const windowStart = shiftMonth(month, -SUGGEST_MONTHS);
 
-  const { data, error } = await supabase
-    .from("transactions")
-    .select("category_id, amount, occurred_on")
-    .eq("type", "expense")
-    .is("deleted_at", null)
-    .gte("occurred_on", windowStart)
-    .lt("occurred_on", month);
-
-  if (error) throw error;
+  /**
+   * Every row in the window, paged.
+   *
+   * This was one unpaginated select, so on a busy account it proposed a ceiling
+   * from whatever fitted under PostgREST's row limit — and a suggestion built
+   * from two thirds of the evidence is lower than the user's actual spending,
+   * which is the direction that makes the board wrong on purpose. F10.
+   *
+   * `lt` on the month rather than `lte` on its last day: the running month is
+   * excluded on purpose, and `listAllTransactions` speaks inclusive bounds, so
+   * the range stops on the last day of the previous month.
+   */
+  const rows = await listAllTransactions({
+    type: "expense",
+    from: windowStart,
+    to: addDays(month, -1),
+  });
 
   // category -> month -> total. The months are bucketed here rather than in
   // SQL because `suggestBudget` wants one figure per month per category and
   // the window is at most three months of one person's spending.
   const byCategory = new Map<string, Map<string, Minor>>();
-  for (const row of data ?? []) {
+  for (const row of rows) {
     if (!row.category_id) continue;
+    // A currency this app cannot convert is not evidence about a ceiling in
+    // the base currency. F01.
+    if (isCurrencyCode(row.currency) && !canConvert(row.currency, currency)) continue;
+    const amount = isCurrencyCode(row.currency)
+      ? convertMinor(row.amount, row.currency, currency)
+      : row.amount;
     const monthKey = row.occurred_on.slice(0, 7);
     const months = byCategory.get(row.category_id) ?? new Map<string, Minor>();
-    months.set(monthKey, (months.get(monthKey) ?? 0) + row.amount);
+    months.set(monthKey, (months.get(monthKey) ?? 0) + amount);
     byCategory.set(row.category_id, months);
   }
 

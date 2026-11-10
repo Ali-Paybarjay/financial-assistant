@@ -13,6 +13,32 @@ const currency = z.enum(CURRENCIES);
 /** Amounts arrive as the raw string the user typed; lib/money parses them. */
 const amountText = z.string().trim().min(1, "مبلغ را بنویس");
 
+/**
+ * An amount that has to be more than nothing.
+ *
+ * `goals.target_amount` carries `check (> 0)` in the database, and the only
+ * validation in front of it was «not empty» — so «۰» passed the form, passed the
+ * action, and was refused by Postgres after the step had already deleted every
+ * goal the user had. Checking for a non-zero digit is currency-agnostic, which
+ * is what lets it live in a schema that has no currency in hand; the action
+ * re-checks the parsed minor amount, and the save function checks it again
+ * before it writes anything. See F04.
+ */
+const positiveAmountText = amountText.refine(
+  (text) => /[1-9۱-۹١-٩]/.test(text),
+  "مبلغ باید بزرگ‌تر از صفر باشد",
+);
+
+/**
+ * The row's own id, when it already has one.
+ *
+ * Present so that re-saving a step updates what is there instead of replacing
+ * it. Without it every save minted new ids, and `transactions.goal_id` is
+ * `on delete set null` — so a goal that kept its title lost every transfer that
+ * had ever funded it and its progress went back to zero. F04.
+ */
+const rowId = z.string().uuid().optional();
+
 const currentYear = new Date().getFullYear();
 
 /**
@@ -79,6 +105,7 @@ export type ProfileFormInput = z.input<typeof profileFormSchema>;
 export type ProfileFormOutput = z.output<typeof profileFormSchema>;
 
 export const incomeSourceSchema = z.object({
+  id: rowId,
   title: z.string().trim().min(1, "عنوان را بنویس").max(80),
   type: z.enum(INCOME_TYPE_OPTIONS.map((o) => o.value)),
   amount: amountText,
@@ -91,6 +118,7 @@ export const step2Schema = z.object({
 });
 
 export const recurringExpenseSchema = z.object({
+  id: rowId,
   title: z.string().trim().min(1, "عنوان را بنویس").max(80),
   categorySlug: z.string().min(1),
   amount: amountText,
@@ -111,9 +139,10 @@ export const step4Schema = z.object({
 });
 
 export const goalSchema = z.object({
+  id: rowId,
   title: z.string().trim().min(1, "عنوان هدف را بنویس").max(80),
   type: z.enum(GOAL_TYPE_OPTIONS.map((o) => o.value)),
-  targetAmount: amountText,
+  targetAmount: positiveAmountText,
   targetDate: z.string().optional(),
   priority: z.number().int().min(0).max(3),
 });

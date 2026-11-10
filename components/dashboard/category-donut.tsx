@@ -1,6 +1,6 @@
 "use client";
 
-import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
+import { DonutRing } from "@/components/charts/lazy";
 import { Money } from "@/components/money";
 import { faPercent } from "@/lib/format";
 import type { CurrencyCode } from "@/lib/money";
@@ -36,24 +36,15 @@ export function CategoryDonut({
 
       <div className="flex items-center gap-4">
         <div className="relative size-[118px] shrink-0">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={data}
-                dataKey="amount"
-                innerRadius={36}
-                outerRadius={59}
-                paddingAngle={1.6}
-                stroke="var(--surface)"
-                strokeWidth={1.5}
-                isAnimationActive={false}
-              >
-                {data.map((slice) => (
-                  <Cell key={slice.id ?? slice.name} fill={slice.fill} />
-                ))}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
+          <DonutRing
+            slices={data.map((slice) => ({
+              key: slice.id ?? slice.name,
+              amount: slice.amount,
+              fill: slice.fill,
+            }))}
+            stroke="var(--surface)"
+            strokeWidth={1.5}
+          />
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
             <span className="text-micro text-ink-muted">بیشترین</span>
             <span className="max-w-[60px] truncate text-caption font-semibold text-ink">

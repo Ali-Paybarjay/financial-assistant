@@ -20,6 +20,13 @@ const USER_BUCKETS = ["receipts", "statements"] as const;
 /**
  * Deletes a user and everything they entered.
  *
+ * Throws if any part of it fails, and that is the contract every caller is
+ * written against: the settings action turns a throw into «حذف نشد» and the
+ * nightly sweep counts the user as failed and leaves them for tomorrow. It used
+ * to check nothing — not the listing, not the removal, not the user delete — so
+ * a storage call that failed produced a "successful" purge with the files still
+ * in the bucket. F11.
+ *
  * Storage first, and through the Storage API rather than SQL. Uploads have no
  * foreign key back to auth.users, so deleting the user alone orphans every
  * receipt they scanned — and a `delete from storage.objects` is refused by
@@ -37,13 +44,75 @@ export async function purgeUser(userId: string): Promise<void> {
   const admin = createAdminClient();
 
   for (const bucket of USER_BUCKETS) {
-    const { data: files } = await admin.storage.from(bucket).list(userId);
-    if (files?.length) {
-      await admin.storage.from(bucket).remove(files.map((file) => `${userId}/${file.name}`));
+    await emptyFolder(admin, bucket, userId);
+  }
+
+  const { error } = await admin.auth.admin.deleteUser(userId);
+  // Throwing rather than returning: every caller of this already treats a throw
+  // as «the delete did not happen» — the settings action says so to the user,
+  // and the sweep counts the guest as failed and leaves them for tomorrow. A
+  // swallowed error here made both of them claim success. F11.
+  if (error) throw new Error(`could not delete user ${userId}: ${error.message}`);
+}
+
+/**
+ * How many objects to ask for at a time.
+ *
+ * The SDK's own default is 100, which is what made this a bug rather than a
+ * detail: `list()` with no options returned the first hundred files, those were
+ * removed, and everything past them stayed in the bucket forever. Somebody who
+ * had photographed two hundred receipts had half of them outlive their account.
+ */
+const LIST_PAGE = 100;
+
+/**
+ * A ceiling on the loop, so a bucket that never empties is a thrown error
+ * rather than a request that never returns. At 100 objects a page this is
+ * 100,000 files, well past the 15MB-a-file product limits.
+ */
+const MAX_LIST_PAGES = 1000;
+
+/**
+ * Remove everything under one user's folder in one bucket.
+ *
+ * Always from offset 0, never with an advancing offset, and that is the whole
+ * subtlety. The listing is a view over a folder that this loop is shortening as
+ * it goes: page 2 of a folder that just lost its first hundred objects is not
+ * the second hundred, it is the fourth. Re-reading from the start is correct by
+ * construction — each pass removes the first page and the next pass sees what
+ * moved up into it.
+ *
+ * Every error is checked. A failed `list` used to read as an empty folder and a
+ * failed `remove` as a successful one, so an account whose storage call timed
+ * out was reported deleted with its files still there. F11.
+ */
+async function emptyFolder(
+  admin: ReturnType<typeof createAdminClient>,
+  bucket: string,
+  userId: string,
+): Promise<void> {
+  for (let page = 0; page < MAX_LIST_PAGES; page += 1) {
+    const { data: files, error: listError } = await admin.storage
+      .from(bucket)
+      .list(userId, { limit: LIST_PAGE });
+
+    if (listError) {
+      throw new Error(`could not list ${bucket}/${userId}: ${listError.message}`);
+    }
+    // Genuinely empty, which is the only way this loop is allowed to end well.
+    if (!files?.length) return;
+
+    const paths = files.map((file) => `${userId}/${file.name}`);
+    const { error: removeError } = await admin.storage.from(bucket).remove(paths);
+
+    if (removeError) {
+      throw new Error(`could not remove from ${bucket}/${userId}: ${removeError.message}`);
     }
   }
 
-  await admin.auth.admin.deleteUser(userId);
+  throw new Error(
+    `${bucket}/${userId} still had objects after ${MAX_LIST_PAGES} pages`,
+  );
 }
 
 /**

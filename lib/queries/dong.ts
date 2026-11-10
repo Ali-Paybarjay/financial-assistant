@@ -62,12 +62,19 @@ function inDisplayOrder(rows: readonly DongGroupWithTotals[]): DongGroupWithTota
 export async function listDongGroups(): Promise<DongGroupWithTotals[]> {
   const supabase = await createClient();
 
-  const [{ data: groups, error }, { data: totals }] = await Promise.all([
+  const [
+    { data: groups, error: groupsError },
+    { data: totals, error: totalsError },
+  ] = await Promise.all([
     supabase.from("dong_groups").select("*"),
     supabase.rpc("dong_group_totals"),
   ]);
 
-  if (error) throw error;
+  if (groupsError) throw groupsError;
+  // The third instance of F08's shape: the zeros below are right for a group
+  // nobody has spent in yet and wrong in exactly the same way when the totals
+  // function failed — every trip listed at «۰ خرج», with nothing saying so.
+  if (totalsError) throw totalsError;
 
   const byGroup = new Map<string, DongGroupTotalRow>(
     ((totals ?? []) as DongGroupTotalRow[]).map((row) => [row.group_id, row]),
@@ -101,11 +108,11 @@ export async function getDongGroup(groupId: string): Promise<DongGroupDetail> {
   const supabase = await createClient();
 
   const [
-    { data: group },
-    { data: members },
-    { data: balances },
-    { data: expenses },
-    { data: payments },
+    { data: group, error: groupError },
+    { data: members, error: membersError },
+    { data: balances, error: balancesError },
+    { data: expenses, error: expensesError },
+    { data: payments, error: paymentsError },
   ] = await Promise.all([
     supabase.from("dong_groups").select("*").eq("id", groupId).maybeSingle(),
     supabase
@@ -129,6 +136,26 @@ export async function getDongGroup(groupId: string): Promise<DongGroupDetail> {
       .order("created_at", { ascending: false }),
   ]);
 
+  /**
+   * Every one of the five, checked separately.
+   *
+   * None of these errors was looked at, and each one degrades into a shape the
+   * page renders happily: no members, no balances, no expenses, no payments —
+   * a settled-looking trip that is only settled because nothing came back.
+   * `group` is the exception that has to be tested for absence as well, because
+   * a group that is genuinely not the viewer's is a 404 rather than an error.
+   * F08.
+   */
+  for (const error of [
+    groupError,
+    membersError,
+    balancesError,
+    expensesError,
+    paymentsError,
+  ]) {
+    if (error) throw error;
+  }
+
   if (!group) notFound();
 
   // A second wave rather than a PostgREST embed: the hand-written Database
@@ -136,20 +163,24 @@ export async function getDongGroup(groupId: string): Promise<DongGroupDetail> {
   // and would have to be asserted through `unknown`. Attaching the shares here
   // costs one round trip and keeps the rows typed all the way through.
   const expenseRows = (expenses ?? []) as DongExpenseRow[];
-  const shares = expenseRows.length
-    ? ((
-        await supabase
-          .from("dong_expense_shares")
-          .select("*")
-          .in(
-            "expense_id",
-            expenseRows.map((expense) => expense.id),
-          )
-      ).data ?? [])
-    : [];
+  let shares: DongExpenseShareRow[] = [];
+  if (expenseRows.length > 0) {
+    const { data, error } = await supabase
+      .from("dong_expense_shares")
+      .select("*")
+      .in(
+        "expense_id",
+        expenseRows.map((expense) => expense.id),
+      );
+    // An expense with no shares is a shape this page renders — it reads as an
+    // expense nobody owes anything on, which would quietly zero somebody's
+    // share of a trip. F08.
+    if (error) throw error;
+    shares = (data ?? []) as DongExpenseShareRow[];
+  }
 
   const sharesByExpense = new Map<string, DongExpenseShareRow[]>();
-  for (const share of shares as DongExpenseShareRow[]) {
+  for (const share of shares) {
     const list = sharesByExpense.get(share.expense_id);
     if (list) list.push(share);
     else sharesByExpense.set(share.expense_id, [share]);

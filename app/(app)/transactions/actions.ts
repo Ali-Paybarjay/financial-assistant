@@ -110,7 +110,7 @@ export async function saveTransaction(raw: unknown): Promise<SaveTransactionResu
   refresh();
 
   const { from, to } = monthRange(viewer.timeZone, parsed.data.occurredOn);
-  const totals = await monthTotals(from, to);
+  const totals = await monthTotals(from, to, viewer.currency);
   return {
     ok: true,
     balanceText: formatMoney(totals.income - totals.expense, viewer.currency, {
@@ -283,7 +283,7 @@ export async function saveParsedTransactions(input: {
   refresh();
 
   const { from, to } = monthRange(viewer.timeZone, rows[0].occurred_on);
-  const totals = await monthTotals(from, to);
+  const totals = await monthTotals(from, to, viewer.currency);
   return {
     ok: true,
     balanceText: formatMoney(totals.income - totals.expense, viewer.currency, {

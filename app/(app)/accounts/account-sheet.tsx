@@ -179,7 +179,7 @@ export function AccountSheet({
           label="این موجودی مالِ چه تاریخی است"
           htmlFor="account-balance-on"
           error={errors.balanceOn?.message}
-          hint="هرچه از این تاریخ به بعد به این حساب بخورد موجودی را عوض می‌کند، نه قبلش."
+          hint="موجودی ابتدای همان روز. خرج و درآمد همان روز و بعدش موجودی را عوض می‌کند؛ قبلش نه."
         >
           <Input id="account-balance-on" type="date" dir="ltr" {...register("balanceOn")} />
         </Field>
@@ -289,8 +289,9 @@ function RestateBalance({
     <div className="flex flex-col gap-3 rounded-control border border-hairline bg-paper p-3">
       <p className="text-caption text-ink-muted">
         عددی که الان واقعاً در حسابت هست را بنویس. مبنای شمارش از{" "}
-        {formatDateFa(account.opening_balance_on)} به تاریخ تازه می‌آید؛ تراکنش‌های قبل از
-        آن دیگر در موجودی شمرده نمی‌شوند، ولی هیچ‌کدام پاک نمی‌شوند.
+        {formatDateFa(account.opening_balance_on)} به تاریخ تازه می‌آید و ابتدای همان روز
+        در نظر گرفته می‌شود؛ تراکنش‌های قبل از آن دیگر در موجودی شمرده نمی‌شوند، ولی
+        هیچ‌کدام پاک نمی‌شوند.
       </p>
 
       <Field label="موجودی واقعی" htmlFor="restate-balance">

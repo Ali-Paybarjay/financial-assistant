@@ -7,6 +7,8 @@ import { THEME_COOKIE, isTheme, type Theme } from "@/lib/theme";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { purgeUser } from "@/lib/guests";
+import { hasRecordedMoney } from "@/lib/queries/money-data";
+import { CURRENCY_LOCKED_ERROR } from "@/lib/currency-lock";
 import { requireViewer } from "@/lib/auth";
 import { CURRENCIES } from "@/lib/money";
 import { profileSchema } from "@/lib/validation/onboarding";
@@ -39,15 +41,33 @@ export async function updateProfile(raw: unknown): Promise<SettingsResult> {
 }
 
 /**
- * Changing the base currency does not convert anything. Existing rows keep the
- * currency they were recorded in, which is why the UI states that before the
- * tap rather than after it.
+ * Changing the base currency converts nothing, so it is only offered while
+ * there is nothing to convert.
+ *
+ * It used to be allowed at any time, with a warning that said existing amounts
+ * would keep their old currency. They do keep it in the database — but the
+ * totals and the rows were rendered in the profile's *current* currency, so a
+ * 100 CAD purchase reappeared as «۱۰۰ تومان» and a month holding both was added
+ * up into one meaningless figure. The warning described a behaviour the app did
+ * not have. That was F01.
+ *
+ * The fix is in two halves and this is the first: once any amount has been
+ * recorded, the switch is refused rather than warned about. The second half is
+ * that every row and every total now names the currency it was actually stored
+ * in — see lib/queries/transactions.ts and components/transactions.
  */
 export async function updateCurrency(raw: unknown): Promise<SettingsResult> {
   const parsed = z.enum(CURRENCIES).safeParse(raw);
   if (!parsed.success) return { error: GENERIC_ERROR };
 
   const viewer = await requireViewer();
+
+  // Same currency in as out is not a change, and refusing it would make the
+  // button lie on a page that re-submits its own current value.
+  if (parsed.data !== viewer.currency && (await hasRecordedMoney(viewer.userId))) {
+    return { error: CURRENCY_LOCKED_ERROR };
+  }
+
   const supabase = await createClient();
 
   const { error } = await supabase

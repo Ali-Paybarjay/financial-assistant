@@ -47,6 +47,13 @@ export async function saveAccount(raw: unknown): Promise<AccountResult> {
     currency: viewer.currency,
     opening_balance: openingBalance,
     opening_balance_on: parsed.data.balanceOn,
+    // The question the form asks is «what did it hold on that date», answered
+    // by someone reading their banking app and then carrying on with their day
+    // — so the day's own transactions are still ahead of the figure. Written
+    // explicitly rather than left to the column default, because the other
+    // writer of these two columns (statement import) means the other thing and
+    // the two must not be told apart by which one remembered. F02.
+    opening_balance_basis: "start_of_day" as const,
     institution: parsed.data.institution || null,
     reference: parsed.data.reference || null,
     is_default: parsed.data.isDefault,
@@ -105,7 +112,14 @@ export async function restateBalance(input: {
 
   const { error } = await supabase
     .from("accounts")
-    .update({ opening_balance: openingBalance, opening_balance_on: input.balanceOn })
+    .update({
+      opening_balance: openingBalance,
+      opening_balance_on: input.balanceOn,
+      // «عددی که الان واقعاً در حسابت هست» on a date the user picks: the same
+      // start-of-day reading the form uses. Restating today's balance and then
+      // recording today's lunch should move it.
+      opening_balance_basis: "start_of_day" as const,
+    })
     .eq("id", input.id);
 
   if (error) return { error: GENERIC_ERROR };

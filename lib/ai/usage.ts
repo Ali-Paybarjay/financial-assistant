@@ -56,6 +56,16 @@ export const FEATURE_DAILY_LIMITS: Record<AiFeature, number> =
  */
 export const GUEST_DAILY_CALL_LIMIT = DEFAULT_SETTINGS.guest_daily_calls;
 
+export type Reservation = {
+  /**
+   * The usage row this call was claimed against, or null when no call may be
+   * made — the ceiling is reached, the model is switched off, or the
+   * reservation itself failed. A null id means «do not call the provider».
+   */
+  id: string | null;
+  allowance: Allowance;
+};
+
 export type Allowance = {
   remaining: number;
   /** What the ceiling was, so the message that reports it can say a true number. */
@@ -70,60 +80,92 @@ export type Allowance = {
 };
 
 /**
- * Counts against the user's own midnight, not UTC's. Two requests firing at
- * once can both read a count below the limit and both proceed; that costs a
- * couple of extra calls a day, which is cheaper than serialising every request
- * through a lock.
+ * Claim one call before making it.
+ *
+ * Counting and then calling is not a limit. Two requests arriving together both
+ * read a count below the ceiling, both proceed and both spend — and the window
+ * here is a whole day wide, so a client firing n requests at once got n calls
+ * whatever the ceiling said. The count is now taken and the usage row written in
+ * one database transaction under a per-user lock (migration 0033), and the
+ * caller settles that row afterwards with what the call actually cost.
+ *
+ * The old count also never said whose calls it was counting: it filtered by date
+ * and feature and left the user to RLS, which is right for an ordinary user and
+ * wrong for an admin, whose read policy on `ai_usage_logs` covers everybody's
+ * rows. The function counts `user_id = auth.uid()` explicitly. F12.
  *
  * A guest is still capped across all three features at once rather than per
- * feature: their ceiling exists to keep the demo affordable for an account
- * that costs one tap to make, and three of each would be three times the
- * number that was actually reasoned about.
+ * feature: their ceiling exists to keep the demo affordable for an account that
+ * costs one tap to make, and three of each would be three times the number that
+ * was actually reasoned about.
  *
  * This is also the single checkpoint in front of every model call — both
- * lib/ai/parse.ts and lib/ai/statement.ts go through it — which is why the
- * kill switch is read here rather than on the three routes. A switch with
- * three implementations is a switch that is off in two places.
+ * lib/ai/parse.ts and lib/ai/statement.ts go through it — which is why the kill
+ * switch is read here rather than on the three routes. A switch with three
+ * implementations is a switch that is off in two places.
  */
-export async function remainingCalls(
+export async function reserveCall(
   timeZone: string,
   feature: AiFeature,
-): Promise<Allowance> {
+  model: string,
+): Promise<Reservation> {
   const supabase = await createClient();
   const user = await getSessionUser();
   const since = startOfDayUtc(todayInTimeZone(timeZone), timeZone);
 
   const isGuest = user?.is_anonymous === true;
 
-  // One primary-key read on a five-row table, on a path that is already about
-  // to run a count — and the count below is the expensive half.
+  // One primary-key read on a five-row table, on a path that is about to make a
+  // model call — which is the expensive half by orders of magnitude.
   const settings = await appSettings();
 
   if (!settings.ai_enabled) {
-    return { remaining: 0, limit: 0, isGuest, disabled: true };
+    return {
+      id: null,
+      allowance: { remaining: 0, limit: 0, isGuest, disabled: true },
+    };
   }
 
-  const limit = isGuest
-    ? settings.guest_daily_calls
-    : settings.ai_daily_limits[feature];
+  const limit = isGuest ? settings.guest_daily_calls : settings.ai_daily_limits[feature];
 
-  const query = supabase
-    .from("ai_usage_logs")
-    .select("id", { count: "exact", head: true })
-    .gte("created_at", since.toISOString());
+  const { data, error } = await supabase.rpc("reserve_ai_call", {
+    p_feature: feature,
+    p_limit: limit,
+    p_since: since.toISOString(),
+    p_per_feature: !isGuest,
+    p_model: model,
+  });
 
-  const { count } = await (isGuest ? query : query.eq("feature", feature));
+  if (error || !data?.[0]) {
+    /**
+     * The reservation could not be taken, so no call is made.
+     *
+     * Failing closed is the whole point: the previous code treated a failed
+     * count as zero calls used, so the one condition under which the ceiling was
+     * most likely to be wrong was also the one under which it was ignored. A
+     * refusal costs the user a retry; the other direction costs money at the
+     * provider with nothing recording it.
+     */
+    return {
+      id: null,
+      allowance: { remaining: 0, limit, isGuest, disabled: false },
+    };
+  }
+
+  const row = data[0];
 
   return {
-    remaining: Math.max(0, limit - (count ?? 0)),
-    limit,
-    isGuest,
-    disabled: false,
+    id: row.reservation_id,
+    allowance: {
+      remaining: row.allowed ? Math.max(0, limit - row.used - 1) : 0,
+      limit,
+      isGuest,
+      disabled: false,
+    },
   };
 }
 
 export type UsageRecord = {
-  userId: string;
   feature: AiFeature;
   model: string;
   inputTokens?: number;
@@ -134,27 +176,36 @@ export type UsageRecord = {
 };
 
 /**
- * Written with the service role because there is deliberately no insert policy
- * on this table — a client that could forge its own usage rows could erase its
- * own rate limit.
+ * Write what the call turned out to cost onto the row that reserved it.
+ *
+ * Written with the service role because there is deliberately no insert or
+ * update policy on this table — a client that could forge its own usage rows
+ * could erase its own rate limit.
+ *
+ * A reservation that is never settled stays at `reserved` and still counts
+ * against the day. That is the safe direction: the request either died
+ * mid-flight or the provider was called and this write failed, and in both cases
+ * the money may already be spent.
  */
-export async function logUsage(record: UsageRecord): Promise<void> {
+export async function settleCall(
+  reservationId: string,
+  record: UsageRecord,
+): Promise<void> {
   try {
     await createAdminClient()
       .from("ai_usage_logs")
-      .insert({
-        user_id: record.userId,
-        feature: record.feature,
-        provider: "openrouter",
+      .update({
         model: record.model,
         input_tokens: record.inputTokens ?? null,
         output_tokens: record.outputTokens ?? null,
         cost_cents: record.costCents ? Math.round(record.costCents) : null,
         latency_ms: record.latencyMs ?? null,
         status: record.status,
-      });
+      })
+      .eq("id", reservationId);
   } catch {
-    // Losing a usage row must not fail the user's request. The worst case is
-    // an under-counted rate limit, not a lost transaction.
+    // Losing the outcome must not fail the user's request. The row is still
+    // there and still counted; what is lost is what it cost, which the admin
+    // panel reports as a reservation nobody closed.
   }
 }

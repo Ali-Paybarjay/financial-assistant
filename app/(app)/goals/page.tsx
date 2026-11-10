@@ -25,7 +25,7 @@ export default async function GoalsPage() {
       supabase.from("recurring_expenses").select("*"),
       supabase.from("variable_expense_baselines").select("*"),
       // Whole months only, so the running month cannot pass for a finished one.
-      monthlySeries(surplusWindowStart(current.month), current.to),
+      monthlySeries(surplusWindowStart(current.month), current.to, viewer.currency),
     ]);
 
   const surplus = monthlySurplus({

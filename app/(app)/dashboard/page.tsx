@@ -18,7 +18,13 @@ import {
 } from "@/lib/queries/insights";
 import { buildInsights } from "@/lib/insights";
 import { monthlySurplus, projectedMonthEnd } from "@/lib/cashflow";
-import { daysLeftInMonth, monthRange, shiftMonth, todayInTimeZone } from "@/lib/date";
+import {
+  daysLeftInMonth,
+  monthKeyFromParam,
+  monthRange,
+  shiftMonth,
+  todayInTimeZone,
+} from "@/lib/date";
 import { DashboardView } from "./dashboard-view";
 
 const SERIES_MONTHS = 6;
@@ -40,7 +46,12 @@ export default async function DashboardPage({
 
   const today = todayInTimeZone(viewer.timeZone);
   const current = monthRange(viewer.timeZone, today);
-  const range = monthRange(viewer.timeZone, requestedMonth ?? today);
+  // Through the shared parser, so `?month=bad-date` lands on this month instead
+  // of reaching Postgres as "NaN-NaN-01" and answering with the error page. F13.
+  const range = monthRange(
+    viewer.timeZone,
+    monthKeyFromParam(requestedMonth, viewer.timeZone),
+  );
 
   // Idempotent in the database, so calling it on every load is safe. Only the
   // current month is generated; back-filling skipped months is out of scope.
@@ -68,9 +79,9 @@ export default async function DashboardPage({
     await Promise.all([
       listCategories(),
       listAccountsWithBalances(),
-      monthTotals(range.from, range.to),
-      monthTotals(previous.from, previous.to),
-      monthlySeries(seriesStart, range.to),
+      monthTotals(range.from, range.to, viewer.currency),
+      monthTotals(previous.from, previous.to, viewer.currency),
+      monthlySeries(seriesStart, range.to, viewer.currency),
       listTransactions({ from: range.from, to: range.to, limit: 10 }),
       // Progress comes from the ledger, so the card cannot quietly disagree
       // with the goals page about how far along something is.
@@ -105,12 +116,21 @@ export default async function DashboardPage({
     return series.get(month) ?? { month, income: 0, expense: 0, logged: 0 };
   });
 
-  const daysLeft = daysLeftInMonth(viewer.timeZone, today);
   const daysInMonth = Number(range.to.split("-")[2]);
   // Only meaningful for the month being lived in. A month already over has no
   // rate left to carry forward, and drawing one would be inventing a future
   // for a past — so the card shows the balance alone.
   const isCurrentMonth = range.month === current.month;
+  /**
+   * Zero for any month but the one being lived in.
+   *
+   * This used to be `daysLeftInMonth(today)` unconditionally, so August's page
+   * opened in September read «۴ روز مانده» and offered a daily allowance for a
+   * month that had ended — a future invented for a past, and the per-day figure
+   * was the current month's remaining days divided into the old month's
+   * balance. F09.
+   */
+  const daysLeft = isCurrentMonth ? daysLeftInMonth(viewer.timeZone, today) : 0;
   const daysGone = isCurrentMonth ? daysInMonth - daysLeft : daysInMonth;
   const forecast = isCurrentMonth
     ? projectedMonthEnd({
@@ -204,6 +224,11 @@ export default async function DashboardPage({
       category.slug !== "dong",
   );
 
+  // Accounts and the month's rows can each hold a currency the totals could
+  // not take in. Reported together, because the reader's question is «what is
+  // missing from these numbers», not «which query dropped it».
+  const accountsTotal = totalBalance(accounts, viewer.currency);
+
   // A tap on an envelope opens the ledger filtered to it, and the ledger
   // filters by slug rather than by id.
   const slugById = Object.fromEntries(
@@ -238,8 +263,11 @@ export default async function DashboardPage({
       goals={goals}
       categories={categories}
       accounts={accounts}
-      accountsTotal={totalBalance(accounts)}
+      accountsTotal={accountsTotal.total}
       accountsDue={accountsDue(accounts, today, viewer.timeZone)}
+      otherCurrencies={[
+        ...new Set([...totals.otherCurrencies, ...accountsTotal.otherCurrencies]),
+      ].sort()}
     />
   );
 }

@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
-import { listTransactions } from "@/lib/queries/transactions";
+import { listAllTransactions } from "@/lib/queries/transactions";
 import { addDays, type IsoDate } from "@/lib/date";
 import type { Minor } from "@/lib/money";
 
@@ -36,7 +36,10 @@ export type WeekSpend = { current: Minor; previous: Minor };
  * week would be comparing two days against seven.
  */
 export async function weeklySpend(today: IsoDate): Promise<WeekSpend> {
-  const rows = await listTransactions({
+  // Fourteen days is well inside one page for almost everybody, and «almost»
+  // is the word that made F10 possible. Paged, so the comparison is between
+  // two whole weeks rather than between one week and part of another.
+  const rows = await listAllTransactions({
     from: addDays(today, -13),
     to: today,
     type: "expense",

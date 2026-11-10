@@ -33,6 +33,29 @@
 export type WorkspaceId = "personal" | "dong";
 
 /**
+ * Where the current path is written down for the server to read.
+ *
+ * A layout is not told the url — that is a deliberate part of the App Router,
+ * because a layout is not re-rendered when only the page under it changes. The
+ * shell works around it by being a client component and reading `usePathname`,
+ * which is right for deciding what chrome to draw and no use at all for deciding
+ * what to fetch: by the time the client knows, the server has already read
+ * everything.
+ *
+ * So middleware copies the path onto the request and the layout reads it back.
+ * It is the one thing the layout needs and cannot derive, and it turns the
+ * composer's four queries — categories, accounts with balances, goals with
+ * progress, this month's envelopes — from «every signed-in page» into «the pages
+ * that have a composer on them». «دنگ و دونگ» does not, and neither does the
+ * chooser.
+ *
+ * Absence is handled rather than trusted: a path this header does not arrive on
+ * falls back to fetching, which is exactly what every page used to do. A missing
+ * header costs four queries, and trusting it would cost a missing composer.
+ */
+export const PATHNAME_HEADER = "x-pathname";
+
+/**
  * The chooser. Not a workspace itself — it is where you stand between them.
  *
  * It has its own address rather than living at «/» with a query string. It

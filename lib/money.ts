@@ -193,8 +193,75 @@ export function toMajor(minor: Minor, currency: CurrencyCode): number {
   return minor / 10 ** MINOR_EXPONENT[currency];
 }
 
+/**
+ * Raised when a sum leaves the range JavaScript can hold an integer in.
+ *
+ * The database stores money as bigint, which has room for an Iranian ledger
+ * measured in rial for a century. `Minor` is a JavaScript `number`, which does
+ * not: past 2^53 the additions below start rounding, and a total that rounds is
+ * a total that is quietly wrong. Every sum in the product goes through the
+ * helpers here so that stops being a silent failure and becomes an error the
+ * caller has to answer for. See the money contract in DECISIONS.md.
+ */
+export class MoneyRangeError extends Error {}
+
+function guardSafe(total: number, what: string): Minor {
+  if (!Number.isSafeInteger(total)) {
+    throw new MoneyRangeError(`${what} left the safe integer range: ${total}`);
+  }
+  return total;
+}
+
 export function sumMinor(amounts: readonly Minor[]): Minor {
-  return amounts.reduce((total, amount) => total + amount, 0);
+  return guardSafe(
+    amounts.reduce((total, amount) => total + amount, 0),
+    "sum",
+  );
+}
+
+/** An amount and the currency it is in. Neither half means anything alone. */
+export type MoneyAmount = { minor: Minor; currency: CurrencyCode };
+
+export type CurrencyTotal = {
+  /** The total, in the target currency. */
+  total: Minor;
+  /**
+   * Currencies that were left out because this app has no rate for them.
+   * A caller showing the total must say so when this is not empty — a figure
+   * that silently drops a currency is worse than one that admits it cannot
+   * add it up.
+   */
+  otherCurrencies: CurrencyCode[];
+};
+
+/**
+ * Add up amounts that may not all be in the same currency.
+ *
+ * Only what `convertMinor` can convert exactly is added: the target currency
+ * itself, and its sibling unit (rial into toman). Anything else is reported
+ * back rather than coerced, because the alternative — adding 100 CAD to 50 USD
+ * and labelling the result «۱۵۰ تومان» — is the single worst thing a ledger
+ * can do. That was F01.
+ */
+export function sumInCurrency(
+  amounts: readonly MoneyAmount[],
+  target: CurrencyCode,
+): CurrencyTotal {
+  let total = 0;
+  const other = new Set<CurrencyCode>();
+
+  for (const amount of amounts) {
+    if (!canConvert(amount.currency, target)) {
+      other.add(amount.currency);
+      continue;
+    }
+    total += convertMinor(amount.minor, amount.currency, target);
+  }
+
+  return {
+    total: guardSafe(total, "sum"),
+    otherCurrencies: [...other].sort(),
+  };
 }
 
 export type FormatOptions = {
@@ -278,6 +345,11 @@ export class CurrencyMismatchError extends Error {}
 export function convertibleFrom(currency: CurrencyCode): CurrencyCode[] {
   const siblings = Object.keys(UNIT_SIBLINGS[currency] ?? {}) as CurrencyCode[];
   return [currency, ...siblings];
+}
+
+/** Whether `convertMinor` can turn one into the other without inventing a rate. */
+export function canConvert(from: CurrencyCode, to: CurrencyCode): boolean {
+  return from === to || UNIT_SIBLINGS[from]?.[to] !== undefined;
 }
 
 /**

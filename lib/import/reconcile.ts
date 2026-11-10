@@ -37,6 +37,39 @@ export type LedgerEntry = {
   toAccountId?: string | null;
 };
 
+/**
+ * A ledger row as reconciliation needs it.
+ *
+ * This lived inline in app/api/import/statement/route.ts, and it dropped
+ * `to_account_id`: the account the money *arrived* in. So `ledgerForAccount`
+ * could never recognise the arriving leg of a transfer, and a transfer into
+ * account B was reported as new income on B's statement — confirm it and B's
+ * balance and the month's income both went up by an amount that had already
+ * been recorded. The function below could see the destination; the caller never
+ * gave it one, and the unit tests handed it a destination directly, so nothing
+ * in the suite looked at the wiring. That was F03.
+ *
+ * It is a function here, and exported, for exactly that reason: the mapping is
+ * the part that was wrong, so it is the part that has to be testable.
+ */
+export function toLedgerEntry(row: {
+  id: string;
+  type: TransactionType;
+  amount: Minor;
+  occurred_on: IsoDate;
+  account_id?: string | null;
+  to_account_id?: string | null;
+}): LedgerEntry {
+  return {
+    id: row.id,
+    type: row.type,
+    amount: row.amount,
+    occurredOn: row.occurred_on,
+    accountId: row.account_id ?? null,
+    toAccountId: row.to_account_id ?? null,
+  };
+}
+
 export type LineMatch = { transactionId: string; dayGap: number };
 
 export type ReconcileResult = {

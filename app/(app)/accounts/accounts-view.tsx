@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Money } from "@/components/money";
 import { AccountRowItem } from "@/components/accounts/account-row";
 import { ReconcileBanner } from "@/components/accounts/reconcile-banner";
+import { CurrencyNotice } from "@/components/currency-notice";
 import { faNumber } from "@/lib/format";
 import type { CurrencyCode } from "@/lib/money";
 import { accountsDue, totalBalance, type AccountWithBalance } from "@/lib/accounts";
@@ -28,7 +29,7 @@ export function AccountsView({
 
   const active = accounts.filter((account) => account.is_active);
   const closed = accounts.filter((account) => !account.is_active);
-  const total = totalBalance(accounts);
+  const total = totalBalance(accounts, currency);
   const due = accountsDue(accounts, today, timeZone);
 
   function open(account: AccountWithBalance | null) {
@@ -74,8 +75,16 @@ export function AccountsView({
               <Wallet size={16} />
               مجموع {faNumber(active.length)} حساب باز
             </span>
-            <Money minor={total} currency={currency} size="kpi" tone="auto" />
+            <Money minor={total.total} currency={currency} size="kpi" tone="auto" />
           </div>
+
+          {/* An account in a currency this app cannot convert is not in the
+              figure above it. Saying so is the whole of F01's second half. */}
+          {total.otherCurrencies.length > 0 && (
+            <div className="mt-2">
+              <CurrencyNotice currencies={total.otherCurrencies} />
+            </div>
+          )}
 
           <div className="mt-3 overflow-hidden rounded-card border border-hairline bg-surface">
             {active.map((account) => (
